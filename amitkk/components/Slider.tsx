@@ -7,11 +7,11 @@ import "slick-carousel/slick/slick-theme.css";
 
 export default function ProductSlider() {
  const products = [
-  { name: "Red Velvet Cake", price: "$17.00", img: "/images/cake.jpeg"  },
-  { name: "Red Velvet Cake", price: "$17.00", img: "/images/cake.jpeg" },
-  {name: "Red Velvet Cake", price: "$17.00", img: "/images/cake.jpeg"   },
-  { name: "Red Velvet Cake", price: "$17.00", img: "/images/cake.jpeg"  },
-  { name: "Red Velvet Cake", price: "$17.00", img: "/images/cake.jpeg"  },
+  { name: "Red Velvet Cake", price: "$17.00", img: "/images/choco-cake.png" },
+  { name: "Red Velvet Cake", price: "$17.00", img: "/images/choco-cake.png"  },
+  {name: "Red Velvet Cake", price: "$17.00", img: "/images/choco-cake.png"  },
+  { name: "Red Velvet Cake", price: "$17.00", img: "/images/choco-cake.png" },
+  { name: "Red Velvet Cake", price: "$17.00", img: "/images/choco-cake.png" },
 ];
 
 

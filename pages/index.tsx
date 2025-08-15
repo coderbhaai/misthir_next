@@ -2,6 +2,12 @@
 
 import { Grid, Box, Container, Typography, Button } from "@mui/material";
 import Image from "next/image";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+
 import ImageSlider from "../amitkk/components/ImageSlider";
 import PaymentHomeSection from "../amitkk/components/PaymentHomeSection";
 import PromoBanner from "../amitkk/components/PromoBanner";
@@ -9,13 +15,22 @@ import Category from "../amitkk/components/Category";
 import Slider from "../amitkk/components/Slider";
 
 import Shippingpayment from "../amitkk/components/ShippingPayment";
+
+
 export default function BannerSection() {
-  
+
+    const heroImages = [
+        "/images/cake44.png",
+        "/images/cake44.png",
+        "/images/cake44.png",
+      ];
+
+
   return ( 
     <Box sx={{ background: "", py: 6 }}>
       <Box sx={{backgroundColor: "#3B923C",}}>
         <Box sx={{py:3}}>
-          <Container className="defaultText" sx={{ p: 3, backdropFilter: "blur(10px) ", backgroundColor: "rgba(255, 255, 255, 0.1)",  borderRadius: 3, boxShadow: "0 4px 30px rgba(15, 3, 3, 0.1)",  transition: "all 0.3s ease",}}>
+          <Container className="defaultText" sx={{ p: 3, backdropFilter: "blur(10px) ",WebkitBackdropFilter: "blur(12px)", backgroundColor: "rgba(255, 255, 255, 0.15)",border: "1px solid rgba(255, 255, 255, 0.2)",boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",  borderRadius: 3, boxShadow: "0 4px 30px rgba(15, 3, 3, 0.1)",  transition: "all 0.3s ease",position: "relative",}}>
             <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }} sx={{}}>
               <Grid size={6}>
                 <Box>
@@ -28,12 +43,22 @@ export default function BannerSection() {
                   </Box>
                 </Box>
               </Grid>
-              <Grid size={6} sx={{ textAlign: "center" }}>
-                  <Image src="/images/cake.png" alt="Chocolate Cake" width={300} height={300} />
+            <Grid size={6} sx={{ textAlign: "center",background: "transparent",alignItems: "flex-start",pt:0 }}>
+                <Swiper modules={[ Autoplay]} slidesPerView={1} autoplay={{ delay: 4000 }} loop
+                >
+                  {heroImages.map((src, index) => (
+                    <SwiperSlide key={index}>
+                      <Box sx={{ background: "transparent",display: "flex", justifyContent: "center",alignItems: "flex-start",height: "100%",padding: 0, }}>
+                        <Image src={src} alt={`Cake ${index + 1}`} width={200} height={200}
+                          style={{ width: "100%", maxWidth: 300, height: "auto",background: "transparent",padding: 0, objectPosition: "top",objectFit: "contain", }}
+                        />
+                      </Box>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
               </Grid>
             </Grid>
-
-            <Box sx={{ mt: 4 }}>
+            <Box >
               <Slider />
             </Box>
           </Container>
