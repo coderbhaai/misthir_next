@@ -1,12 +1,15 @@
 {
-  "name": "misthir_next",
+  "name": "misthir_next_one",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "git": "git add . && git commit -a -m `commit` && git push",
+    "dit": "git add . && git commit -a -m `commit` && git push",
+    "deploy": "node gitpush.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -15,12 +18,17 @@
     "@mui/material": "^7.3.1",
     "next": "15.4.6",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-slick": "^0.31.0",
+    "slick-carousel": "^1.8.1",
+    "swiper": "^11.2.10"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "tailwindcss": "^4",
     "typescript": "^5"
   }
 }
