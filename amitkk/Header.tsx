@@ -27,7 +27,6 @@ export default function BakeryHeader() {
       }}
     >
       <Toolbar sx={{ justifyContent: "space-between" }}>
-        {/* Logo */}
         <Typography
           variant="h6"
           sx={{
@@ -38,8 +37,6 @@ export default function BakeryHeader() {
         >
           SweetBite
         </Typography>
-
-        {/* Menu Links */}
         <Box sx={{ display: { xs: "none", md: "flex" }, gap: 4 }}>
           {menuItems.map((item) => (
             <Link key={item.label} href={item.href} passHref>
@@ -56,8 +53,6 @@ export default function BakeryHeader() {
             </Link>
           ))}
         </Box>
-
-        {/* Icons */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconButton sx={{ color: "#5a3825" }}>
             <ShoppingCartIcon />
