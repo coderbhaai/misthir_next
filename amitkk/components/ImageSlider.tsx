@@ -24,7 +24,7 @@ export default function ImageSlider() {
 
   return (
     <Box sx={{ position: "relative",mb:12}}>
-      <Typography variant="h4"sx={{ textAlign: "center", color: "text.primary", mb: 2 }}>Cakes</Typography>
+      {/* <Typography variant="h4"sx={{ textAlign: "center", color: "text.primary", mb: 2 }}>Cakes</Typography> */}
 
       <IconButton className="custom-prev" sx={{ position: "absolute", top: "50%", left: 0, zIndex: 10, transform: "translateY(-50%)", backgroundColor: "white", "&:hover": { backgroundColor: "grey.200" },}}>
         <ArrowBackIosIcon />
