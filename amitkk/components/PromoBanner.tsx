@@ -12,12 +12,9 @@ export default function PromoBanner() {
   return (
     <Box sx={{ py: 8, textAlign: "center", background: "#3B923C", overflow: "hidden",}}>
       <Box sx={{ mx: "auto" }}>
-        <Typography variant="h5" sx={{letterSpacing: 2, color: "#ffff", py: 2,}}>
-          DO NOT MISS
-          </Typography>
-        <Typography variant="h3"sx={{ fontWeight: "bold", background: "#ffff", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", mb: 3,}}>
-          OUR SIGNATURE <br/>NOVELTIES & PROMOTIONS
-        </Typography>
+        <Typography variant="h4" sx={{letterSpacing: 2, color: "#ffff", py: 2,}}>DO NOT MISS</Typography>
+        <Typography variant="h3"sx={{ fontWeight: "bold",color: "#ffff"}}>OUR  <span style={{ color: "black" }}>SIGNATURE </span></Typography>
+        <Typography variant="h3"sx={{ fontWeight: "bold", mb: 3,}}>NOVELTIES & PROMOTIONS</Typography>
 
         <TextField
           placeholder="Enter your email"
