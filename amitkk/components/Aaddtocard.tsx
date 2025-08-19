@@ -22,7 +22,6 @@ import { useTheme } from "@mui/material/styles";
 export default function Addtocart() {
   const [cartItems, setCartItems] = useState([
     { id: 1, category: "Cake", name: "Vintage", weight: "2.4 KG", count: 1, price: 189,img: "/images/cake3.jpeg"},
-    { id: 2, category: "Macarons", name: "Galaxy", weight: "0.24 KG", count: 1, price: 495,img: "/images/cake3.jpeg"},
   ]);
 
   const theme = useTheme();

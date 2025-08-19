@@ -22,17 +22,10 @@ export default function AboutPage() {
                   boxShadow: "0 6px 30px rgba(0,0,0,0.1)",
                 }}
               >
-                <Image
-                  src="/images/cake3.jpeg"
-                  alt="SweetBite Bakery"
-                  width={600}
-                  height={400}
-                  style={{ width: "100%", height: "auto" }}
-                />
+                <Image src="/images/cake3.jpeg" alt="SweetBite Bakery" width={600} height={400} style={{ width: "100%", height: "auto" }}/>
               </Box>
             </Grid>
 
-            {/* Text */}
             <Grid size={6}>
               <Typography
                 variant="h2"
@@ -46,16 +39,8 @@ export default function AboutPage() {
                 Our Story
               </Typography>
 
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "#5a3825",
-                  lineHeight: 1.8,
-                  mb: 3,
-                  fontSize: "1.1rem",
-                }}
-              >
-                Welcome to <strong>SweetBite</strong>, where passion for baking
+              <Typography variant="body1" sx={{color: "#5a3825", mb: 3,fontSize: "1.1rem",}}>
+                Welcome to SweetBite, where passion for baking
                 meets the art of happiness. Founded in 2010, we started as a
                 small neighborhood bakery and have grown into a community
                 favorite for all things sweet and fresh. Our bakers rise before
@@ -63,31 +48,14 @@ export default function AboutPage() {
                 that you can taste in every bite.
               </Typography>
 
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "#5a3825",
-                  lineHeight: 1.8,
-                  mb: 3,
-                  fontSize: "1.1rem",
-                }}
-              >
+              <Typography variant="body1" sx={{ color: "#5a3825", mb: 3, fontSize: "1.1rem", }}>
                 We believe in quality, sustainability, and the magic of
                 gathering around good food. Whether you’re here for your daily
                 coffee, a special celebration cake, or just a little treat —
                 you’re part of our SweetBite family.
               </Typography>
 
-              <Button
-                variant="contained"
-                sx={{
-                  backgroundColor: "#d2691e",
-                  "&:hover": { backgroundColor: "#b25418" },
-                  borderRadius: "50px",
-                  px: 4,
-                  py: 1.5,
-                }}
-              >
+              <Button variant="contained" sx={{ backgroundColor: "#d2691e", borderRadius: "50px", px: 4, py: 1.5, }}>
                 Explore Our Menu
               </Button>
             </Grid>
@@ -95,19 +63,9 @@ export default function AboutPage() {
         </Container>
       </Box>
 
-      {/* Our Values Section */}
       <Box sx={{ backgroundColor: "#fff1e6", py: 8 }}>
         <Container>
-          <Typography
-            variant="h3"
-            align="center"
-            sx={{
-              fontWeight: 700,
-              fontFamily: "'Pacifico', cursive",
-              color: "#d2691e",
-              mb: 6,
-            }}
-          >
+          <Typography variant="h3" align="center" sx={{ fontWeight: 700, fontFamily: "'Pacifico', cursive", color: "#d2691e", mb: 6,}}>
             Why Choose SweetBite?
           </Typography>
 
