@@ -24,7 +24,7 @@ export default function ImageSlider() {
 
   return (
     <Box sx={{ position: "relative" ,mb:6 }}>
-      <Typography variant="h4" sx={{textAlign :"center",  color: "" }}>Cakes</Typography>
+      {/* <Typography variant="h4" sx={{textAlign :"center",  color: "" }}>Cakes</Typography> */}
       <IconButton className="custom-prev"sx={{ position: "absolute", top: "50%", left: 0, zIndex: 10, backgroundColor: "white", "&:hover": { backgroundColor: "grey.200" },}}>
         <ArrowBackIosIcon />
       </IconButton>
@@ -51,9 +51,9 @@ export default function ImageSlider() {
       >
         {products.map((p, i) => (
           <SwiperSlide key={i}>
-            <Card sx={{ textAlign: "center" }}>
-              <CardMedia sx={{py:6}}>
-                <Image src={p.img} alt={`Product ${i + 1}`} width={270} height={250} style={{ objectFit: "cover" }}/>
+            <Card sx={{ width: "100%", height: "100%", overflow: "hidden", borderRadius: 2 }}>
+              <CardMedia sx={{position: "relative", width: "100%", height: 430 }}>
+                <Image src={p.img} alt={`Product ${i + 1}`} fill style={{ objectFit: "cover" }}/>
               </CardMedia>
             </Card>
           </SwiperSlide>

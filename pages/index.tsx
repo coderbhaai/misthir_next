@@ -14,7 +14,11 @@ import PromoBanner from "../amitkk/components/PromoBanner";
 import Category from "../amitkk/components/Category";
 import Slider from "../amitkk/components/Slider";
 
+
+
 import Shippingpayment from "../amitkk/components/ShippingPayment";
+import Review from "@/amitkk/components/Review";
+
 
 
 export default function BannerSection() {
@@ -30,7 +34,7 @@ export default function BannerSection() {
     <Box sx={{ background: "", py: 6 }}>
       <Box sx={{backgroundColor: "#3B923C",}}>
         <Box sx={{py:3}}>
-          <Container className="defaultText" sx={{ p: 3, backdropFilter: "blur(10px) ",WebkitBackdropFilter: "blur(12px)", backgroundColor: "rgba(255, 255, 255, 0.15)",border: "1px solid rgba(255, 255, 255, 0.2)",boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",  borderRadius: 3, boxShadow: "0 4px 30px rgba(15, 3, 3, 0.1)",  transition: "all 0.3s ease",position: "relative",}}>
+          <Container className="defaultText" sx={{ p: 3, backdropFilter: "blur(10px) ",WebkitBackdropFilter: "blur(12px)", backgroundColor: "rgba(255, 255, 255, 0.15)",border: "1px solid rgba(255, 255, 255, 0.2)",borderRadius: 3, boxShadow: "0 4px 30px rgba(15, 3, 3, 0.1)",  transition: "all 0.3s ease",position: "relative",}}>
             <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }} sx={{}}>
               <Grid size={6}>
                 <Box>
@@ -67,8 +71,10 @@ export default function BannerSection() {
       <Box sx={{p:8}}>
       <Category />
        <PaymentHomeSection />
+       <Typography variant="h4" sx={{textAlign :"center",  color: "" }}>Cakes</Typography>
       <ImageSlider />
       <PromoBanner />
+      <Review />
       </Box>
     </Box>
   );

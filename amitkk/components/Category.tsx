@@ -41,14 +41,15 @@ export default function CakeGrid() {
           {filteredItems.map((item, index) => (
             <Grid key={index}>
               <Box
-                sx={{position: "relative",overflow: "hidden",borderRadius: 2,boxShadow: "0 6px 20px rgba(0,0,0,0.2)",transform: "perspective(800px) translateZ(0)",transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                  "&:hover": {transform: "perspective(800px) translateZ(10px) scale(1.02)",boxShadow: "0 12px 30px rgba(0,0,0,0.3)",},
+                sx={{position: "relative",overflow: "hidden",borderRadius: 2,boxShadow: "0 6px 20px rgba(0,0,0,0.1)",transform: "perspective(800px) translateZ(0)",transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  "&:hover": {transform: "perspective(800px) translateZ(10px) scale(1.02)",boxShadow: "0 12px 30px rgba(0,0,0,0.1)",},
                   "&:hover .hoverContent": {opacity: 1,transform: "translateY(0)",},
                   "&:hover .defaultText": {opacity: 0,transform: "translateY(100%)",},
                   "&:hover .tintOverlay": {opacity: 1,},
+                  "&:hover .cardImg": { filter: "blur(15px) brightness(0.8)" },
                 }}
               >
-                <Box component="img" src={item.img} alt={item.title} sx={{ width: "100%", height: 350, objectFit: "cover", display: "block",}}/>
+                <Box component="img" src={item.img} alt={item.title} sx={{ width: "100%", height: 350, objectFit: "cover", display: "block",transition: "all 0.3s ease",}}/>
                 <Box className="tintOverlay" sx={{ position: "absolute", inset: 0, bgcolor: "rgba(0, 0, 0, 0.4)", opacity: 0, transition: "opacity 0.3s ease", pointerEvents: "none", }}/>
                 <Box className="defaultText" sx={{ position: "absolute", bottom: 0, left: 0, right: 0, color: "#000",  p: 2, textAlign: "center", transition: "all 0.3s ease", backdropFilter: "blur(6px)",  WebkitBackdropFilter: "blur(2px)",}}>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -57,7 +58,7 @@ export default function CakeGrid() {
                   </Box>
                </Box>
                 <Box className="hoverContent"
-                  sx={{position: "absolute",inset: 0,bgcolor: "rgba(0,0,0,0.6)",display: "flex",flexDirection: "column",justifyContent: "center",alignItems: "center",opacity: 0,transform: "translateY(20px)",transition: "all 0.3s ease",color: "#fff", }}>
+                  sx={{position: "absolute",inset: 0,bgcolor: "rgba(0,0,0,0.1)",display: "flex",flexDirection: "column",justifyContent: "center",alignItems: "center",opacity: 0,transform: "translateY(20px)",transition: "all 0.3s ease",color: "#fff", }}>
                   <Typography variant="body1">{item.weight}</Typography>
                   <Typography variant="h6" sx={{ py: 2 }}>{item.type}</Typography>
                   <Typography variant="h4" sx={{ mb: 2 }}>{item.amt}</Typography>

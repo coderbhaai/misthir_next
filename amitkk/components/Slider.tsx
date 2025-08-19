@@ -1,5 +1,5 @@
 "use client";
-import { Grid, Card, CardContent, CardMedia, Typography } from "@mui/material";
+import { Grid, Card, CardContent,Box, CardMedia, Typography } from "@mui/material";
 import Image from "next/image";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
@@ -34,24 +34,35 @@ export default function ProductSlider() {
   };
 
   return (
-    <Slider {...inspirationSettings}>
+    <Box sx={{ }}>
+
+    <Slider {...inspirationSettings} >
       {products.map((p, i) => (
         <div key={i}>
-          <Card sx={{  background: "rgba(255,255,255,0.15)", borderRadius: 2, color: "#fff", padding: 2, margin: "0 10px",}}>
-            <Grid container rowSpacing={0} columnSpacing={{ md:8 }} sx={{}} alignItems="center">
-              <Grid size={6}>
+          <Card sx={{  background: "rgba(255,255,255,0.15)", borderRadius: 2, color: "#fff", padding: 2, margin: "0 10px", }}>
+            <Grid container rowSpacing={0} columnSpacing={{ md:8 }} sx={{overflow: "visible"}} alignItems="center">
+              <Grid size={6}  >
                 <CardContent>
                   <Typography variant="subtitle1">{p.name}</Typography>
                   <Typography variant="body2">{p.price}</Typography>
                 </CardContent>
               </Grid>
-              <Grid size={6}>
-                  <Image src={p.img} alt={p.name} width={100} height={100} />
+              <Grid size={6} sx={{  }}>
+                   <Box sx={{ mt: -6, display: "flex", justifyContent: "center", }}>
+                      <Image src={p.img} alt={p.name} width={200} height={200} style={{ objectFit: "contain", }}
+                      />
+                  </Box>
               </Grid>
             </Grid>
           </Card>
         </div>
       ))}
     </Slider>
+    </Box>
   );
 }
+
+
+
+
+
