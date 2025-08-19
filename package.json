@@ -11,6 +11,9 @@
     "dit": "git add . && git commit -a -m `commit` && git push",
     "deploy": "node gitpush.js"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
