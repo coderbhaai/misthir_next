@@ -2,7 +2,7 @@
 
 import { Box, Grid, Typography, Divider, Paper } from "@mui/material";
 import Image from "next/image";
-import ImageSlider from "@/amitkk/components/ImageSlider"; 
+import ImageSlider from "@/amitkk/components/ImageSlider";      
 export default function OrderConfirmation() {
   return (
     <Grid container spacing={4} sx={{ px: 4, py: 6 }} justifyContent="center" alignItems="center" textAlign="center">
