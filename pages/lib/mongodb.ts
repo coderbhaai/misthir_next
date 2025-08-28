@@ -26,7 +26,7 @@ export default async function connectDB(): Promise<typeof mongoose> {
 
   try {
     cached.conn = await cached.promise;
-    console.log('✅ MongoDB Connected');
+    console.log('✅ MongoDB Misthir Connected',);
     return cached.conn;
   } catch (error) {
     cached.promise = null;

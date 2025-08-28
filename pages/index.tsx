@@ -31,16 +31,18 @@ export default function HomePage({ meta, faq, testimonials }: HomePageProps) {
       <MobileSecond />
       <Portfolio />
       <Admin />
-      <FaqPanel faq={faq}/>
     </Box>
   );
 }
 
 export async function getServerSideProps() {
-  const res = await apiRequest("get", `basic/page?function=get_page_data&url=/&module=Page`);
-  const meta = res?.data?.meta || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
-  const faq = res?.data?.faq || [];
-  const testimonials = res?.data?.testimonials || [];
+  // const res = await apiRequest("get", `basic/page?function=get_page_data&url=/&module=Page`);
+  // const meta = res?.data?.meta || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
+  // const faq = res?.data?.faq || [];
+  // const testimonials = res?.data?.testimonials || [];
+  const meta = { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
+  // const faq = [];
+  // const testimonials = [];
 
-  return { props: { meta, faq, testimonials } };
+  return { props: { meta } };
 }
