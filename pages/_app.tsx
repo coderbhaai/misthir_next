@@ -1,14 +1,43 @@
-import "@/styles/globals.css";
+// pages/_app.tsx
+import "../styles/globals.css";
+import AdminLayout from "@amitkk/basic/utils/layouts/AdminLayout";
+import AppLayout from "@amitkk/basic/utils/layouts/AppLayout";
+import { AuthProvider } from "contexts/AuthContext";
 import type { AppProps } from "next/app";
-import Header from "../amitkk/Header"; 
-import Footer from "../amitkk/Footer"; 
+import { useRouter } from "next/router";
 
-export default function App({ Component, pageProps }: AppProps) {
+import { CacheProvider, EmotionCache } from "@emotion/react";
+import { ThemeProvider, CssBaseline } from "@mui/material";
+import createEmotionCache from "./createEmotionCache";
+import theme from "pages/theme";
+
+const clientSideEmotionCache = createEmotionCache();
+
+export interface MyAppProps extends AppProps {
+  emotionCache?: EmotionCache;
+}
+
+export default function App({ Component, pageProps, emotionCache = clientSideEmotionCache }: MyAppProps) {
+  const router = useRouter();
+  const isAdminRoute = router.pathname.startsWith("/admin");
+  const isVendorRoute = router.pathname.startsWith("/vendor");
+
   return (
-    <>
-      <Header />
-      <Component {...pageProps} />
-      <Footer />
-    </>
+    <CacheProvider value={emotionCache}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          {isAdminRoute ? (
+            <AdminLayout>
+              <Component {...pageProps} />
+            </AdminLayout>
+          ) : (
+            <AppLayout meta={pageProps.meta}>
+              <Component {...pageProps} />
+            </AppLayout>
+          )}
+        </AuthProvider>
+      </ThemeProvider>
+    </CacheProvider>
   );
 }

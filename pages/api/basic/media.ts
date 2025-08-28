@@ -1,0 +1,266 @@
+import path from 'path';
+import fs from 'fs';
+import sharp from 'sharp';
+import Media from 'lib/models/basic/Media';
+import { v4 as uuidv4 } from 'uuid';
+import { Fields, Files, IncomingForm, type File } from 'formidable';
+import mongoose, { isValidObjectId, Model, Types } from 'mongoose';
+import { log } from '../utils';
+import { NextApiRequest, NextApiResponse } from 'next';
+import connectDB from 'pages/lib/mongodb';
+import { sanitizeText } from '@amitkk/basic/utils/utils';
+import { uploadMediaToS3 } from 'services/uploadMediaToS3';
+
+const MEDIA_PATH = path.join(process.cwd(), 'public', 'storage');
+
+export const getUniqueFilename = (uploadDir: string, name: string, fileName: string, fileExt: string): string => {
+  const sanitName = sanitizeText(name);
+  let finalName = `${sanitName}${fileExt}`;
+  const filePath = path.join(uploadDir, finalName);
+
+  if (fs.existsSync(filePath)) {
+    const uniqueId = uuidv4();
+    finalName = `${sanitName}-${uniqueId}${fileExt}`;
+  }
+  return finalName;
+};
+
+export const getPaths = (type: string) => {
+  const paths = {
+    blog: { folder: 'blog', small: [150, 150], thumbnail: [300, 200] },
+    author: { folder: 'author', small: [100, 100], thumbnail: [200, 150] },
+    banner: { folder: 'banner', small: [1920, 500], thumbnail: [1920, 500] },
+    uploads: { folder: 'uploads', small: [], thumbnail: [] },
+  };
+  return paths[type as keyof typeof paths] ?? paths.uploads;
+};
+
+const ensureDirs = (basePath: string, small: number[], thumbnail: number[]) => {
+  if (!fs.existsSync(basePath)) fs.mkdirSync(basePath, { recursive: true });
+  if (small.length) fs.mkdirSync(path.join(basePath, 'small'), { recursive: true });
+  if (thumbnail.length) fs.mkdirSync(path.join(basePath, 'thumbnail'), { recursive: true });
+};
+
+const resizeImage = async (inputPath: string, outputPath: string, size: number[]) => {
+  await sharp(inputPath).resize(...size).toFile(outputPath);
+};
+
+interface UploadMediaParams {
+  file: any;
+  name: string;
+  alt?: string;
+  pathType: string;
+  media_id?: string | null;
+}
+
+export const deleteOldImage = async ( mediaModel: Model<any>, media_id: string | mongoose.Types.ObjectId ) => {
+  if (!media_id) return;
+
+  try {
+    const media = await mediaModel.findById(media_id);
+    if (!media || !media.path || !media.media) return;
+
+    let cleanedPath = media.path.replace(/^[/\\]*storage[/\\]*/, '');
+    const relativeDir = path.dirname(cleanedPath);
+    const variants = [
+      path.join(MEDIA_PATH, relativeDir, media.media),
+      path.join(MEDIA_PATH, relativeDir, 'small', media.media),
+      path.join(MEDIA_PATH, relativeDir, 'thumbnail', media.media),
+    ];
+
+    for (const filePath of variants) {
+      fs.unlink(filePath, (error) => { if (error) { log(error); } });
+    }
+  } catch (error) { log(error); }
+};
+
+export const uploadMedia = async ({ file, name, pathType, media_id = null }: UploadMediaParams): Promise<string | null> => {
+  try {
+    // return await uploadMediaToS3({ file, name, pathType, media_id });
+    return uploadMediaToLocal({ file, name, pathType, media_id });
+  } catch (error) { log(error); return null; } 
+};
+
+export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null }: UploadMediaParams) => {  
+  try {
+    if ( !file ) { return media_id ? media_id : null; }
+
+    if (file && media_id && isValidObjectId(media_id)) {
+      await deleteOldImage(Media, media_id);
+    }
+    const { folder, small, thumbnail } = getPaths(pathType);
+    const basePath = path.join(MEDIA_PATH, folder);
+    ensureDirs(basePath, small, thumbnail);
+    const originalName = (file as any).originalFilename || 'file.jpg';
+    const ext = path.extname(originalName);
+    const filename = getUniqueFilename(basePath, name, originalName, ext);
+    const finalPath = path.join(basePath, filename);
+
+    fs.renameSync(file.filepath, finalPath);
+    if (small.length) {
+      await resizeImage(finalPath, path.join(basePath, 'small', filename), small);
+    }
+
+    if (thumbnail.length) {
+      await resizeImage(finalPath, path.join(basePath, 'thumbnail', filename), thumbnail);
+    }
+
+    let entry;
+    const storagePath = `/storage/${folder}/${filename}`;  
+
+    if (file && media_id && isValidObjectId(media_id)) {
+      entry = await Media.findByIdAndUpdate(
+        media_id,
+        { media: filename, path: storagePath },
+        { new: true }
+      );
+    } else {
+      entry = await Media.create({ media: filename, alt: name, path: storagePath });
+    }
+
+    return entry._id.toString(); 
+  } catch (error) { log(error); } 
+};
+
+type HandlerMap = {
+  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
+};
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+interface ExtendedRequest extends NextApiRequest {
+  file?: File;
+  files?: { [key: string]: File | File[] };
+}
+
+export async function get_all_media(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    // const data = await Media.find().populate('media_id').exec();
+    // return res.status(200).json({ message: 'Fetched all Authors', data });
+
+    const data = await Media.find().exec();
+    return res.status(200).json({ message: 'Fetched all Authors', data })
+
+  } catch (error) { return log(error); }
+}
+
+export async function get_single_media(req: NextApiRequest, res: NextApiResponse){
+  try{
+    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
+  
+    if (!id || !Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid or missing ID' });
+    }
+    
+    const data = await Media.findById(id).exec();
+    if(!data) { return res.status(404).json({message:`Media meta with ID ${id} not found`}); }
+    
+    return res.status(200).json({ message: '✅ Single Entry Fetched', data });
+    return;
+  }catch (error) { return log(error); }
+};
+
+export async function create_update_media(req: ExtendedRequest, res: NextApiResponse) {
+ 
+  try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+    const data = req.body;  
+    if (!data?.alt) { return res.status(400).json({ message: 'Required fields missing' }); }
+
+    const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
+
+    let media_id: string | null = null;
+    if (data._id && isValidObjectId(data._id)) { media_id = data._id; }
+    const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
+    
+    if (file) {
+      await uploadMedia({ file, name: data.alt, pathType: data.path, media_id: media_id ?? null });
+    }else if(media_id){
+      await Media.findByIdAndUpdate(
+        media_id,
+        { alt: data.alt },
+        { new: true }
+      );
+    }
+
+    const entry = await Media.findById(media_id).exec();
+    
+    return res.status(201).json({ message: '✅ Entry created successfully', data: entry });
+  } catch (error) { return log(error); }
+}
+
+const functions: HandlerMap = {
+  get_all_media: get_all_media,
+  get_single_media: get_single_media,
+  create_update_media: create_update_media,
+};
+
+const tmpDir = path.join(process.cwd(), 'tmp');
+if (!fs.existsSync(tmpDir)) {
+  fs.mkdirSync(tmpDir);
+}
+
+function normalizeFormFields(fields: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const key in fields) {
+    const value = fields[key];
+    const v = Array.isArray(value) && value.length === 1 ? value[0] : value;
+    result[key] = v === 'null' || v === '' ? undefined : v;
+  }
+  return result;
+}
+
+export const parseForm = async ( req: NextApiRequest ): Promise<{ fields: Fields; files: Files }> => {
+  return new Promise((resolve, reject) => {
+    const form = new IncomingForm({
+      uploadDir: tmpDir,
+      keepExtensions: true,
+      multiples: true,
+    });
+
+    form.parse(req, (err: Error | null, fields: Fields, files: Files) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ fields, files });
+      }
+    });
+  });
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    let fnName: string;
+    let body: any = req.body;
+    let files: any = null;
+
+    if (req.method === 'POST') {
+      const parsed = await parseForm(req);
+      body = normalizeFormFields(parsed.fields);
+      files = parsed.files;
+      fnName = body.function;
+    } else {
+      fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
+    }
+
+    if (!fnName || typeof fnName !== 'string') {
+      return res.status(400).json({ message: 'Missing or invalid function name' });
+    }  
+    const targetFn = functions[fnName];
+    if (!targetFn) {
+      return res.status(400).json({ message: `Invalid function name: ${fnName}` });
+    }
+
+    await connectDB();
+
+    req.body = body;
+    if (files) (req as any).files = files;
+
+    await targetFn(req, res);
+  } catch (error) { return log(error); }
+}

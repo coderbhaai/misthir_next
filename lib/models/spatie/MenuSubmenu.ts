@@ -1,0 +1,13 @@
+import mongoose, { Schema } from "mongoose";
+
+export interface IProps extends Document {
+  menu_id: mongoose.Types.ObjectId;
+  submenu_id: mongoose.Types.ObjectId;
+}
+
+const MenuSubmenuSchema = new Schema<IProps>({
+  menu_id: { type: Schema.Types.ObjectId, ref: "SpatieMenu", required: true },
+  submenu_id: { type: Schema.Types.ObjectId, ref: "SpatieSubmenu", required: true }
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
+
+export default mongoose.models.MenuSubmenu || mongoose.model<IProps>("MenuSubmenu", MenuSubmenuSchema);
