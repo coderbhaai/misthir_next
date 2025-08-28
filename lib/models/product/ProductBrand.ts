@@ -1,27 +1,31 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface ProductmetaDoc extends Document {
-  module: string;
+interface ProductBrandDoc extends Document {
   name: string;
   url: string;
+  content: string;
   status: boolean;
   displayOrder?: number;
+  vendor_id?: Types.ObjectId;
+  media_id?: Types.ObjectId;
   meta_id?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   products?: { product_id: Types.ObjectId }[];
 }
 
-const productmetaSchema = new Schema<ProductmetaDoc>({
-    module: { type: String, required: true },
+const productBrandSchema = new Schema<ProductBrandDoc>({
     name: { type: String, required: true },
     url: { type: String, required: true, unique: true },
+    content: { type: String, required: false },
     status: { type: Boolean, default: true },
     displayOrder: { type: Number, required: false },
+    vendor_id: { type: Schema.Types.ObjectId, ref: "Vendor" },
+    media_id: { type: Schema.Types.ObjectId, ref: "Media" },
     meta_id: { type: Schema.Types.ObjectId, ref: "Meta" },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-productmetaSchema.virtual("products", { ref: "ProductProductmeta", localField: "_id", foreignField: "productmeta_id" });
+productBrandSchema.virtual("products", { ref: "ProductProductBrand", localField: "_id", foreignField: "productBrand_id" });
 
-export default mongoose.models.Productmeta || model<ProductmetaDoc>("Productmeta", productmetaSchema);
+export default mongoose.models.ProductBrand || model<ProductBrandDoc>("ProductBrand", productBrandSchema);

@@ -17,7 +17,7 @@ const blogmetaSchema = new Schema<BlogmetaDoc>({
     name: { type: String, required: true },
     url: { type: String, required: true, unique: true },
     status: { type: Boolean, default: true },
-    displayOrder: Number,
+    displayOrder: { type: Number, required: false },
     meta_id: { type: Schema.Types.ObjectId, ref: "Meta" },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

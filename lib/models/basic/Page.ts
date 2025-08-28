@@ -24,7 +24,7 @@ const pageSchema = new Schema<PageDoc>(
     meta_id: { type: Schema.Types.ObjectId, ref: "Meta" },
     content: String,
     status: { type: Boolean, default: true },
-    displayOrder: Number,
+    displayOrder: { type: Number, required: false },
     schema_status: { type: Boolean, default: false },
     sitemap: { type: Boolean, default: true },
   },
