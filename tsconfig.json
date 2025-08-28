@@ -20,7 +20,9 @@
       "@amitkk/basic/*": ["amitkk/basic/*"],
       "@amitkk/blog/*": ["amitkk/blog/*"],
       "@amitkk/seo/*": ["amitkk/seo/*"],
-      "@amitkk/agency/*": ["amitkk/agency/*"]
+      "@amitkk/product/*": ["amitkk/product/*"],
+      "@amitkk/ecom/*": ["amitkk/ecom/*"],
+      "@amitkk/address/*": ["amitkk/address/*"],
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", "amitkk/generateComponentMap.js", "amitkk/basic/components/ProductSlider.jsx", "amitkk/basic/components/CustomSlider.tsx"],
