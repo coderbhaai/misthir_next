@@ -1,3 +1,5 @@
+// pages > admin > [...slug].tsx
+
 "use client";
 import { clo } from "@amitkk/basic/utils/utils";
 import { useRouter } from "next/router";

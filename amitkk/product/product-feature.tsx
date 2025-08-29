@@ -31,7 +31,7 @@ export function AdminProductFeature(){
     const fetchData = useCallback(async () => {
         try {
             const res = await apiRequest("get", "product/basic?function=get_all_product_features");
-            setData(res?.data);
+            setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
 
@@ -43,6 +43,7 @@ export function AdminProductFeature(){
                 try {
                     const res = await apiRequest("get", `product/basic?function=get_single_product_feature&id=${updatedDataId}`);
                     const data = res?.data;
+                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
 
                     setData((prevData = []) => {
                         const exists = prevData.some(i => String(i._id) === String(data._id));

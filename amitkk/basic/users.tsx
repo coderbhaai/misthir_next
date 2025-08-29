@@ -30,19 +30,17 @@ export function AdminUsers() {
   const fetchData = useCallback(async () => {
     try {
       const res_1 = await apiRequest("get", `basic/spatie?function=get_all_users`);
-      setData(res_1?.data);
+      setData(res_1?.data ?? []);
 
       const res_2 = await apiRequest("get", `basic/spatie?function=get_all_roles`);
-      setRoles(res_2?.data);
+      setRoles(res_2?.data ?? []);
 
       const res_3 = await apiRequest("get", `basic/spatie?function=get_all_permissions`);
-      setPermissions(res_3?.data);
+      setPermissions(res_3?.data ?? []);
     } catch (error) { clo( error ); }
   }, []);  
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (updatedDataId) {
@@ -50,6 +48,7 @@ export function AdminUsers() {
         try {
           const res = await apiRequest("get", `basic/spatie?function=get_single_user&id=${updatedDataId}`);
           const data    = res?.data
+          if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
 
           setData((prevData = []) => {
               const exists = prevData.some(i => String(i._id) === String(data._id));

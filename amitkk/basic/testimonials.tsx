@@ -36,7 +36,7 @@ export default function AdminTestimonial({ module = "", module_id = "" }: AdminM
     const fetchData = useCallback(async () => {
         try {
             const res = await apiRequest("get", `basic/page?function=get_all_testimonials`);
-            setData(res?.data);
+            setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
     
@@ -48,6 +48,7 @@ export default function AdminTestimonial({ module = "", module_id = "" }: AdminM
                 try {
                     const res = await apiRequest("get", `basic/page?function=get_single_testimonial&id=${updatedDataId}`);
                     const data = res?.data;
+                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
     
                     setData((prevData = []) => {
                         const exists = prevData.some(i => String(i._id) === String(data._id));

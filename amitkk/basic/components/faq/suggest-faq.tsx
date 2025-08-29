@@ -16,7 +16,7 @@ export const SuggestFaq: React.FC<FaqModuleProps> = ({ module = "", module_id = 
             const fetchData = async () => {
                 try {
                     const res = await apiRequest("get", `/page/get_faq?module=${module}&module_id=${module_id}`);
-                    setData(res?.data);
+                    setData(res?.data ?? []);
                     
                 } catch (error) { clo( error ); }
 

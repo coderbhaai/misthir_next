@@ -27,16 +27,14 @@ export  function AdminMenu(){
     const fetchData = useCallback(async () => {
         try {
             const res_1 = await apiRequest("get", `basic/spatie?function=get_all_menus`);
-            setData(res_1?.data);
+            setData(res_1?.data ?? []);
             
             const res_2 = await apiRequest("get", `basic/spatie?function=get_all_submenus`);
-            setSubmenu(res_2?.data);
+            setSubmenu(res_2?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
     useEffect(() => {
         if (updatedDataId) {
@@ -44,6 +42,7 @@ export  function AdminMenu(){
                 try {
                     const res = await apiRequest("get", `basic/spatie?function=get_single_menu&id=${updatedDataId}`);
                     const data = res?.data;
+                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
     
                     setData((prevData = []) => {
                         const exists = prevData.some(i => String(i._id) === String(data._id));
@@ -85,5 +84,4 @@ export  function AdminMenu(){
     )
 }
 
-export default AdminMenu;
-// export default withAuth(AdminMenu);
+export default withAuth(AdminMenu);

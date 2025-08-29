@@ -119,7 +119,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
         const fetchCategory = async () => {
           try {
             const res_1 = await apiRequest("get", `blog/blogmeta?function=get_category`);
-            setCategory(res_1.data);
+            setCategory(res_1.data ?? []);
           } catch (error) { clo( error ); }
         };
         fetchCategory();    
@@ -127,7 +127,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
         const fetchTags = async () => {
           try {
             const res_2 = await apiRequest("get", `blog/blogmeta?function=get_tag`);
-            setTag(res_2.data);
+            setTag(res_2.data ?? []);
           } catch (error) { clo( error ); }
         };
         fetchTags();
@@ -135,7 +135,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
         const fetchAuthors = async () => {
             try {
                 const res_3 = await apiRequest("get", `blog/author?function=get_all_author`);
-                setAuthorOptions(res_3.data);
+                setAuthorOptions(res_3.data ?? []);
             } catch (error) { clo( error ); }
           };
           fetchAuthors();

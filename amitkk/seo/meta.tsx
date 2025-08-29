@@ -29,7 +29,7 @@ export  function AdminMeta(){
     const fetchData = useCallback(async () => {
         try {
             const res = await apiRequest("get", "basic/meta?function=get_all_meta");
-            setData(res?.data);
+            setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
 
@@ -39,7 +39,9 @@ export  function AdminMeta(){
         if (updatedDataId) {
             const fetchData = async () => {
                 try {
-                    const data = await apiRequest("get", `basic/meta?function=get_single_meta&id=${updatedDataId}`);
+                    const res = await apiRequest("get", `basic/meta?function=get_single_meta&id=${updatedDataId}`);
+                    const data = res?.data;
+                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
     
                     setData((prevData = []) => {
                         const exists = prevData.some(i => String(i._id) === String(data._id));

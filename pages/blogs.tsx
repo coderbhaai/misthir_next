@@ -18,7 +18,7 @@ export default function BlogPage() {
     const fetchBlogs = async () => {
       try {        
         const res_one = await apiRequest("post", "blog/blogs", { function : 'get_blogs', skip: 0, limit: 5 });
-        setBlogsOne(res_one?.data);
+        setBlogsOne(res_one?.data ?? []);
       } catch (err) { clo(err); }
     };
 

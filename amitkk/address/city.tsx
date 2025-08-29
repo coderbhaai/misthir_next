@@ -29,13 +29,11 @@ export  function AdminBlogMeta(){
     const fetchData = useCallback(async () => {
         try {
             const res = await apiRequest("get", "blog/blogmeta?function=get_all_blog_meta");
-            setData(res?.data);
+            setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
 
-    useEffect(() => {
-    fetchData();
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
     useEffect(() => {
         if (updatedDataId) {
@@ -43,6 +41,7 @@ export  function AdminBlogMeta(){
                 try {
                     const res = await apiRequest("get", `blog/blogmeta?function=get_single_blog_meta&id=${updatedDataId}`);
                     const data = res?.data;
+                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
     
                     setData((prevData = []) => {
                         const exists = prevData.some(i => String(i._id) === String(data._id));

@@ -33,11 +33,11 @@ export type TableDataFormProps = {
   selectedDataId: string | number | null | object;
 }
 
-export function useTableFilter<T>( data: T[], order: "asc" | "desc", orderBy: keyof T, filterData: string, filterFields: Array<keyof T> ) {
+export function useTableFilter<T>( data: T[] = [],  order: "asc" | "desc", orderBy: keyof T, filterData: string, filterFields: Array<keyof T> ) {
   return useMemo(
     () =>
       applyFilter<T>({
-        inputData: data,
+        inputData: Array.isArray(data) ? data : [],
         comparator: getComparator(order, orderBy),
         filterData,
         filterFields,

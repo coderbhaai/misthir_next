@@ -20,7 +20,7 @@ export function AdminBlog(){
     const fetchData = useCallback(async () => {
         try {
             const res = await apiRequest("get", "blog/blogs?function=get_all_blogs");
-            setData(res?.data);
+            setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
 

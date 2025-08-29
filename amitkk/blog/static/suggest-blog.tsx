@@ -13,7 +13,7 @@ export default function SuggestBlogs() {
     const fetchBlogs = async () => {
       try {        
         const res_one = await apiRequest("post", "blog/blogs", { function : 'get_blogs', skip: 0, limit: 5 });
-        setBlogs(res_one?.data);
+        setBlogs(res_one?.data ?? []);
       } catch (err) { clo(err); }
     };
 

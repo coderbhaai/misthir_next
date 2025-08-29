@@ -67,7 +67,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
             }
   
             const res = await apiRequest("get", route);
-            setModuleOptions(res?.data);
+            setModuleOptions(res?.data ?? []);
   
           } catch (error) { clo( error ); }
         };

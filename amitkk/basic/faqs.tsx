@@ -64,7 +64,7 @@ export default function AdminFaq({ module = "", module_id = "" }: AdminModulePro
         }
       }
       const res = await apiRequest("get", `basic/page?function=${apiFunction}`);
-      setData(res?.data);
+      setData(res?.data ?? []);
 
       let route = '';
       if ( module === "Blog") {
@@ -92,6 +92,7 @@ export default function AdminFaq({ module = "", module_id = "" }: AdminModulePro
         try {
           const res = await apiRequest("get", `basic/page?function=get_single_faq&id=${updatedDataId}`);
           const data = res?.data;
+          if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
 
           setData((prevData = []) => {
             const exists = prevData.some((i) => String(i._id) === String(data._id));

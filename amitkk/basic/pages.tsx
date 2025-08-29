@@ -17,7 +17,7 @@ export function AdminPages(){
     const fetchData = useCallback(async () => {
         try {
             const res = await apiRequest("get", "basic/page?function=get_all_pages");
-            setData(res?.data);
+            setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
 
