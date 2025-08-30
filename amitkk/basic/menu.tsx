@@ -42,7 +42,7 @@ export  function AdminMenu(){
                 try {
                     const res = await apiRequest("get", `basic/spatie?function=get_single_menu&id=${updatedDataId}`);
                     const data = res?.data;
-                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
+                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }z
     
                     setData((prevData = []) => {
                         const exists = prevData.some(i => String(i._id) === String(data._id));

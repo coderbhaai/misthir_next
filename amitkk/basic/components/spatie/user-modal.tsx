@@ -7,7 +7,7 @@ import Select, {SelectChangeEvent} from '@mui/material/Select';
 import Chip from '@mui/material/Chip';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import type {DataProps} from './admin-user-table';
+import type {DataProps} from '@amitkk/basic/components/spatie/admin-user-table';
 import { Checkbox, ListItemText } from '@mui/material';
 import CustomModal from '@amitkk/basic/static/CustomModal';
 import { TableDataFormProps, apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
@@ -20,7 +20,7 @@ type DataFormProps = TableDataFormProps & {
 
 export default function DataModal({ open, handleClose, selectedDataId, onUpdate, roles, permissions }: DataFormProps) {
   const initialFormData: DataProps = {
-    function: 'update_user',
+    function: 'create_update_user',
     _id: '',
     selectedDataId,
     name: '',
@@ -59,7 +59,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
           setSelectedRoles(roleIds);
 
           setFormData({
-            function: 'update_user',
+            function: 'create_update_user',
             _id: res?.data._id || '',
             selectedDataId: res?.data._id || '',
             name: res?.data.name || '',
@@ -76,25 +76,23 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
   }, [open, selectedDataId]);
 
   const handleRoleChange = (event: SelectChangeEvent<typeof selectedRoles>) => {
-    const {
-      target: {value}
-    } = event;
+    const { target: {value} } = event;
     setSelectedRoles(typeof value === 'string' ? value.split(',') : value);
   };
 
   const handlePermissionChange = (event: SelectChangeEvent<typeof selectedPermissions>) => {
-    const {
-      target: {value}
-    } = event;
+    const { target: {value} } = event;
     setSelectedPermissions(typeof value === 'string' ? value.split(',') : value);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedData: DataProps = {...formData, function: 'update_user', role_child: JSON.stringify(selectedRoles ?? []), permission_child: JSON.stringify(selectedPermissions ?? []), updatedAt: new Date(), _id: selectedDataId as string};
+    const updatedData: DataProps = {...formData, function: 'create_update_user', role_child: JSON.stringify(selectedRoles ?? []), permission_child: JSON.stringify(selectedPermissions ?? []), updatedAt: new Date(), _id: selectedDataId as string};
 
     try {
       const res = await apiRequest("post", `basic/spatie`, updatedData);
+
+      console.log("res", res)
 
       if( res?.data ){
         setFormData(initialFormData);
@@ -106,7 +104,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
     } catch (error) { clo( error ); }
   };
 
-  const title = selectedDataId ? 'Add Menu' : 'UpdateMenu';
+  const title = !selectedDataId ? 'Add User' : 'Update User';
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
       <form onSubmit={handleSubmit}>

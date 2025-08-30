@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import {SelectChangeEvent} from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import type {DataProps} from '@amitkk/product/admin/admin-author-table';
+import type {DataProps} from '@amitkk/product/admin/admin-product-brand-table';
 import { useState } from 'react';
 import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/utils';
 import CkEditor from '@amitkk/basic/components/static/ckeditor-input';
@@ -12,15 +12,20 @@ import StatusSelect from '@amitkk/basic/components/static/status-input';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import CustomModal from '@amitkk/basic/static/CustomModal';
 import { MediaProps } from '@amitkk/basic/types/page';
+import MetaInput from '@amitkk/basic/components/static/meta-input';
+import GenericSelect from '@amitkk/basic/components/static/generic-select';
 
 type DataFormProps = TableDataFormProps & {
   onUpdate: (updatedData: DataProps) => void;
+  vendorOptions: { _id: string; name: string }[]; 
 };
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
+export default function DataModal({ open, handleClose, selectedDataId, onUpdate, vendorOptions }: DataFormProps) {
   const initialFormData: DataProps = {
-    function : 'create_update_author',
+    function : 'create_update_product_brand',
     name: '',
+    url: '',
+    vendor_id: '',
     status: true,
     content: '',
     createdAt: new Date(),
@@ -28,6 +33,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     media_id: '',
     _id: '',
     selectedDataId,
+    meta_id: '', title: '', description: '',
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
 
@@ -49,11 +55,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;
-  
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: name === "status" ? value === "true" : value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
   };
 
   React.useEffect(() => {
@@ -63,8 +65,9 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
           const res = await apiRequest("get", `blog/author?function=get_single_author&id=${selectedDataId}`);
   
           setFormData({
-            function: 'create_update_author',
+            function: 'create_update_product_brand',
             name: res?.data?.name || "",
+            url: res?.data?.url || "",
             content: res?.data?.content || "",
             status: res?.data?.status ?? true,
             createdAt: res?.data?.createdAt || new Date(),
@@ -72,6 +75,10 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
             media_id: res?.data?.media_id || null,
             _id: res?.data?._id || "",
             selectedDataId: res?.data?._id || "",
+            meta_id: res?.data?.meta_id?._id,
+            title: res?.data?.meta_id?.title || '',
+            description: res?.data?.meta_id?.description || '',
+            vendor_id: res?.data?.vendor_id || "",
           });
 
           setContent(res?.data?.content || ""); 
@@ -93,11 +100,12 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("function", "create_update_author");
+      formDataToSend.append("function", "create_update_product_brand");
       formDataToSend.append("name", formData.name);
+      formDataToSend.append("url", formData.url);
       formDataToSend.append("status", String(formData.status));
       formDataToSend.append("content", content);
-      formDataToSend.append("path", "author");
+      formDataToSend.append("path", "product");
 
       const mediaIdToSend = formData.media_id && typeof formData.media_id === "object" && "_id" in formData.media_id 
         ? String((formData.media_id as MediaProps)._id) : typeof formData.media_id === "string" && formData.media_id !== "null" ? formData.media_id : "";
@@ -106,7 +114,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
       formDataToSend.append("_id", selectedDataId as string);
       if (image) { formDataToSend.append("image", image); }
 
-      const res = await apiRequest("post", `blog/author`, formDataToSend);
+      const res = await apiRequest("post", `product/basic`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);
@@ -117,18 +125,21 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     } catch (error) { clo( error ); }
   };
 
-  const title = !selectedDataId ? 'Add Author' : 'Update Author';
+  const title = !selectedDataId ? 'Add Brand' : 'Update Brand';
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
       <form onSubmit={handleSubmit} style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <TextField label="Author Name" variant="outlined" value={formData.name} name="name" fullWidth onChange={handleChange} required/>
+          <GenericSelect label="Client" name="vendor_id" value={formData.vendor_id?.toString() ?? ""} options={vendorOptions} onChange={(val) => setFormData({ ...formData, vendor_id: val as string })}/>
+          <TextField label="Brand Name" variant="outlined" value={formData.name} name="name" fullWidth onChange={handleChange} required/>
+          <TextField label="URL" variant="outlined" value={formData.url} name="url" fullWidth onChange={handleChange} required/>
           <StatusSelect value={formData.status} onChange={handleChange}/>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <MediaImage media={formData.media_id as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
             <ImageUpload name="image" label="Upload Image" required={!selectedDataId} error={imageError} onChange={(name, file) => { setImage(file); }}/>
           </div>
+          <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
           <CkEditor name="content" value={formData.content} onChange={handleEditorChange} required={!selectedDataId} error={contentError} />
           <Button type="submit" variant="contained" color="primary">{title}</Button>
         </Box>

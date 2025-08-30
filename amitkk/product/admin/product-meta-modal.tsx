@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
-import {SelectChangeEvent} from '@mui/material/Select';
+import Select, {SelectChangeEvent} from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import type {DataProps} from '@amitkk/product/admin/admin-product-meta-table';
@@ -12,6 +12,9 @@ import StatusSelect from '@amitkk/basic/components/static/status-input';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import CustomModal from '@amitkk/basic/static/CustomModal';
 import { MediaProps } from '@amitkk/basic/types/page';
+import StatusDisplay from '@amitkk/basic/components/static/status-display-input';
+import { FormControl, InputLabel, MenuItem, FormHelperText } from '@mui/material';
+import MetaInput from '@amitkk/basic/components/static/meta-input';
 
 type DataFormProps = TableDataFormProps & {
   onUpdate: (updatedData: DataProps) => void;
@@ -20,14 +23,18 @@ type DataFormProps = TableDataFormProps & {
 export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
     function : 'create_update_product_meta',
+    module: '',
     name: '',
-    status: true,
+    url: '',
     content: '',
+    status: true,
+    displayOrder: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     media_id: '',
     _id: '',
     selectedDataId,
+    meta_id: '', title: '', description: '',
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
 
@@ -49,11 +56,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;
-  
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: name === "status" ? value === "true" : value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
   };
 
   React.useEffect(() => {
@@ -64,14 +67,20 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   
           setFormData({
             function: 'create_update_product_meta',
+            module: res?.data?.module || "",
             name: res?.data?.name || "",
+            url: res?.data?.url || "",
             content: res?.data?.content || "",
             status: res?.data?.status ?? true,
+            displayOrder: res?.data?.displayOrder ?? 0,
             createdAt: res?.data?.createdAt || new Date(),
             updatedAt: new Date(),
             media_id: res?.data?.media_id || null,
             _id: res?.data?._id || "",
             selectedDataId: res?.data?._id || "",
+            meta_id: res?.data?.meta_id?._id,
+            title: res?.data?.meta_id?.title || '',
+            description: res?.data?.meta_id?.description || '',
           });
 
           setContent(res?.data?.content || ""); 
@@ -94,14 +103,21 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("function", "create_update_product_meta");
+      formDataToSend.append("module", formData.module);
       formDataToSend.append("name", formData.name);
+      formDataToSend.append("url", formData.url);
       formDataToSend.append("status", String(formData.status));
+      formDataToSend.append("displayOrder", formData.displayOrder?.toString() || "0");
       formDataToSend.append("content", content);
       formDataToSend.append("path", "product");
 
       const mediaIdToSend = formData.media_id && typeof formData.media_id === "object" && "_id" in formData.media_id 
         ? String((formData.media_id as MediaProps)._id) : typeof formData.media_id === "string" && formData.media_id !== "null" ? formData.media_id : "";
       formDataToSend.append("media_id", mediaIdToSend);
+
+      formDataToSend.append("title", formData.title?.toString() ?? "");
+      formDataToSend.append("description", formData.description?.toString() ?? "");
+      formDataToSend.append( "meta_id", typeof formData.meta_id === "string" ? formData.meta_id : formData.meta_id?.meta_id?.toString() ?? "" );
 
       formDataToSend.append("_id", selectedDataId as string);
       if (image) { formDataToSend.append("image", image); }
@@ -123,12 +139,22 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
       <form onSubmit={handleSubmit} style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
+          <FormControl sx={{ width: "100%" }}>
+            <InputLabel id="module-label">Module <span style={{ color: "red" }}>*</span></InputLabel>
+            <Select labelId="module-label" id="module" name="module" value={formData.module} onChange={handleChange} required>
+              <MenuItem value="Category">Category</MenuItem>
+              <MenuItem value="Tag">Tag</MenuItem>
+              <MenuItem value="Type">Type</MenuItem>
+            </Select>
+          </FormControl>
           <TextField label="Name" variant="outlined" value={formData.name} name="name" fullWidth onChange={handleChange} required/>
-          <StatusSelect value={formData.status} onChange={handleChange}/>
+          <TextField label="URL" variant="outlined" value={formData.url} name="url" fullWidth onChange={handleChange} required/>
+          <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <MediaImage media={formData.media_id as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
             <ImageUpload name="image" label="Upload Image" required={!selectedDataId} error={imageError} onChange={(name, file) => { setImage(file); }}/>
           </div>
+          <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
           <CkEditor name="content" value={formData.content} onChange={handleEditorChange} required={!selectedDataId} error={contentError} />
           <Button type="submit" variant="contained" color="primary">{title}</Button>
         </Box>

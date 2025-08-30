@@ -6,23 +6,19 @@ import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
-import { RolePermissionItem } from './admin-role-table';
-import { PermissionRoleItem } from './admin-permission-table';
+import { RolePermissionItem } from '@amitkk/basic/components/spatie/admin-role-table';
+import { PermissionRoleItem } from '@amitkk/basic/components/spatie/admin-permission-table';
 import { TableRowPropsBase, Iconify } from '@amitkk/basic/utils/utils';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
+import { UserProps } from '@amitkk/basic/types/page';
 
-export type DataProps = {
-  function: string;
-  name: string;
-  email: string;
-  phone: string;
-  updatedAt: Date;
-  status: boolean;
-  createdAt: string | Date;
-  _id: string | Types.ObjectId;
+export interface DataProps extends UserProps {
+  function: string;  
   selectedDataId: string | number | object | null;
-  permissions?:String[],
-  roles?:String[],
+  // permissions?:String[],
+  // roles?:String[],
+  permissions?:{ _id: string; name: string }[];
+  roles?:{ _id: string; name: string }[];
   permissionsAttached?: RolePermissionItem[];
   rolesAttached?: PermissionRoleItem[];
   role_child?: string;
@@ -47,25 +43,17 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
         <TableCell>{row.phone}</TableCell>
         <TableCell>
           {(row.rolesAttached ?? [])?.map((m, i, arr) => (
-            <span key={m._id} style={{ marginRight: '10px' }}>
-              {m.role_id?.name ?? ''}
-              {i < arr.length - 1 && ','}
-            </span>
+            <span key={m._id} style={{ marginRight: '10px' }}>{m.role_id?.name ?? ''} {i < arr.length - 1 && ','}</span>
           ))}
         </TableCell>
         <TableCell>
           {(row.permissionsAttached ?? [])?.map((m, i, arr) => (
-            <span key={m._id} style={{ marginRight: '10px' }}>
-              {m.permission_id?.name ?? ''}
-              {i < arr.length - 1 && ','}
-            </span>
+            <span key={m._id} style={{ marginRight: '10px' }}>{m.permission_id?.name ?? ''} {i < arr.length - 1 && ','}</span>
           ))}
         </TableCell>
-        <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
+        <TableCell>{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A' }</TableCell>
         <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="User"/></TableCell>
-        <TableCell align='right'>
-          <MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem>
-        </TableCell>
+        <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

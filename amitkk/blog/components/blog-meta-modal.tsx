@@ -30,8 +30,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     _id: '',
     selectedDataId,
     selected_meta_id: '', 
-    meta_id: {}, 
-    title: '', description: '',
+    meta_id: '', title: '', description: '',
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
   
@@ -65,9 +64,9 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
             _id: res?.data?._id || '',
             selectedDataId: res?.data?._id || '',
             selected_meta_id: res?.data?.meta_id?._id || '',
+            meta_id: res?.data?.meta_id?._id,
             title: res?.data?.meta_id?.title || '',
             description: res?.data?.meta_id?.description || '',
-            meta_id: {},
           });
         } catch (error) { clo( error ); }
       };

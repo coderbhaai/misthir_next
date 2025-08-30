@@ -1,12 +1,10 @@
 "use client"
-
 import { useState, useEffect, useCallback } from "react";
-
-import DataModal from "@amitkk/product/admin/product-meta-modal";
-import { AdminDataTable, DataProps } from "@amitkk/product/admin/admin-product-meta-table";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
+import DataModal from "@amitkk/product/admin/product-meta-modal";
+import { AdminDataTable, DataProps } from "@amitkk/product/admin/admin-product-meta-table";
 
 export function AdminProductmeta(){
     const showCheckBox = false;
@@ -69,8 +67,10 @@ export function AdminProductmeta(){
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
+                    { id: "module", label: "Module" },
                     { id: "name", label: "Name" },
                     { id: "media", label: "Media" },
+                    { id: "meta", label: "Meta" },
                     { id: "status", label: "Status" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },

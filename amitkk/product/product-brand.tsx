@@ -22,10 +22,10 @@ export function AdminProductBrand(){
     const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
     const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
     const [filterData, setFilterData] = useState("");
-
+    const [vendorOptions, setVendorOptions] = useState([]);
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData };
+    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, vendorOptions };
     const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
 
     const fetchData = useCallback(async () => {
@@ -71,6 +71,7 @@ export function AdminProductBrand(){
                 headLabel={[
                     { id: "name", label: "Name" },
                     { id: "media", label: "Media" },
+                    { id: "meta", label: "Meta" },
                     { id: "status", label: "Status" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },

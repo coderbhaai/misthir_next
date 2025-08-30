@@ -1,5 +1,31 @@
 import { Types } from "mongoose";
 
+export interface RoleItem {
+  _id: string;
+  name: string;
+}
+
+export interface PermissionItem {
+  _id: string;
+  name: string;
+}
+
+export interface UserProps {
+  _id: string | Types.ObjectId;
+  name: string;
+  email: string;
+  phone: string;
+  status: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface MetaTableProps {
+  meta_id?: string | Types.ObjectId;
+  title?: String;
+  description?: String;
+}
+
 export interface PageItemProps {
   _id: string | Types.ObjectId;
   name: string;

@@ -1,28 +1,26 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useTableFilter, apiRequest, clo } from "@amitkk/basic/utils/utils";
+import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
 import DataModal from "@amitkk/basic/components/spatie/user-modal";
 import { AdminDataTable, DataProps } from "@amitkk/basic/components/spatie/admin-user-table";
 
 export function AdminUsers() {
-  const [roles, setRoles] = useState<{_id: string; name: string}[]>([]);
-  const [permissions, setPermissions] = useState<{_id: string; name: string}[]>([]);
-  
-  const showCheckBox = false;
   const table = useTable();
   const [open, setOpen] = useState(false);
-
   const handleClose = () => {
       setOpen(false);
       setSelectedDataId(null);
-      setUpdatedDataId(null);
   }
+
   const [data, setData] = useState<DataProps[]>([]);
   const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
   const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
   const [filterData, setFilterData] = useState("");
-  const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
+  const [roles, setRoles] = useState<{_id: string; name: string}[]>([]);
+  const [permissions, setPermissions] = useState<{_id: string; name: string}[]>([]);
+
+  const updateData = async (i: DataProps) => { setUpdatedDataId(i._id.toString()); };
   const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
   const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, roles, permissions };
   const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
@@ -44,7 +42,7 @@ export function AdminUsers() {
 
   useEffect(() => {
     if (updatedDataId) {
-      const fetchData = async () => {
+      const fetchSingleData = async () => {
         try {
           const res = await apiRequest("get", `basic/spatie?function=get_single_user&id=${updatedDataId}`);
           const data    = res?.data
@@ -65,13 +63,13 @@ export function AdminUsers() {
         setUpdatedDataId(null);
       };
 
-      fetchData();
+      fetchSingleData();
     }
   }, [updatedDataId]);
 
   return (
     <AdminTableLayout<DataProps>
-      title="Roles" addButtonLabel="New Role" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
+      title="Users" addButtonLabel="New User" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
       head={
           <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
           headLabel={[
@@ -90,9 +88,8 @@ export function AdminUsers() {
               <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
           ))}>
       <DataModal {...modalProps} />
-  </AdminTableLayout>
+    </AdminTableLayout>
   );
 }
 
-export default AdminUsers;
-// export default withAuth(AdminUsers);
+export default withAuth(AdminUsers);

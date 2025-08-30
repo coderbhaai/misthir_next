@@ -41,3 +41,4 @@ typescript
 @types/jsonwebtoken
 @types/nodemailer
 @types/date-fns
+cross-env

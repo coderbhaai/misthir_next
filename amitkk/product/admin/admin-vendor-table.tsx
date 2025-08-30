@@ -1,4 +1,3 @@
-import {Types} from 'mongoose';
 import {useState, useCallback} from 'react';
 import Popover from '@mui/material/Popover';
 import TableRow from '@mui/material/TableRow';
@@ -6,22 +5,11 @@ import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
-import MediaImage from '@amitkk/basic/components/static/table-image';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
-import { MediaProps } from '@amitkk/basic/types/page';
-
-export type DataProps = {
-  function: string;
-  name: string;
-  status: boolean;
-  content: string;
-  createdAt: string | Date;
-  updatedAt: Date;
-  media_id: string | Types.ObjectId | MediaProps;
-  _id: string | Types.ObjectId;
-  selectedDataId: string | number | object | null;
-};
+import UserRow from '@amitkk/basic/static/UserRow';
+import { UserRowProps } from '@amitkk/blog/types/blog';
+import type {DataProps} from '@amitkk/basic/components/spatie/admin-user-table';
 
 type UserTableRowProps = TableRowPropsBase & {
   row: DataProps;
@@ -36,13 +24,20 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
-        <TableCell>{row.name}</TableCell>
-        <TableCell><MediaImage media={row.media_id as MediaProps}/></TableCell>
-        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="Vendor"/></TableCell>
-        <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-        <TableCell align='right'>
-          <MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem>
+        <TableCell><UserRow row={row as unknown as UserRowProps}/></TableCell>
+        <TableCell>
+          {(row.roles ?? [])?.map((m, i, arr) => (
+            <span key={m._id} style={{ marginRight: '10px' }}>{m?.name ?? ''} {i < arr.length - 1 && ','}</span>
+          ))}
         </TableCell>
+        <TableCell>
+          {(row.permissions ?? [])?.map((m, i, arr) => (
+            <span key={m._id} style={{ marginRight: '10px' }}>{m.name ?? ''} {i < arr.length - 1 && ','}</span>
+          ))}
+        </TableCell>
+        <TableCell>{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A' }</TableCell>
+        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="User"/></TableCell>
+        <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

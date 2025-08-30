@@ -49,15 +49,16 @@ export interface MenuProps {
   export async function get_single_user(req: NextApiRequest, res: NextApiResponse){
     const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
 
-    if (!id || !Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid or missing ID' });
-    }
+    console.log("id", id)
     
-   const data = await User.findById(id)
-  .populate({ path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "_id name status" } })
-  .populate({ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } })
-  .lean();
+    if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
     
+    const data = await User.findById(id)
+    .populate({ path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "_id name status" } })
+    .populate({ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } })
+    .lean();
+    
+    console.log("data", data)
     const userRoles = await UserRole.find({ user_id: id }).populate("role_id", "name").lean().exec();
     const rolesIds = userRoles?.map(rp => rp.role_id?._id).filter(Boolean);
 
@@ -68,36 +69,58 @@ export interface MenuProps {
     return res.status(201).json({ message: 'Entry Fetched', data: { ...data, role_ids: rolesIds, permission_ids: permissionIds } });
   };
 
-  export async function update_user(req: NextApiRequest, res: NextApiResponse) {
+  export async function create_update_user(req: NextApiRequest, res: NextApiResponse) {
     try {
       if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
     
       const data = req.body;
-      if ( !data?.name || !data?.email || !data._id ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+      if ( !data?.name || !data?.email || !data.phone ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
 
-      const user = await User.findOne({ _id: data._id });
-      if (!user) { return res.status(401).json({ message: "Invalid credentials", data: null }); }
+      const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
+      console.log("data", data)
 
-      const updated = await User.findByIdAndUpdate(
-        data._id,
-        {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          status: data.status,
-          updatedAt: new Date(),
-        },
-        { new: true }
-      );
+      if (modelId && isValidObjectId(modelId)) {
+        try {
+          const updated = await User.findByIdAndUpdate(
+            modelId,
+            {
+              name: data.name,
+              email: data.email,
+              phone: data.phone,
+              status: data.status,
+              updatedAt: new Date(),
+            }, { new: true }
+          );
+
+          const child_role_array = JSON.parse(data.role_child);
+          await pivotEntry( UserRole, updated._id, child_role_array, 'user_id', 'role_id' );
+
+          const child_permission_array = JSON.parse(data.permission_child);
+          await pivotEntry( UserPermission, updated._id, child_permission_array, 'user_id', 'permission_id' );
+
+          return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
+        } catch (error) { return log(error); }
+      }      
+
+      const newEntry = new User({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        status: data.status,
+        createdAt: new Date(),
+      });
+
+      await newEntry.save();
       
       const child_role_array = JSON.parse(data.role_child);
-      await pivotEntry( UserRole, data._id, child_role_array, 'user_id', 'role_id' );
+      await pivotEntry( UserRole, newEntry._id, child_role_array, 'user_id', 'role_id' );
 
       const child_permission_array = JSON.parse(data.permission_child);
-      await pivotEntry( UserPermission, data._id, child_permission_array, 'user_id', 'permission_id' );
-      
+      await pivotEntry( UserPermission, newEntry._id, child_permission_array, 'user_id', 'permission_id' );
 
-      if (updated) { return res.status(200).json({ message: '✅ Entry updated successfully', data: updated }); }
+      console.log("newEntryyyyyyyyyyy", newEntry)
+
+      return res.status(200).json({ message: '✅ Entry updated successfully', data: newEntry });
     } catch (error) { return log(error); }
   }
 // User
@@ -388,36 +411,36 @@ export interface MenuProps {
 // Submenu
 
 export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      const user_id = getUserIdFromToken(req);
+  try {
+    const user_id = getUserIdFromToken(req);
 
-      const userPermissions = await UserPermission.find({ user_id }).select("permission_id").lean();
-      const permissionIds = userPermissions?.map(up => up.permission_id);
-      const menus = await SpatieMenu.find({ status: true }).populate([ { path: "media_id", model: "Media", select: "path alt" }, { path: "submenusAttached", populate: { path: "submenu_id",  model: "SpatieSubmenu", match: { status: true, permission_id: { $in: permissionIds } }, populate: [ { path: "media_id", model: "Media", select: "path alt" }, ] } }]).lean();
+    const userPermissions = await UserPermission.find({ user_id }).select("permission_id").lean();
+    const permissionIds = userPermissions?.map(up => up.permission_id);
+    const menus = await SpatieMenu.find({ status: true }).populate([ { path: "media_id", model: "Media", select: "path alt" }, { path: "submenusAttached", populate: { path: "submenu_id",  model: "SpatieSubmenu", match: { status: true, permission_id: { $in: permissionIds } }, populate: [ { path: "media_id", model: "Media", select: "path alt" }, ] } }]).lean();
 
-      const adminLinks = menus
-        ?.map(menu => {
-          const children = (menu.submenusAttached || [])
-            ?.map((ms: SubmenuAttachedProps) => ms.submenu_id)
-            .filter((submenu: any): submenu is SubmenuProps => Boolean(submenu))
-            .map((sub: { name: any; url: any; media_id: { path: any; }; }) => ({
-              name: sub.name,
-              url: sub.url,
-              media: sub.media_id?.path || null,
-            }));
+    const adminLinks = menus
+      ?.map(menu => {
+        const children = (menu.submenusAttached || [])
+          ?.map((ms: SubmenuAttachedProps) => ms.submenu_id)
+          .filter((submenu: any): submenu is SubmenuProps => Boolean(submenu))
+          .map((sub: { name: any; url: any; media_id: { path: any; }; }) => ({
+            name: sub.name,
+            url: sub.url,
+            media: sub.media_id?.path || null,
+          }));
 
-          if (children.length === 0) return null;
+        if (children.length === 0) return null;
 
-          return {
-            name: menu.name,
-            media: menu.media_id?.path || null,
-            children
-          };
-        }).filter(Boolean);
+        return {
+          name: menu.name,
+          media: menu.media_id?.path || null,
+          children
+        };
+      }).filter(Boolean);
 
-        return res.status(200).json({ message: 'Fetched User Menus', data: adminLinks });
-    } catch (error) { return log(error); }
-  }
+      return res.status(200).json({ message: 'Fetched User Menus', data: adminLinks });
+  } catch (error) { return log(error); }
+}
 
 type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
@@ -445,7 +468,7 @@ const functions: HandlerMap = {
   
   get_all_users: get_all_users,
   get_single_user: get_single_user,
-  update_user: update_user,
+  create_update_user: create_update_user,
 
   create_update_menu: create_update_menu,
   get_all_menus: get_all_menus,
@@ -505,6 +528,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
+
+    console.log("fnName", fnName)
 
     if (!fnName || typeof fnName !== 'string') {
       return res.status(400).json({ message: 'Missing or invalid function name' });

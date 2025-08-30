@@ -1,32 +1,26 @@
 const fs = require("fs");
 const path = require("path");
 
-const amitkkRoot = path.resolve(__dirname, ".");
+const amitkkRoot = path.resolve(__dirname);
 const outputPath = path.resolve(amitkkRoot, "componentMap.ts");
 
-function getFiles(dir, prefix = "") {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+function getFilesFromDirectSubfolders(root) {
   const result = {};
+  const subfolders = fs.readdirSync(root, { withFileTypes: true })
+    .filter(entry => entry.isDirectory());
 
-  for (const entry of entries) {
-    if (entry.name === 'node_modules' || entry.name === '.next' || entry.name.startsWith('.')) {
-      continue;
-    }
+  for (const folder of subfolders) {
+    const folderPath = path.join(root, folder.name);
+    const entries = fs.readdirSync(folderPath, { withFileTypes: true });
 
-    const fullPath = path.join(dir, entry.name);
-    
-    if (entry.isDirectory()) {
-      Object.assign(result, getFiles(fullPath, path.join(prefix, entry.name)));
-    } else if (/\.(tsx|ts)$/.test(entry.name)) {
-      const name = path.basename(entry.name, path.extname(entry.name)).toLowerCase();
-      
-      const relativePath = fullPath.replace(amitkkRoot + path.sep, "");
-      const normalizedPath = relativePath.replace(/\\/g, '/');
-      
-      // REMOVE FILE EXTENSION - FIXES THE ERROR
-      const importPath = `./${normalizedPath.replace(/\.(tsx|ts)$/, '')}`;
-      
-      result[name] = importPath;
+    for (const entry of entries) {
+      // ✅ Only files directly inside the folder
+      if (entry.isFile() && /\.(tsx|ts)$/.test(entry.name)) {
+        const name = path.basename(entry.name, path.extname(entry.name)).toLowerCase();
+        const relativePath = `${folder.name}/${entry.name}`.replace(/\\/g, "/");
+        const importPath = `./${relativePath.replace(/\.(tsx|ts)$/, "")}`;
+        result[name] = importPath;
+      }
     }
   }
 
@@ -34,7 +28,7 @@ function getFiles(dir, prefix = "") {
 }
 
 try {
-  const files = getFiles(amitkkRoot);
+  const files = getFilesFromDirectSubfolders(amitkkRoot);
 
   const mapEntries = Object.entries(files)
     .map(([key, importPath]) => `  "${key}": () => import("${importPath}"),`)
@@ -50,7 +44,6 @@ export default componentMap;
 
   fs.writeFileSync(outputPath, output);
   console.log("✅ componentMap.ts generated at:", outputPath);
-
 } catch (error) {
   console.error("Error generating component map:", error);
 }

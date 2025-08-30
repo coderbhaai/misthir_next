@@ -5,9 +5,10 @@ import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
-import MetaTableInput, { MetaTableProps } from '@amitkk/basic/components/static/meta-table-input';
+import MetaTableInput from '@amitkk/basic/components/static/meta-table-input';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
+import { MetaTableProps } from '@amitkk/basic/types/page';
 
 export type DataProps = {
   function: string;
@@ -18,8 +19,8 @@ export type DataProps = {
   createdAt?: string | Date;
   updatedAt?: string | Date;
   _id: string;
-  meta_id: MetaTableProps;
   selected_meta_id: String;
+  meta_id: string | MetaTableProps;
   title: String;
   description: String;
   selectedDataId?: string | number | object | null;
@@ -41,7 +42,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
         <TableCell>{row.type}</TableCell>
         <TableCell>{row.name}</TableCell>
         <TableCell>{row.url}</TableCell>
-        <TableCell><MetaTableInput title={row.meta_id?.title} description={row.meta_id?.description}/></TableCell>
+        <TableCell><MetaTableInput meta={row.meta_id} /></TableCell>
         <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="Blogmeta"/></TableCell>
         <TableCell>{new Date(row.createdAt ?? new Date()).toLocaleDateString()}</TableCell>
         <TableCell align='right'>

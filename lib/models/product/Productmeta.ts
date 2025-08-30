@@ -6,7 +6,9 @@ interface ProductmetaDoc extends Document {
   url: string;
   status: boolean;
   displayOrder?: number;
+  media_id?: Types.ObjectId;
   meta_id?: Types.ObjectId;
+  content?: string;
   createdAt: Date;
   updatedAt: Date;
   products?: { product_id: Types.ObjectId }[];
@@ -18,7 +20,9 @@ const productmetaSchema = new Schema<ProductmetaDoc>({
     url: { type: String, required: true, unique: true },
     status: { type: Boolean, default: true },
     displayOrder: { type: Number, required: false },
+    media_id: { type: Schema.Types.ObjectId, ref: "Media" },
     meta_id: { type: Schema.Types.ObjectId, ref: "Meta" },
+    content: { type: String, required: false },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
