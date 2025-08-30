@@ -69,8 +69,10 @@ export function AdminProductFeature(){
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
+                    { id: "module", label: "Module" },
                     { id: "name", label: "Name" },
                     { id: "media", label: "Media" },
+                    { id: "meta", label: "Meta" },
                     { id: "status", label: "Status" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },

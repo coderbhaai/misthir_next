@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-
 import DataModal from "@amitkk/product/admin/product-brand-modal";
 import { AdminDataTable, DataProps } from "@amitkk/product/admin/admin-product-brand-table";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
@@ -30,8 +29,12 @@ export function AdminProductBrand(){
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await apiRequest("get", "product/basic?function=get_all_product_brands");
-            setData(res?.data ?? []);
+            const res_1 = await apiRequest("get", "product/basic?function=get_all_product_brands");
+            setData(res_1?.data ?? []);
+
+            const res_2 = await apiRequest("get", "product/basic?function=get_user_module&role=Vendor");
+            setVendorOptions(res_2?.data ?? []);
+
         } catch (error) { clo( error ); }
     }, []);
 
@@ -70,6 +73,7 @@ export function AdminProductBrand(){
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
                     { id: "name", label: "Name" },
+                    { id: "vendor", label: "Vendor" },
                     { id: "media", label: "Media" },
                     { id: "meta", label: "Meta" },
                     { id: "status", label: "Status" },

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "ts-node amitkk/generateComponentMap.js",
-    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev",
+    "predev": "ts-node amitkk/generateComponentMap.js && node amitkk/checkMemory.js",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

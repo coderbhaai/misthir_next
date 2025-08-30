@@ -17,6 +17,7 @@ export async function getUsersWithRole(roleName?: string) {
           email: 1,
           phone: 1,
           status: 1,
+          createdAt: 1,
           roles: { _id: 1, name: 1, status: 1 },
           permissions: { _id: 1, name: 1 },
         },
@@ -29,4 +30,21 @@ export async function getUsersWithRole(roleName?: string) {
   
     return await User.aggregate(pipeline).exec();
   }catch (error) { return log(error); }
+}
+
+export async function getUserModule(roleName?: string) {
+  try {
+    const pipeline: PipelineStage[] = [
+      { $lookup: { from: "userroles", localField: "_id", foreignField: "user_id", as: "rolesAttached", } },
+      { $lookup: { from: "spatieroles", localField: "rolesAttached.role_id", foreignField: "_id", as: "roles", } },
+    ];
+
+    if (roleName) {
+      pipeline.push({ $match: { "roles.name": roleName } });
+    }
+
+    pipeline.push({ $project: { _id: 1, name: 1 } });
+
+    return await User.aggregate(pipeline).exec();
+  } catch (error) { return log(error); }
 }

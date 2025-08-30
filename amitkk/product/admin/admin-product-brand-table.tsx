@@ -1,4 +1,3 @@
-import {Types} from 'mongoose';
 import {useState, useCallback} from 'react';
 import Popover from '@mui/material/Popover';
 import TableRow from '@mui/material/TableRow';
@@ -12,6 +11,8 @@ import StatusSwitch from '@amitkk/basic/components/static/status-switch';
 import { MediaProps, MetaTableProps } from '@amitkk/basic/types/page';
 import MetaTableInput from '@amitkk/basic/components/static/meta-table-input';
 import { ProductBrandProps } from '../types/product';
+import UserRow from '@amitkk/basic/static/UserRow';
+import { UserRowProps } from '@amitkk/blog/types/blog';
 
 export interface DataProps extends ProductBrandProps {
   function: string;
@@ -35,6 +36,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
         <TableCell>{row.name}<br/>{row.url}</TableCell>
+        <TableCell><UserRow row={row.vendor_id as unknown as UserRowProps}/></TableCell>
         <TableCell><MediaImage media={row.media_id as MediaProps}/></TableCell>
         <TableCell><MetaTableInput meta={row.meta_id} /></TableCell>
         <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="ProductBrand"/></TableCell>

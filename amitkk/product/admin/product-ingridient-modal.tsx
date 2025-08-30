@@ -6,12 +6,11 @@ import Button from '@mui/material/Button';
 import type {DataProps} from '@amitkk/product/admin/admin-product-ingridient-table';
 import { useState } from 'react';
 import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/utils';
-import CkEditor from '@amitkk/basic/components/static/ckeditor-input';
 import ImageUpload from '@amitkk/basic/components/static/file-input';
-import StatusSelect from '@amitkk/basic/components/static/status-input';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import CustomModal from '@amitkk/basic/static/CustomModal';
 import { MediaProps } from '@amitkk/basic/types/page';
+import StatusDisplay from '@amitkk/basic/components/static/status-display-input';
 
 type DataFormProps = TableDataFormProps & {
   onUpdate: (updatedData: DataProps) => void;
@@ -22,7 +21,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     function : 'create_update_product_ingridient',
     name: '',
     status: true,
-    content: '',
+    displayOrder: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     media_id: '',
@@ -37,15 +36,8 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   };  
 
   const [media_id, setMedia_id] = useState("");
-  const [content, setContent] = useState("");
-  const [contentError, setContentError] = useState<string | null>(null);
-
   const [image, setImage] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-
-  const handleEditorChange = (name: string, value: string) => {
-    setContent(value);
-  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;
@@ -65,16 +57,14 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
           setFormData({
             function: 'create_update_product_ingridient',
             name: res?.data?.name || "",
-            content: res?.data?.content || "",
             status: res?.data?.status ?? true,
+            displayOrder: res?.data?.displayOrder ?? 0,
             createdAt: res?.data?.createdAt || new Date(),
             updatedAt: new Date(),
             media_id: res?.data?.media_id || null,
             _id: res?.data?._id || "",
             selectedDataId: res?.data?._id || "",
           });
-
-          setContent(res?.data?.content || ""); 
         } catch (error) { clo( error ); }
       };
       fetchData();
@@ -84,11 +74,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const updatedData: DataProps = {...formData, updatedAt: new Date(), _id: selectedDataId as string};
-
-    setContentError(!content ? "Content is required." : null);
     setImageError(!image && !selectedDataId ? "Image is required." : null);
-
-    if (!content.trim() ) { hitToastr("error", "Content is required!"); return; }
     if (!selectedDataId && !image) { hitToastr("error", "Image is required."); return; }
 
     try {
@@ -96,7 +82,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
       formDataToSend.append("function", "create_update_product_ingridient");
       formDataToSend.append("name", formData.name);
       formDataToSend.append("status", String(formData.status));
-      formDataToSend.append("content", content);
+      formDataToSend.append("displayOrder", formData.displayOrder?.toString() || "0");
       formDataToSend.append("path", "product");
 
       const mediaIdToSend = formData.media_id && typeof formData.media_id === "object" && "_id" in formData.media_id 
@@ -124,12 +110,11 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
       <form onSubmit={handleSubmit} style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
           <TextField label="Name" variant="outlined" value={formData.name} name="name" fullWidth onChange={handleChange} required/>
-          <StatusSelect value={formData.status} onChange={handleChange}/>
+          <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <MediaImage media={formData.media_id as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
             <ImageUpload name="image" label="Upload Image" required={!selectedDataId} error={imageError} onChange={(name, file) => { setImage(file); }}/>
           </div>
-          <CkEditor name="content" value={formData.content} onChange={handleEditorChange} required={!selectedDataId} error={contentError} />
           <Button type="submit" variant="contained" color="primary">{title}</Button>
         </Box>
       </form>

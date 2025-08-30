@@ -20,7 +20,7 @@ const productBrandSchema = new Schema<ProductBrandDoc>({
     content: { type: String, required: false },
     status: { type: Boolean, default: true },
     displayOrder: { type: Number, required: false },
-    vendor_id: { type: Schema.Types.ObjectId, ref: "Vendor" },
+    vendor_id: { type: Schema.Types.ObjectId, ref: "User" },
     media_id: { type: Schema.Types.ObjectId, ref: "Media" },
     meta_id: { type: Schema.Types.ObjectId, ref: "Meta" },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

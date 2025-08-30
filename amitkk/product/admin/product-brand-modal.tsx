@@ -62,7 +62,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `blog/author?function=get_single_author&id=${selectedDataId}`);
+          const res = await apiRequest("get", `product/basic?function=get_single_product_brand&id=${selectedDataId}`);
   
           setFormData({
             function: 'create_update_product_brand',
@@ -92,15 +92,10 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
     event.preventDefault();
     const updatedData: DataProps = {...formData, updatedAt: new Date(), _id: selectedDataId as string};
 
-    setContentError(!content ? "Content is required." : null);
-    setImageError(!image && !selectedDataId ? "Image is required." : null);
-
-    if (!content.trim() ) { hitToastr("error", "Content is required!"); return; }
-    if (!selectedDataId && !image) { hitToastr("error", "Image is required."); return; }
-
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("function", "create_update_product_brand");
+      formDataToSend.append("vendor_id", String(formData.vendor_id));
       formDataToSend.append("name", formData.name);
       formDataToSend.append("url", formData.url);
       formDataToSend.append("status", String(formData.status));
@@ -114,6 +109,10 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
       formDataToSend.append("_id", selectedDataId as string);
       if (image) { formDataToSend.append("image", image); }
 
+
+      formDataToSend.append("title", formData.title?.toString() ?? "");
+      formDataToSend.append("description", formData.description?.toString() ?? "");
+      formDataToSend.append( "meta_id", typeof formData.meta_id === "string" ? formData.meta_id : formData.meta_id?.meta_id?.toString() ?? "" );
       const res = await apiRequest("post", `product/basic`, formDataToSend);
 
       if( res?.data ){
@@ -131,7 +130,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
       <form onSubmit={handleSubmit} style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <GenericSelect label="Client" name="vendor_id" value={formData.vendor_id?.toString() ?? ""} options={vendorOptions} onChange={(val) => setFormData({ ...formData, vendor_id: val as string })}/>
+          <GenericSelect label="Vendor" name="vendor_id" value={formData.vendor_id?.toString() ?? ""} options={vendorOptions} onChange={(val) => setFormData({ ...formData, vendor_id: val as string })}/>
           <TextField label="Brand Name" variant="outlined" value={formData.name} name="name" fullWidth onChange={handleChange} required/>
           <TextField label="URL" variant="outlined" value={formData.url} name="url" fullWidth onChange={handleChange} required/>
           <StatusSelect value={formData.status} onChange={handleChange}/>

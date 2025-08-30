@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-
 import DataModal from "@amitkk/product/admin/product-ingridient-modal";
 import { AdminDataTable, DataProps } from "@amitkk/product/admin/admin-product-ingridient-table";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";

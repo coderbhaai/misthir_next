@@ -46,13 +46,10 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   const [media_id, setMedia_id] = useState("");
   const [content, setContent] = useState("");
   const [contentError, setContentError] = useState<string | null>(null);
+  const handleEditorChange = (name: string, value: string) => { setContent(value); };
 
   const [image, setImage] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-
-  const handleEditorChange = (name: string, value: string) => {
-    setContent(value);
-  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;

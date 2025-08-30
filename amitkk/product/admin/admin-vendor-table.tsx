@@ -35,8 +35,8 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
             <span key={m._id} style={{ marginRight: '10px' }}>{m.name ?? ''} {i < arr.length - 1 && ','}</span>
           ))}
         </TableCell>
-        <TableCell>{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A' }</TableCell>
         <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="User"/></TableCell>
+        <TableCell>{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A' }</TableCell>
         <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 

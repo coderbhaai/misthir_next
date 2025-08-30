@@ -32,7 +32,7 @@ export function AdminVendor(){
 
     const fetchData = useCallback(async () => {
         try {
-            const res_1 = await apiRequest("get", "product/basic?function=get_all_vendors&role=Vendor");
+            const res_1 = await apiRequest("get", "product/basic?function=get_user_by_role&role=Vendor");
             setData(res_1?.data ?? []);
 
             const res_2 = await apiRequest("get", `basic/spatie?function=get_all_roles`);

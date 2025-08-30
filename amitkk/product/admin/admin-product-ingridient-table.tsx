@@ -15,7 +15,7 @@ export type DataProps = {
   function: string;
   name: string;
   status: boolean;
-  content: string;
+  displayOrder?:number;
   createdAt: string | Date;
   updatedAt: Date;
   media_id: string | Types.ObjectId | MediaProps;
@@ -40,9 +40,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
         <TableCell><MediaImage media={row.media_id as MediaProps}/></TableCell>
         <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="ProductIngridient"/></TableCell>
         <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-        <TableCell align='right'>
-          <MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem>
-        </TableCell>
+        <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

@@ -28,3 +28,18 @@ export interface ProductBrandProps {
     meta_id: string | Types.ObjectId | MetaTableProps | null; 
     _id: string | Types.ObjectId;
 }
+
+export interface ProductFeatureProps {
+    module: string;
+    module_value: string;
+    name: string;
+    url: string;
+    status: boolean;
+    displayOrder?: number;
+    content?: string;
+    createdAt: string | Date;
+    updatedAt: Date;
+    media_id: string | Types.ObjectId | MediaProps;
+    meta_id: string | Types.ObjectId | MetaTableProps | null; 
+    _id: string | Types.ObjectId;
+}
