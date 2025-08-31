@@ -1,5 +1,10 @@
 import { Types } from "mongoose";
 
+export interface OptionProps {
+  _id:  string;
+  name: string;
+}
+
 export interface RoleItem {
   _id: string;
   name: string;

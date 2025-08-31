@@ -6,7 +6,6 @@ export default function AddUpdateFaq() {
   const { module, module_id } = router.query;
 
   return(
-      // <AddUpdateFaqPage module={module as string } module_id={module_id as string }/>
       <Faqs module={module as string } module_id={module_id as string }/>
   );
 }

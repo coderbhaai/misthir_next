@@ -57,8 +57,6 @@ export const uploadMediaToS3 = async ({ file, name, pathType, media_id = null }:
 
     const result: CloudflareResponse = (await response.json()) as CloudflareResponse;
 
-    console.log("CloudflareResponse", result)
-
     if (!result.success) { log(result.errors); return null; }
 
     const image = result.result;
@@ -94,10 +92,7 @@ export const uploadMediaToS3 = async ({ file, name, pathType, media_id = null }:
         });
 
     return entry._id.toString();
-  } catch (err) { 
-    console.log("Eror in uplooadmedia s3")
-    
-    log(err); return null; }
+  } catch (err) { log(err); return null; }
 };
 
 export const deleteMediaFromCloudflareImages = async ( media_id: string ): Promise<boolean> => {

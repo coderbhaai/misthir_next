@@ -10,7 +10,7 @@ interface CommissionDoc extends Document {
 
 const commissionSchema = new Schema<CommissionDoc>({
     productmeta_id: { type: Schema.Types.ObjectId, ref: "Productmeta" },
-    vendor_id: { type: Schema.Types.ObjectId, ref: "Vendor" },
+    vendor_id: { type: Schema.Types.ObjectId, ref: "User" },
     percentage: { type: Number, required: true },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

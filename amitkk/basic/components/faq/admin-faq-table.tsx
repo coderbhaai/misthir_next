@@ -29,8 +29,6 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const handlePopover = useCallback( (e: React.MouseEvent<HTMLButtonElement> | null) => setOpenPopover(e?.currentTarget || null), [] );
 
-  console.log('row', row)
-
   return (
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>

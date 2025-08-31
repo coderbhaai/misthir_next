@@ -203,8 +203,6 @@ export async function status_switch(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ message: 'Invalid or missing ID' });
     }
 
-    console.log('id', id)
-
     const entry = await Page.findById(id).exec();
     if (!entry) { return res.status(404).json({ message: `Page with ID ${id} not found` }); }
 
@@ -506,8 +504,6 @@ export async function get_page_data(req: NextApiRequest, res: NextApiResponse) {
   try {
     const url = (req.method === 'GET' ? req.query.url : req.body.url) as string;
     const module = (req.method === 'GET' ? req.query.module : req.body.module) as string;
-
-    console.log('url', url)
     if (!url) { return res.status(400).json({ message: 'Invalid or missing URL' }); }
 
     const meta = await Meta.findOne({ url }).exec();
@@ -595,8 +591,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
-
-    console.log("fnName", fnName)
     
     if (!fnName || typeof fnName !== 'string') {
       return res.status(400).json({ message: 'Missing or invalid function name' });

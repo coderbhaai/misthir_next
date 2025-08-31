@@ -30,7 +30,7 @@ export function AdminDocument(){
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await apiRequest("get", "product/vendor?function=get_all_documents");
+            const res = await apiRequest("get", "product/basic?function=get_all_documents");
             setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
@@ -41,7 +41,7 @@ export function AdminDocument(){
         if (updatedDataId) {
             const fetchData = async () => {
                 try {
-                    const res = await apiRequest("get", `product/vendor?function=get_single_document&id=${updatedDataId}`);
+                    const res = await apiRequest("get", `product/basic?function=get_single_document&id=${updatedDataId}`);
                     const data = res?.data;
                     if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
 

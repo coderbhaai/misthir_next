@@ -16,6 +16,7 @@ import UserPermission from 'lib/models/spatie/UserPermission';
 import { getUserModule, getUsersWithRole } from 'services/userService';
 import Ingridient from 'lib/models/product/Ingridient';
 import ProductFeature from 'lib/models/product/ProductFeature';
+import Commission from 'lib/models/product/Commission';
 
 type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
@@ -112,12 +113,18 @@ interface ExtendedRequest extends NextApiRequest {
     } catch (error) { return log(error); }
   }
 
-  // export async function get_all_productmeta_options(req: NextApiRequest, res: NextApiResponse) {
-  //   try {
-  //     const data = await Productmeta.find().select('_id name').exec();
-  //     return res.status(200).json({ message: 'Fetched all Productmetas', data });
-  //   } catch (error) { return log(error); }
-  // }
+  export async function get_product_meta_by_module(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const { module } = req.query;
+      const query: any = {};
+      if (module) {
+        query.module = module.toString();
+      }
+
+      const data = await Productmeta.find(query).select("_id name").exec();
+      return res.status(200).json({ message: 'Fetched all Productmetas', data });
+    } catch (error) { return log(error); }
+  }
 // Productmeta
 
 // ProductBrand
@@ -368,7 +375,6 @@ interface ExtendedRequest extends NextApiRequest {
       const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
       
       if (file) {
-        console.log(1111111111)
         media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
       }
 
@@ -423,6 +429,104 @@ interface ExtendedRequest extends NextApiRequest {
   }
 // Feature
 
+// Commission
+  export async function get_all_commissions(req: NextApiRequest, res: NextApiResponse) {
+    try {      
+      const { vendor_id } = req.query;
+
+      let filter: any = {};
+      if (vendor_id) { filter.vendor_id = vendor_id; }
+
+      const data = await Commission.find(filter).populate([{ path: "vendor_id" }, { path: "productmeta_id" }]).exec();
+      return res.status(200).json({ message: 'Fetched all Commission', data });
+    } catch (error) { return log(error); }
+  }
+
+  export async function get_single_commission(req: NextApiRequest, res: NextApiResponse){
+    try{
+      const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
+      if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }  
+    
+      const entry = await Commission.findById(id).populate([ { path: 'vendor_id' }, { path: 'productmeta_id' } ]).exec();  
+      if (!entry) { return res.status(404).json({ message: `Commission with ID ${id} not found` }); }
+    
+      return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
+
+    }catch (error) { return log(error); }
+  };
+
+  export async function create_update_commission(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const data = req.body;
+
+      if (!data?.productmeta_id || !data?.vendor_id || !data?.percentage) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+
+      const existing = await Commission.findOne({ productmeta_id: data.productmeta_id, vendor_id: data.vendor_id });
+
+      if (existing) {
+        existing.percentage = data.percentage;
+        existing.updatedAt = new Date();
+
+        const updated = await existing.save();
+        return res.status(200).json({ message: "✅ Entry updated successfully", data: updated });
+      }
+      
+      const newEntry = new Commission({
+       productmeta_id: data.productmeta_id,
+        vendor_id: data.vendor_id,
+        percentage: data.percentage,
+        createdAt: new Date(),
+      });
+
+      await newEntry.save();
+      return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
+    } catch (error) { return log(error); }
+  }
+
+  export async function create_update_vendor_commission(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
+      const { data } = req.body;
+
+      console.log('data', data)
+
+      if (!Array.isArray(data) || data.length === 0) { return res.status(400).json({ message: "❌ No commission entries provided" }); }
+      const results = [];
+
+      for (const entry of data) {
+        if (!entry?.productmeta_id || !entry?.vendor_id || entry.percentage === undefined) {
+          results.push({ success: false, entry, message: "❌ Required fields missing" });
+          continue;
+        }
+
+        const existing = await Commission.findOne({ productmeta_id: entry.productmeta_id, vendor_id: entry.vendor_id });
+
+        if (existing) {
+          existing.percentage = entry.percentage;
+          existing.updatedAt = new Date();
+
+          const updated = await existing.save();
+          results.push({ success: true, type: "update", data: updated });
+        } else {
+          const newEntry = new Commission({
+            productmeta_id: entry.productmeta_id,
+            vendor_id: entry.vendor_id,
+            percentage: entry.percentage,
+            createdAt: new Date(),
+          });
+
+          await newEntry.save();
+          results.push({ success: true, type: "create", data: newEntry });
+        }
+      }
+
+      return res.status(200).json({ message: "✅ Bulk commissions processed", results });
+    } catch (error) { return log(error); }
+  }
+// Commission
+
 const functions: HandlerMap = {
   get_user_by_role: get_user_by_role,
   get_single_vendor: get_single_vendor,
@@ -431,6 +535,7 @@ const functions: HandlerMap = {
   get_all_product_metas: get_all_product_metas,
   get_single_product_meta: get_single_product_meta,
   create_update_product_meta: create_update_product_meta,
+  get_product_meta_by_module: get_product_meta_by_module,
 
   get_all_product_brands: get_all_product_brands,
   get_single_product_brand: get_single_product_brand,
@@ -446,6 +551,11 @@ const functions: HandlerMap = {
   get_single_product_feature: get_single_product_feature,
   create_update_product_feature: create_update_product_feature,
   get_product_feature_module: get_product_feature_module,
+
+  get_all_commissions: get_all_commissions,
+  get_single_commission: get_single_commission,
+  create_update_commission: create_update_commission,
+  create_update_vendor_commission: create_update_vendor_commission,
 };
 
 const tmpDir = path.join(process.cwd(), 'tmp');
@@ -493,8 +603,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
-
-    console.log("fnName", fnName)
 
     if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }    
 

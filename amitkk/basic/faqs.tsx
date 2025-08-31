@@ -10,11 +10,6 @@ import { Types } from "mongoose";
 import DataModal from "@amitkk/basic/components/faq/faq-modal";
 import { AdminDataTable, DataProps } from "@amitkk/basic/components/faq/admin-faq-table";
 
-interface ModuleProps {
-    module?: string;
-    module_id?: string;
-}
-
 export default function AdminFaq({ module = "", module_id = "" }: AdminModuleProps) {
   const table = useTable();
   const [open, setOpen] = useState(false);
@@ -84,7 +79,7 @@ export default function AdminFaq({ module = "", module_id = "" }: AdminModulePro
     } catch (error) { clo(error); }
   }, [module, module_id]);
 
-  useEffect(() => { fetchData(); }, [fetchData]); 
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (updatedDataId) {
@@ -110,24 +105,24 @@ export default function AdminFaq({ module = "", module_id = "" }: AdminModulePro
   }, [updatedDataId]);
 
   return (
-        <AdminTableLayout<DataProps>
-            title={ <span dangerouslySetInnerHTML={{ __html: title }} /> } addButtonLabel="New FAQ" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
-                    { id: "model", label: "Module" },
-                    { id: "model_id", label: "Model" },
-                    { id: "question", label: "Question" },
-                    { id: "status", label: "Status" },
-                    { id: "date", label: "Date" },
-                    { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
-                ))}>
-            <DataModal {...modalProps} />
-        </AdminTableLayout>
+    <AdminTableLayout<DataProps>
+        title={ <span dangerouslySetInnerHTML={{ __html: title }} /> } addButtonLabel="New FAQ" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
+        head={
+            <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
+            headLabel={[
+                { id: "model", label: "Module" },
+                { id: "model_id", label: "Model" },
+                { id: "question", label: "Question" },
+                { id: "status", label: "Status" },
+                { id: "date", label: "Date" },
+                { id: "", label: "" },
+            ]}/>
+        }
+        rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
+            .map((i) => (
+                <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
+            ))}>
+        <DataModal {...modalProps} />
+    </AdminTableLayout>
     )
 }

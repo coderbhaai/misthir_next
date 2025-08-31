@@ -140,8 +140,6 @@ interface ExtendedRequest extends NextApiRequest {
 
       const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
 
-      console.log("data", data)
-
       if (modelId && isValidObjectId(modelId)) {
         try {
           const updated = await Contact.findByIdAndUpdate(

@@ -22,6 +22,7 @@ const componentMap: Record<string, () => Promise<any>> = {
   "blogs": () => import("./blog/blogs"),
   "bank-detail": () => import("./product/bank-detail"),
   "commission": () => import("./product/commission"),
+  "vendor-commission": () => import("./product/vendor-commission"),
   "document": () => import("./product/document"),
   "product-brand": () => import("./product/product-brand"),
   "product-feature": () => import("./product/product-feature"),

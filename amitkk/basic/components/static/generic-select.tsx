@@ -1,16 +1,12 @@
 import React from "react";
 import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
-
-export interface Option {
-  _id: string;
-  name: string;
-}
+import { OptionProps } from "@amitkk/basic/types/page";
 
 type GenericSelectProps = {
   label: string;
   name: string;
   value: string | string[];
-  options: Option[];
+  options: OptionProps[];
   multiple?: boolean;
   required?: boolean;
   onChange: (value: string | string[]) => void;
@@ -19,8 +15,8 @@ type GenericSelectProps = {
 const GenericSelect: React.FC<GenericSelectProps> = ({ label, name, value, options, multiple = false, required = false, onChange, }) => {
   const handleChange = (e: SelectChangeEvent<typeof value>) => {
     const newValue = multiple
-      ? (e.target.value as string[]) // for multiple
-      : (e.target.value as string); // for single
+      ? (e.target.value as string[])
+      : (e.target.value as string);
 
     onChange(newValue);
   };

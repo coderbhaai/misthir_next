@@ -6,13 +6,13 @@ import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
-import MetaTableInput, { MetaTableProps } from '@amitkk/basic/components/static/meta-table-input';
+import MetaTableInput from '@amitkk/basic/components/static/meta-table-input';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import Link from 'next/link';
 import DateFormat from '@amitkk/basic/components/static/date-format';
 import { IconButton } from '@mui/material';
-import { MediaProps } from '@amitkk/basic/types/page';
+import { MediaProps, MetaTableProps } from '@amitkk/basic/types/page';
 
 export type DataProps = {
   _id: string | Types.ObjectId;
@@ -86,11 +86,9 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
         </TableCell>
 
         <TableCell>{row.author_id?.name}</TableCell>
-        <TableCell><MetaTableInput title={row.meta_id?.title} description={row.meta_id?.description}/></TableCell>
+        <TableCell><MetaTableInput meta={row.meta_id} /></TableCell>
         <TableCell><DateFormat date={row.createdAt} /></TableCell>
-        <TableCell align='right'>
-          <IconButton id={row._id.toString()} onClick={handleOpenPopover}><Iconify icon='Edit'/></IconButton>
-        </TableCell>
+        <TableCell align='right'><IconButton id={row._id.toString()} onClick={handleOpenPopover}><Iconify icon='Edit'/></IconButton></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClose={handleClosePopover} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

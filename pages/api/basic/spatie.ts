@@ -47,18 +47,13 @@ export interface MenuProps {
   }
 
   export async function get_single_user(req: NextApiRequest, res: NextApiResponse){
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-
-    console.log("id", id)
-    
+    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;    
     if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
     
     const data = await User.findById(id)
     .populate({ path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "_id name status" } })
     .populate({ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } })
     .lean();
-    
-    console.log("data", data)
     const userRoles = await UserRole.find({ user_id: id }).populate("role_id", "name").lean().exec();
     const rolesIds = userRoles?.map(rp => rp.role_id?._id).filter(Boolean);
 
@@ -77,7 +72,6 @@ export interface MenuProps {
       if ( !data?.name || !data?.email || !data.phone ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
 
       const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
-      console.log("data", data)
 
       if (modelId && isValidObjectId(modelId)) {
         try {
@@ -117,8 +111,6 @@ export interface MenuProps {
 
       const child_permission_array = JSON.parse(data.permission_child);
       await pivotEntry( UserPermission, newEntry._id, child_permission_array, 'user_id', 'permission_id' );
-
-      console.log("newEntryyyyyyyyyyy", newEntry)
 
       return res.status(200).json({ message: '✅ Entry updated successfully', data: newEntry });
     } catch (error) { return log(error); }
@@ -528,8 +520,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
-
-    console.log("fnName", fnName)
 
     if (!fnName || typeof fnName !== 'string') {
       return res.status(400).json({ message: 'Missing or invalid function name' });

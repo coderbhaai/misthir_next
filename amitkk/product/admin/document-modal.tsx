@@ -60,7 +60,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `product/vendor?function=get_single_document&id=${selectedDataId}`);
+          const res = await apiRequest("get", `product/basic?function=get_single_document&id=${selectedDataId}`);
   
           setFormData({
             function: 'create_update_document',
@@ -106,7 +106,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
       formDataToSend.append("_id", selectedDataId as string);
       if (image) { formDataToSend.append("image", image); }
 
-      const res = await apiRequest("post", `product/vendor`, formDataToSend);
+      const res = await apiRequest("post", `product/basic`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);

@@ -8,7 +8,6 @@ export interface FaqFinalProps {
 }
 
 export default function FaqPanel({ faq }: FaqFinalProps) {
-  console.log('faq', faq)
   if (!faq || faq.length === 0) { return null; }
 
   return (

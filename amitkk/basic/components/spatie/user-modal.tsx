@@ -91,9 +91,6 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
 
     try {
       const res = await apiRequest("post", `basic/spatie`, updatedData);
-
-      console.log("res", res)
-
       if( res?.data ){
         setFormData(initialFormData);
         onUpdate(res?.data)

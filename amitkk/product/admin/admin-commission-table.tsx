@@ -13,12 +13,11 @@ import { MediaProps } from '@amitkk/basic/types/page';
 
 export type DataProps = {
   function: string;
-  name: string;
-  status: boolean;
-  content: string;
+  productmeta_id: string | Types.ObjectId;
+  vendor_id: string | Types.ObjectId;
+  percentage: number;
   createdAt: string | Date;
   updatedAt: Date;
-  media_id: string | Types.ObjectId | MediaProps;
   _id: string | Types.ObjectId;
   selectedDataId: string | number | object | null;
 };
@@ -36,13 +35,11 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
-        <TableCell>{row.name}</TableCell>
-        <TableCell><MediaImage media={row.media_id as MediaProps}/></TableCell>
-        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="Commission"/></TableCell>
+        <TableCell>{(row.productmeta_id as any).name}</TableCell>
+        <TableCell>{(row.vendor_id as any).name}</TableCell>
+        <TableCell>{row.percentage}</TableCell>
         <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-        <TableCell align='right'>
-          <MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem>
-        </TableCell>
+        <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>
