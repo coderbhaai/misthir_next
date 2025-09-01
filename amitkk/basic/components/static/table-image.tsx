@@ -14,7 +14,6 @@ const MediaImage: React.FC<MediaImageProps> = ({ media, className = "", style = 
     height: "48px",
     objectFit: "cover" as const,
   };
-
   return (
     <img src={media.path} alt={media.alt || "No Image"} className={className} style={{ ...defaultStyle, ...style }}/>
   );

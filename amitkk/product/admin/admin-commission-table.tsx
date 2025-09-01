@@ -10,6 +10,8 @@ import MediaImage from '@amitkk/basic/components/static/table-image';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
 import { MediaProps } from '@amitkk/basic/types/page';
+import UserRow from '@amitkk/basic/static/UserRow';
+import { UserRowProps } from '@amitkk/blog/types/blog';
 
 export type DataProps = {
   function: string;
@@ -36,7 +38,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
         <TableCell>{(row.productmeta_id as any).name}</TableCell>
-        <TableCell>{(row.vendor_id as any).name}</TableCell>
+        <TableCell><UserRow row={row.vendor_id as unknown as UserRowProps}/></TableCell>
         <TableCell>{row.percentage}</TableCell>
         <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
         <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>

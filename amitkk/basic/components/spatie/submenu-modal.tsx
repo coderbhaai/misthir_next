@@ -62,20 +62,14 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
 
   const handleChange = ( e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent ) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: name === "status" ? value === "true" : value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
   };
   
   React.useEffect(() => {
     if (open && selectedDataId) {
       const fetchSingle = async () => {
         try {
-          const res = await apiRequest(
-            "get",
-            `basic/spatie?function=get_single_submenu&id=${selectedDataId}`
-          );
+          const res = await apiRequest( "get", `basic/spatie?function=get_single_submenu&id=${selectedDataId}` );
 
           const menuIds = res?.data?.menu_ids?.map(String) ?? [];
 

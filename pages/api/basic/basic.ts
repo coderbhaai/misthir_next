@@ -234,8 +234,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
 
-    console.log("fnName", fnName)
-
     if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }    
 
     const targetFn = functions[fnName];

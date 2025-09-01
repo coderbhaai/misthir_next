@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-
-import DataModal from "@amitkk/product/admin/bank-detail-modal";
-import { AdminDataTable, DataProps } from "@amitkk/product/admin/admin-bank-detail-table";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
+import DataModal from "@amitkk/product/admin/bank-detail-modal";
+import { AdminDataTable, DataProps } from "@amitkk/product/admin/admin-bank-detail-table";
 
 export function AdminBankDetail(){
     const showCheckBox = false;
@@ -24,7 +23,7 @@ export function AdminBankDetail(){
     const [filterData, setFilterData] = useState("");
 
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["ifsc"] );
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData };
     const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
 
@@ -69,9 +68,11 @@ export function AdminBankDetail(){
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
-                    { id: "name", label: "Name" },
-                    { id: "media", label: "Media" },
-                    { id: "status", label: "Status" },
+                    { id: "vendor", label: "Vendor" },
+                    { id: "account", label: "Account" },
+                    { id: "ifsc", label: "IFSC" },
+                    { id: "branch", label: "Branch" },
+                    { id: "bank", label: "Bank" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
                 ]}/>

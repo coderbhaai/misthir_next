@@ -8,7 +8,7 @@ export interface ProductMetaProps {
     status: boolean;
     displayOrder?: number;
     content?: string;
-    createdAt: string | Date;
+    createdAt: Date;
     updatedAt: Date;
     media_id: string | Types.ObjectId | MediaProps;
     meta_id: string | Types.ObjectId | MetaTableProps | null; 
@@ -21,7 +21,7 @@ export interface ProductBrandProps {
     status: boolean;
     displayOrder?: number;
     content?: string;
-    createdAt: string | Date;
+    createdAt: Date;
     updatedAt: Date;
     vendor_id: string | Types.ObjectId;
     media_id: string | Types.ObjectId | MediaProps;
@@ -37,9 +37,29 @@ export interface ProductFeatureProps {
     status: boolean;
     displayOrder?: number;
     content?: string;
-    createdAt: string | Date;
+    createdAt: Date;
     updatedAt: Date;
     media_id: string | Types.ObjectId | MediaProps;
     meta_id: string | Types.ObjectId | MetaTableProps | null; 
     _id: string | Types.ObjectId;
+}
+
+export interface BankProps {
+    user_id: string | Types.ObjectId;
+    account: string;
+    ifsc: string;
+    bank: string;
+    branch: string;
+    _id: string | Types.ObjectId;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface DocumentProps {
+    user_id: string;
+    name: string;
+    media_id: string | Types.ObjectId | MediaProps;
+    _id: string | Types.ObjectId;
+    createdAt: string | Date;
+    updatedAt: Date;
 }

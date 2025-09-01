@@ -6,20 +6,13 @@ import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
-import MediaImage from '@amitkk/basic/components/static/table-image';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
-import StatusSwitch from '@amitkk/basic/components/static/status-switch';
-import { MediaProps } from '@amitkk/basic/types/page';
+import { BankProps } from '../types/product';
+import UserRow from '@amitkk/basic/static/UserRow';
+import { UserRowProps } from '@amitkk/blog/types/blog';
 
-export type DataProps = {
+export interface DataProps extends BankProps {
   function: string;
-  name: string;
-  status: boolean;
-  content: string;
-  createdAt: string | Date;
-  updatedAt: Date;
-  media_id: string | Types.ObjectId | MediaProps;
-  _id: string | Types.ObjectId;
   selectedDataId: string | number | object | null;
 };
 
@@ -36,13 +29,13 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
-        <TableCell>{row.name}</TableCell>
-        <TableCell><MediaImage media={row.media_id as MediaProps}/></TableCell>
-        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="BankDetail"/></TableCell>
+        <TableCell><UserRow row={row.user_id as unknown as UserRowProps}/></TableCell>
+        <TableCell>{row.account}</TableCell>
+        <TableCell>{row.ifsc}</TableCell>
+        <TableCell>{row.branch}</TableCell>
+        <TableCell>{row.bank}</TableCell>
         <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-        <TableCell align='right'>
-          <MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem>
-        </TableCell>
+        <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

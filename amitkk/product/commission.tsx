@@ -44,17 +44,18 @@ export default function AdminCommission({ vendor_id = "" }: AdminCommissionProps
                     apiFunction = `get_all_commissions&vendor_id=${encodeURIComponent(vendor_id)}`;
                 } else {
                     router.push('/404');
-                }                
+                }
+                             
+                const res_2 = await apiRequest("get", `basic/spatie?function=get_single_user&id=${encodeURIComponent(vendor_id)}`);
+                setVendor(res_2?.data);
+                if( res_2?.data ){
+                    setTitle(`Commission For ${res_2?.data?.name}`);
+                }
             }
 
             const res_1 = await apiRequest("get", `product/basic?function=${apiFunction}`);
             setData(res_1?.data ?? []);
 
-            const res_2 = await apiRequest("get", `basic/spatie?function=get_single_user&id=${vendor_id}`);
-            setVendor(res_2?.data);
-            if( res_2?.data ){
-                setTitle(`Commission For ${res_2?.data?.name}`);
-            }
 
         } catch (error) { clo( error ); }
     }, []);

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface DocumentDoc extends Document {
+interface DocumentationDoc extends Document {
   user_id?: Types.ObjectId;
   name: string;
   media_id?: Types.ObjectId;
@@ -9,11 +9,11 @@ interface DocumentDoc extends Document {
   products?: { product_id: Types.ObjectId }[];
 }
 
-const documentSchema = new Schema<DocumentDoc>({
+const documentationSchema = new Schema<DocumentationDoc>({
     user_id: { type: Schema.Types.ObjectId, ref: "User" },
     name: { type: String, required: true },
     media_id: { type: Schema.Types.ObjectId, ref: "Media" },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export default mongoose.models.Document || model<DocumentDoc>("Document", documentSchema);
+export default mongoose.models.Documentation || model<DocumentationDoc>("Documentation", documentationSchema);

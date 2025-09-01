@@ -12,7 +12,7 @@ interface BankDetailDoc extends Document {
 }
 
 const bankDetailSchema = new Schema<BankDetailDoc>({
-    user_id: { type: Schema.Types.ObjectId, ref: "user" },
+    user_id: { type: Schema.Types.ObjectId, ref: "User" },
     account: { type: String, required: true },
     ifsc: { type: String, required: true },
     branch: { type: String, required: true },

@@ -69,6 +69,7 @@ export function AdminDocument(){
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
+                    { id: "vendor", label: "Vendor" },
                     { id: "name", label: "Name" },
                     { id: "media", label: "Media" },
                     { id: "status", label: "Status" },

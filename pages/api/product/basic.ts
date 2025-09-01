@@ -17,6 +17,8 @@ import { getUserModule, getUsersWithRole } from 'services/userService';
 import Ingridient from 'lib/models/product/Ingridient';
 import ProductFeature from 'lib/models/product/ProductFeature';
 import Commission from 'lib/models/product/Commission';
+import BankDetail from 'lib/models/product/BankDetail';
+import Documentation from 'lib/models/product/Documentation';
 
 type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
@@ -342,7 +344,7 @@ interface ExtendedRequest extends NextApiRequest {
   export async function get_all_product_features(req: NextApiRequest, res: NextApiResponse) {
     try {
       const data = await ProductFeature.find().populate([ { path: 'media_id' }, { path: 'meta_id' } ]).exec();
-      return res.status(200).json({ message: 'Fetched all IngProductFeatureridient', data });
+      return res.status(200).json({ message: 'Fetched all ProductFeature', data });
     } catch (error) { return log(error); }
   }
 
@@ -490,8 +492,6 @@ interface ExtendedRequest extends NextApiRequest {
       if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
       const { data } = req.body;
 
-      console.log('data', data)
-
       if (!Array.isArray(data) || data.length === 0) { return res.status(400).json({ message: "❌ No commission entries provided" }); }
       const results = [];
 
@@ -527,6 +527,136 @@ interface ExtendedRequest extends NextApiRequest {
   }
 // Commission
 
+// Bank Detail
+  export async function get_all_bank_details(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await BankDetail.find().populate([ { path: 'user_id' } ]).exec();
+      return res.status(200).json({ message: 'Fetched all BankDetail', data });
+    } catch (error) { return log(error); }
+  }
+
+  export async function get_single_bank_detail(req: NextApiRequest, res: NextApiResponse){
+    try{
+      const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
+      if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }  
+    
+      const entry = await BankDetail.findById(id).populate([ { path: 'user_id' } ]).exec();  
+      if (!entry) { return res.status(404).json({ message: `BankDetail with ID ${id} not found` }); }
+    
+      return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
+
+    }catch (error) { return log(error); }
+  };
+
+  export async function create_update_bank_detail(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const data = req.body;
+      if (!data?.account || !data?.ifsc || !data?.branch || !data?.bank) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+
+      const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
+
+      if (modelId && isValidObjectId(modelId)) {
+        try {
+          const updated = await BankDetail.findByIdAndUpdate(
+            modelId,
+            {
+              user_id: data.user_id,
+              account: data.account,
+              ifsc: data.ifsc,
+              branch: data.branch,
+              bank: data.bank,
+              updatedAt: new Date(),
+            }, { new: true }
+          );
+
+          return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
+        } catch (error) { return log(error); }
+      }
+      
+      const newEntry = new BankDetail({
+        user_id: data.user_id,
+        account: data.account,
+        ifsc: data.ifsc,
+        branch: data.branch,
+        bank: data.bank,
+        createdAt: new Date(),
+      });
+
+      await newEntry.save();
+      return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
+    } catch (error) { return log(error); }
+  }
+// Bank Detail
+
+// Document
+  export async function get_all_documents(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await Documentation.find().populate([ { path: 'user_id' }, { path: 'media_id' } ]).exec();
+      return res.status(200).json({ message: 'Fetched all Documentation', data });
+    } catch (error) { return log(error); }
+  }
+
+  export async function get_single_document(req: NextApiRequest, res: NextApiResponse){
+    try{
+      const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
+      if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }  
+    
+      const entry = await Documentation.findById(id).populate([ { path: 'user_id' }, { path: 'media_id' } ]).exec();  
+      if (!entry) { return res.status(404).json({ message: `Documentation with ID ${id} not found` }); }
+    
+      return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
+
+    }catch (error) { return log(error); }
+  };
+
+  export async function create_update_document(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+      
+      const data = req.body;
+      if (!data?.name || !data?.user_id) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+
+      const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
+
+      let media_id: string | null = null;
+      if (data.media_id && isValidObjectId(data.media_id)) { media_id = data.media_id; }
+      const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
+      
+      if (file) {
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+      }
+
+      if (modelId && isValidObjectId(modelId)) {
+        try {
+          const updated = await Documentation.findByIdAndUpdate(
+            modelId,
+            {
+              user_id: data.user_id,
+              name: data.name,
+              media_id: media_id,
+              updatedAt: new Date(),
+            }, { new: true }
+          );
+
+          return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
+        } catch (error) { return log(error); }
+      }
+      
+      const newEntry = new Documentation({
+        user_id: data.user_id,
+        name: data.name,
+        media_id: media_id,
+        createdAt: new Date(),
+      });
+
+      await newEntry.save();
+      return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
+    } catch (error) { return log(error); }
+  }
+// Document
+
 const functions: HandlerMap = {
   get_user_by_role: get_user_by_role,
   get_single_vendor: get_single_vendor,
@@ -556,6 +686,14 @@ const functions: HandlerMap = {
   get_single_commission: get_single_commission,
   create_update_commission: create_update_commission,
   create_update_vendor_commission: create_update_vendor_commission,
+
+  get_all_bank_details: get_all_bank_details,
+  get_single_bank_detail: get_single_bank_detail,
+  create_update_bank_detail: create_update_bank_detail,
+
+  get_all_documents: get_all_documents,
+  get_single_document: get_single_document,
+  create_update_document: create_update_document,
 };
 
 const tmpDir = path.join(process.cwd(), 'tmp');
