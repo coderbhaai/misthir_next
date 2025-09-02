@@ -272,6 +272,12 @@ export async function updateBrowsingHistory( module: string, module_id: string )
   } catch (error) { clo(error); }
 }
 
+export async function checkPermission(slug: string | string[]): Promise<boolean> {
+  try {
+    const res = await apiRequest("get", `basic/spatie?function=check_permission&url=${slug}`);
+    return res?.data === true;
+  } catch (err) { clo(err); return false; }
+}
 
 
 

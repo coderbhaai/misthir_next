@@ -94,5 +94,4 @@ export  function AdminSubmenu(){
     )
 }
 
-export default AdminSubmenu;
-// export default withAuth(AdminSubmenu);
+export default withAuth(AdminSubmenu);

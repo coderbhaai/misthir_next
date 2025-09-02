@@ -261,7 +261,7 @@ export interface MenuProps {
       const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
       
       if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
       }
 
       if (data._id) {
@@ -338,7 +338,7 @@ export interface MenuProps {
       
       media_id = data.media_id;
       if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
       }
 
       if (data._id) {
@@ -434,6 +434,25 @@ export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) 
   } catch (error) { return log(error); }
 }
 
+export async function check_permission(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const user_id = getUserIdFromToken(req);
+    if (!user_id) return res.status(401).json({ message: 'Checked Permissions - Auth Missing', data: false });
+
+    const url = req.query.url as string;
+    if (!url) return res.status(400).json({ message: 'Checked Permissions - URL MIssing', data: false });
+
+    const submenu = await SpatieSubmenu.findOne({ url });
+    if (!submenu) return res.status(404).json({ message: 'Checked Permissions - Menu MIssing', data: false });
+
+    const hasPermission = await UserPermission.findOne({ user_id: user_id, permission_id: submenu.permission_id });
+    console.log("hasPermission", hasPermission)
+    if (!hasPermission) { return res.status(403).json({ message: 'Permission Denied', data: false }); }
+
+    return res.status(200).json({ message: 'Permission To Enter', data: true });
+  } catch (error) { log(error); return res.status(500).json({ allowed: false }); }
+}
+
 type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
 };
@@ -471,6 +490,7 @@ const functions: HandlerMap = {
   get_single_submenu: get_single_submenu,
 
   get_admin_menu: get_admin_menu,
+  check_permission: check_permission,
 };
 
 const tmpDir = path.join(process.cwd(), 'tmp');
@@ -520,6 +540,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
+
+    console.log( "fnName", fnName) 
 
     if (!fnName || typeof fnName !== 'string') {
       return res.status(400).json({ message: 'Missing or invalid function name' });

@@ -51,6 +51,7 @@ interface UploadMediaParams {
   alt?: string;
   pathType: string;
   media_id?: string | null;
+  user_id?: string | null;
 }
 
 export const deleteOldImage = async ( mediaModel: Model<any>, media_id: string | mongoose.Types.ObjectId ) => {
@@ -74,14 +75,14 @@ export const deleteOldImage = async ( mediaModel: Model<any>, media_id: string |
   } catch (error) { log(error); }
 };
 
-export const uploadMedia = async ({ file, name, pathType, media_id = null }: UploadMediaParams): Promise<string | null> => {
+export const uploadMedia = async ({ file, name, pathType, media_id = null, user_id = null }: UploadMediaParams): Promise<string | null> => {
   try {
     // return await uploadMediaToS3({ file, name, pathType, media_id });
     return uploadMediaToLocal({ file, name, pathType, media_id });
   } catch (error) { log(error); return null; } 
 };
 
-export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null }: UploadMediaParams) => {  
+export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null, user_id = null }: UploadMediaParams) => {  
   try {
     if ( !file ) { return media_id ? media_id : null; }
 
@@ -115,7 +116,7 @@ export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null
         { new: true }
       );
     } else {
-      entry = await Media.create({ media: filename, alt: name, path: storagePath });
+      entry = await Media.create({ media: filename, alt: name, path: storagePath, user_id : user_id });
     }
 
     return entry._id.toString(); 
@@ -179,7 +180,7 @@ export async function create_update_media(req: ExtendedRequest, res: NextApiResp
     const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
     
     if (file) {
-      await uploadMedia({ file, name: data.alt, pathType: data.path, media_id: media_id ?? null });
+      await uploadMedia({ file, name: data.alt, pathType: data.path, media_id: media_id ?? null, user_id:data.user_id });
     }else if(media_id){
       await Media.findByIdAndUpdate(
         media_id,

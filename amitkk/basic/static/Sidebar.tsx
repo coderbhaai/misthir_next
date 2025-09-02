@@ -1,11 +1,9 @@
 "use client";
 import Link from "next/link";
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Divider, Typography, Box, Button, } from "@mui/material";
-import { Home as HomeIcon, Hotel as HotelIcon, Flight as FlightIcon, Apartment as ApartmentIcon, Map as MapIcon, Diamond as DiamondIcon, Support as SupportIcon, Work as WorkIcon, Login as LoginIcon, PersonAdd as PersonAddIcon, Logout as LogoutIcon, } from "@mui/icons-material";
-import { useEffect, useState } from "react";
-import RegisterModal from "@amitkk/basic/components/auth/RegisterModal";
-import { useAuth } from "contexts/AuthContext";
-import { hitToastr } from "@amitkk/basic/utils/utils";
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Divider, Box } from "@mui/material";
+import { Home as HomeIcon, Hotel as HotelIcon, Flight as FlightIcon, Apartment as ApartmentIcon, Map as MapIcon, Diamond as DiamondIcon, Support as SupportIcon, Work as WorkIcon } from "@mui/icons-material";
+import MenuLink from "./MenuLink";
+import LogOut from "./LogOut";
 
 interface NavItem {
   label: string;
@@ -31,23 +29,6 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 export function Sidebar({ isOpen, onClose, navItems, loggedIn }: SidebarProps) {
-  const { logout } = useAuth();
-  const handleLogout = () => {
-    logout();
-    hitToastr('success', "GoodBye");
-  };
-
-  const [authModal, setAuthModal] = useState({ open: false, type: 'login' });
-  const handleAuthClick = (type: 'login' | 'signup') => {
-    setAuthModal({ open: true, type });
-  };
-
-  useEffect(() => {
-    if (loggedIn) {
-      setAuthModal(prev => ({ ...prev, open: false }));
-    }
-  }, [loggedIn]);
-  
   const NavLink = ({ href, label, Icon, }: { href: string; label: string; Icon?: React.ElementType; }) => (
     <Link href={href} passHref>
       <ListItem disablePadding>
@@ -67,37 +48,17 @@ export function Sidebar({ isOpen, onClose, navItems, loggedIn }: SidebarProps) {
         </Box>
         
         <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-          <List>
-            {navItems?.map((item) => (
-              <NavLink key={item.to} href={item.to} label={item.label} Icon={iconMap[item.label] || WorkIcon}/>
-            ))}
-          </List>
-
+          <List>{navItems?.map((item) => ( <NavLink key={item.to} href={item.to} label={item.label} Icon={iconMap[item.label] || WorkIcon}/> ))}</List>
+          
           {loggedIn && (
             <>
               <Divider sx={{ my: 1 }} />
-              <List>
-                {/* {userSpecificLinks?.map((link) => (
-                  <NavLink key={link.to} href={link.to} label={link.label} Icon={link.icon} />
-                ))} */}
-              </List>
+              <MenuLink/>
             </>
           )}
         </Box>
-
-        <Box sx={{ borderTop: "1px solid #e0e0e0", p: 2 }}>
-          {loggedIn ? (
-            <Button fullWidth variant="outlined" color="error" startIcon={<LogoutIcon />} onClick={handleLogout}>Log out</Button>
-          ) : (
-            <List>
-              <Button fullWidth startIcon={<LoginIcon />} onClick={() => handleAuthClick('login')} sx={{ justifyContent: 'flex-start' }}>Log In</Button>
-              <Button fullWidth startIcon={<PersonAddIcon />} onClick={() => handleAuthClick('signup')} sx={{ justifyContent: 'flex-start', mt: 1 }}>Sign Up</Button>
-            </List>
-          )}
-        </Box>
+        <LogOut/>
       </Box>
-
-      <RegisterModal open={authModal.open} title={authModal.type === 'login' ? 'Login' : 'Sign Up'} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/>
     </Drawer>
   );
 }

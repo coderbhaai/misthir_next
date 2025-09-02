@@ -23,7 +23,7 @@ export interface ProductBrandProps {
     content?: string;
     createdAt: Date;
     updatedAt: Date;
-    vendor_id: string | Types.ObjectId;
+    vendor_id: string | null | Types.ObjectId;
     media_id: string | Types.ObjectId | MediaProps;
     meta_id: string | Types.ObjectId | MetaTableProps | null; 
     _id: string | Types.ObjectId;
@@ -59,6 +59,23 @@ export interface DocumentProps {
     user_id: string;
     name: string;
     media_id: string | Types.ObjectId | MediaProps;
+    _id: string | Types.ObjectId;
+    createdAt: string | Date;
+    updatedAt: Date;
+}
+
+export interface ProductProps {
+    vendor_id: string | Types.ObjectId;
+    name: string;
+    url: string;
+    gtin?: string;
+    adminApproval: boolean;
+    status: boolean;
+    displayOrder?: number;
+    short_desc?: string;
+    long_desc?: string;
+    meta_id: string | Types.ObjectId | MetaTableProps | null; 
+    dietary_type: string;
     _id: string | Types.ObjectId;
     createdAt: string | Date;
     updatedAt: Date;

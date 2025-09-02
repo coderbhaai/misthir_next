@@ -78,7 +78,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
             meta_id: res?.data?.meta_id?._id,
             title: res?.data?.meta_id?.title || '',
             description: res?.data?.meta_id?.description || '',
-            vendor_id: res?.data?.vendor_id || "",
+            vendor_id: res?.data?.vendor_id?._id || "",
           });
 
           setContent(res?.data?.content || ""); 

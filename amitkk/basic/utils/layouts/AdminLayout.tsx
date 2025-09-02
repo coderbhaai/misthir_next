@@ -13,6 +13,8 @@ import TopBar from "@amitkk/basic/static/TopBar";
 import { getLayoutLinks } from "@amitkk/basic/utils/utils";
 import { SettingsProvider } from "@amitkk/basic/utils/context/SettingsContext";
 import theme from "@amitkk/basic/utils/theme";
+import MenuLink from "@amitkk/basic/static/MenuLink";
+import LogOut from "@amitkk/basic/static/LogOut";
 
 const drawerWidth = 0;
 const collapsedWidth = 70;
@@ -52,21 +54,7 @@ interface SidebarLayoutProps {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [open, setOpen] = useState(true);
-  const [submenuOpen, setSubmenuOpen] = useState<{ [key: string]: boolean }>({});
-  const [menu, setMenu] = useState<any[]>([]);
-
-  useEffect(() => {
-    async function fetchMenu() {
-      const data = await getLayoutLinks();
-      setMenu(data);
-    }
-    fetchMenu();
-  }, []);
-
-  const handleSubmenuToggle = (name: string) => {
-    setSubmenuOpen((prev) => ({ ...prev, [name]: !prev[name] }));
-  };
-
+  
   const handleSidebarToggle = () => {
     setOpen((prevOpen) => !prevOpen);
   };
@@ -87,44 +75,13 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
               <Search/>
             </Toolbar>
           </AppBar>
-          
-          <Main open={open} >
-            <Grid container spacing={4} sx={{ py:4, width:"100vw",mx:"auto"}} gap={0} >
-              <Grid size={3}>
-                  <List>
-                    {menu?.map((item) => (
-                      <div key={item.name}>
-                        <ListItem disablePadding>
-                          <ListItemButton onClick={() => item.children && handleSubmenuToggle(item.name)}>
-                            {item.media && (
-                              <img src={item.media} alt={item.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: "50%", marginRight: 8, }}/>
-                            )}
-                            {open && <ListItemText primary={item.name} />}
-                            {open && item.children && (submenuOpen[item.name] ? <ExpandLess /> : <ExpandMore />)}
-                          </ListItemButton>
-                        </ListItem>
-                      
-                          {item.children && open && (
-                            <Collapse in={submenuOpen[item.name]} timeout="auto" unmountOnExit>
-                              <List component="div" disablePadding>
-                                {item.children?.map((child: { name: string; url?: string, media?:string }) => (
-                                  <List key={`${item.name}-${child.url || child.name}`}>
-                                    <ListItem component="a" href={child.url} sx={{ pl: 4 }}>
-                                      {child.media && (
-                                        <img src={child.media} alt={child.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: "50%", marginRight: 8, }}/>
-                                      )}
-                                      <ListItemText primary={child.name} />
-                                    </ListItem>
-                                  </List>
-                                ))}
-                              </List>
-                            </Collapse>
-                          )}
-                      </div>
-                    ))}
-                  </List>
+          <Main open={open}>
+            <Grid container spacing={4} sx={{ py: 4, width: "100vw", mx: "auto" }} gap={0}>
+              <Grid size={3} sx={{ position: "fixed", top: "95px", left: 0, bottom: 0, display: "flex", flexDirection: "column", width: "25%", borderRight: "1px solid #e0e0e0", bgcolor: "background.paper", zIndex: 1200 }}>
+                <Box sx={{ flex: 1, overflowY: "auto", pb: 8 }}><MenuLink /></Box>
+                <Box sx={{ position: "sticky", bottom: 0, bgcolor: "background.paper", p: 2, }}><LogOut /></Box>
               </Grid>
-              <Grid size={9}>
+              <Grid size={9} sx={{ ml: "25%" }}>
                 {children}
               </Grid>
             </Grid>

@@ -82,7 +82,7 @@ export async function status_switch(req: NextApiRequest, res: NextApiResponse) {
         const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
         
         if (file) {
-          media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+          media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
         }
 
         let meta_id: string | null = null;
@@ -313,7 +313,7 @@ export async function status_switch(req: NextApiRequest, res: NextApiResponse) {
         const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
         
         if (file) {
-          media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+          media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
         }
 
         if (modelId && isValidObjectId(modelId)) {

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Model, PopulateOptions } from "mongoose";
 import { NextApiRequest } from "next";
 import jwt from "jsonwebtoken";
 import Page from "lib/models/basic/Page";
@@ -42,7 +42,6 @@ export async function pivotEntry(
   }
 }
 
-
 interface AddUpdateMediaParams {
   path: string;
   alt: string;
@@ -66,7 +65,6 @@ export async function addUpdateMediaModel({ path, alt, media_id = null }: AddUpd
 
   } catch (err) { return null; }
 }
-
 
 interface JwtPayload {
   user_id: string;
@@ -111,13 +109,9 @@ export const generateSitemap =async () => {
   try {
     await connectDB();
 
- const site = process.env.MODE === 'development' 
-  ? process.env.DEV_URL || 'https://tripsandstay.com/' 
-  : process.env.PROD_URL || 'https://tripsandstay.com/';
-
-  const pages = await Page.find({ status: 1, sitemap: 1, url: { $ne: "/" } }).select("url");
-  const blogs = await Blog.find().select("url name updatedAt"); 
-
+    const site = process.env.MODE === 'development' ? process.env.DEV_URL as string : process.env.PROD_URL as string;
+    const pages = await Page.find({ status: 1, sitemap: 1, url: { $ne: "/" } }).select("url");
+    const blogs = await Blog.find().select("url name updatedAt");
   
     const today = format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX");
     const urlEntry = (loc: string, priority: number) => `
@@ -145,13 +139,11 @@ export const generateSitemap =async () => {
       </urlset>`;
     fs.writeFileSync(path.join(process.cwd(), "public", "sitemap-image.xml"), imageSitemapXML);
 
-
     const newsSitemapXML = `<?xml version="1.0" encoding="UTF-8"?>
       <urlset xmlns="http://www.google.com/schemas/sitemap-news/0.9">
         <!-- Your news loop here -->
       </urlset>`;
     fs.writeFileSync(path.join(process.cwd(), "public", "news-sitemap.xml"), newsSitemapXML);
-
 
     const urls = [
       `${site}/`,
@@ -173,5 +165,30 @@ export const generateSitemap =async () => {
     // });
 
   } catch (err) { log(err); }
-
 };
+
+interface QueryOptions {
+  filter?: Record<string, any>;
+  sort?: Record<string, 1 | -1>;
+  populate?: (string | PopulateOptions)[];
+  select?: string;
+}
+
+export async function fetchData<T>(
+  model: Model<T>,
+  { filter = {}, sort, populate = [], select }: QueryOptions = {}
+) {
+  let query = model.find(filter);
+
+  if (populate.length > 0) {
+    query = query.populate(populate);
+  }
+
+  if (select) {
+    query = query.select(select);
+  }
+
+  query = query.sort(sort ?? { updatedAt: -1, createdAt: -1 });
+
+  return query.exec();
+}

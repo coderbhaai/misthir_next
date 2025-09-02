@@ -8,6 +8,9 @@ export interface SkuDocument extends Document {
   status: boolean;
   displayOrder?: number;
   adminApproval: boolean;
+  eggless_id?: Types.ObjectId;
+  sugarfree_id?: Types.ObjectId;
+  gluttenfree_id?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,8 +23,14 @@ const skuSchema = new Schema<SkuDocument>({
     status: { type: Boolean, default: true },
     displayOrder: { type: Number },
     adminApproval: { type: Boolean, default: true },
+    eggless_id: { type: Schema.Types.ObjectId, ref: "ProductFeature" },
+    sugarfree_id: { type: Schema.Types.ObjectId, ref: "ProductFeature" },
+    gluttenfree_id: { type: Schema.Types.ObjectId, ref: "ProductFeature" },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+skuSchema.virtual('flavors', { ref: 'SkuProductFeature', localField: '_id', foreignField: 'sku_id', justOne: false });
+skuSchema.virtual('colors', { ref: 'SkuProductFeature', localField: '_id', foreignField: 'sku_id', justOne: false });
 
 export const Sku = models.Sku || model<SkuDocument>("Sku", skuSchema);
 

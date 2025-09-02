@@ -90,5 +90,4 @@ export  function AdminPermission(){
     )
 }
 
-export default AdminPermission;
-// export default withAuth(AdminPermission);
+export default withAuth(AdminPermission);

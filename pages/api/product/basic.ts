@@ -75,7 +75,7 @@ interface ExtendedRequest extends NextApiRequest {
       const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
       
       if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
       }
 
       if (modelId && isValidObjectId(modelId)) {
@@ -132,7 +132,11 @@ interface ExtendedRequest extends NextApiRequest {
 // ProductBrand
   export async function get_all_product_brands(req: NextApiRequest, res: NextApiResponse) {
     try {
-      const data = await ProductBrand.find().populate([ { path: 'media_id' }, { path: 'meta_id' }, { path: 'vendor_id' }, ]).exec();
+      const { vendor_id } = req.query;
+      const filter: any = {};
+      if (vendor_id) { filter.vendor_id = vendor_id; }
+
+      const data = await ProductBrand.find(filter).populate([ { path: 'media_id' }, { path: 'meta_id' }, { path: 'vendor_id' }, ]).exec();
       return res.status(200).json({ message: 'Fetched all ProductBrands', data });
     } catch (error) { return log(error); }
   }
@@ -155,21 +159,25 @@ interface ExtendedRequest extends NextApiRequest {
       if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
 
       const data = req.body;
-      if (!data?.name || !data?.url || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+      if (!data?.name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
 
       const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
-
-      const slug = await slugify(data.url, Productmeta, modelId);
-
+      
+      const slug = await slugify(data?.url ?? data?.name, Productmeta, modelId);
       let meta_id: string | null = null;
-      meta_id = await upsertMeta({ meta_id: data.selected_meta_id ?? null, url: data.url, title: data.title, description: data.description });      
+      meta_id = await upsertMeta({
+        meta_id: data?.selected_meta_id ?? null,
+        url: data?.url ?? data?.name,
+        title: data?.title ?? data?.name,
+        description: data?.description ?? data?.name,
+      }); 
       
       let media_id: string | null = null;
       if (data.media_id && isValidObjectId(data.media_id)) { media_id = data.media_id; }
       const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
       
       if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: data.vendor_id });
       }
       
       if (modelId && isValidObjectId(modelId)) {
@@ -299,7 +307,7 @@ interface ExtendedRequest extends NextApiRequest {
       const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
       
       if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
       }
 
       if (modelId && isValidObjectId(modelId)) {
@@ -377,7 +385,7 @@ interface ExtendedRequest extends NextApiRequest {
       const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
       
       if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
       }
 
       let meta_id: string | null = null;
@@ -625,7 +633,7 @@ interface ExtendedRequest extends NextApiRequest {
       const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
       
       if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: data.user_id });
       }
 
       if (modelId && isValidObjectId(modelId)) {

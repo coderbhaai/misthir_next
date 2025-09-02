@@ -67,7 +67,7 @@ export async function create_update_author(req: ExtendedRequest, res: NextApiRes
     const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
     
     if (file) {
-      media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null });
+      media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
     }
 
     if (modelId && isValidObjectId(modelId)) {

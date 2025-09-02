@@ -4,7 +4,7 @@
 import { checkPermission, clo } from "@amitkk/basic/utils/utils";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { adminComponentMap } from "../../amitkk/componentMaps";
+import { sellerComponentMap } from "../../../amitkk/componentMaps";
 
 const DynamicAdminPage = () => {
   const router = useRouter();
@@ -19,8 +19,8 @@ const DynamicAdminPage = () => {
       try {
         const slugParts = Array.isArray(slug) ? slug : [slug];
         const baseSlug = slugParts[0];
-        
-        const fullPath = `/admin/${slugParts.join("/")}`;
+
+        const fullPath = `/admin/seller/${slugParts.join("/")}`;
         const allowed = await checkPermission(fullPath);
         if (!allowed) {
           setHasAccess(false);
@@ -28,9 +28,8 @@ const DynamicAdminPage = () => {
         }
         setHasAccess(true);
 
-
-        if (baseSlug && adminComponentMap[baseSlug]) {
-          const PageComponent = await adminComponentMap[baseSlug]();
+        if (baseSlug && sellerComponentMap[baseSlug]) {
+          const PageComponent = await sellerComponentMap[baseSlug]();
           setComponent(() => PageComponent.default);
         } else {
           throw new Error(`Unknown base slug: ${baseSlug}`);
@@ -47,7 +46,6 @@ const DynamicAdminPage = () => {
   }, [slug, router.isReady]);
 
   if (hasAccess === false) return <h1>You are Not Permitted</h1>;
-
   if (!Component) return <h1>Loading...</h1>;
   return (
     <Component module={Array.isArray(slug) && slug[1] ? slug[1] : ""} module_id={Array.isArray(slug) && slug[2] ? slug[2] : ""}/>

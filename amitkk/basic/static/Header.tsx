@@ -22,39 +22,7 @@ const navItems = [
   { label: 'Home', to: '/' },
   { label: 'Services', to: '/services' },
   { label: 'Clients', to: '/client' },
-
 ];
-
-// const navTranslations: Record<string, Record<string, string>> = {
-//   ENG: {
-//     'Home': 'Home',
-//     'Hotels': 'Hotels',
-//     'Flights': 'Flights',
-//     'Airbnb': 'Airbnb',
-//     'Tours & Cruises': 'Tours & Cruises',
-//     'Ultra Lux': 'Ultra Lux',
-//     'Inspiration': 'Inspiration',
-//   },
-//   HIN: {
-//     'Home': 'घर',
-//     'Hotels': 'होटल',
-//     'Flights': 'उड़ानें',
-//     'Airbnb': 'एयरबीएनबी',
-//     'Tours & Cruises': 'टूर्स और क्रूज़',
-//     'Ultra Lux': 'अल्ट्रा लक्स',
-//     'Inspiration': 'प्रेरणा',
-//   },
-//   ARA: {
-//     'Home': 'الصفحة الرئيسية',
-//     'Hotels': 'الفنادق',
-//     'Flights': 'رحلات جوية',
-//     'Airbnb': 'إير بي إن بي',
-//     'Tours & Cruises': 'جولات ورحلات بحرية',
-//     'Ultra Lux': 'الترا لوكس',
-//     'Inspiration': 'إلهام',
-//   }
-// };
-
 
 
 export default function Header() {

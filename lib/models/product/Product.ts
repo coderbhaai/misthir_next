@@ -17,9 +17,9 @@ interface ProductDocument extends Document {
   dietary_type : string;
   short_desc?: string;
   long_desc?: string;
-  adminApproval: boolean;
   status: boolean;
   displayOrder?: number;
+  adminApproval: boolean;
   createdAt: Date;
   updatedAt: Date;
   metas?: ProductmetaReference[];
@@ -29,17 +29,21 @@ interface ProductDocument extends Document {
 const productSchema = new Schema<ProductDocument>({
   name: { type: String, required: true },
   url: { type: String, required: true, unique: true },
-  status: { type: Boolean, default: true },
-  adminApproval: { type: Boolean, default: true },
+  gtin: { type: String, required: false },
   dietary_type : { type: String, required: true },
-  displayOrder: { type: Number, required: false, },
   vendor_id: { type: Schema.Types.ObjectId, ref: 'Vendor' },
   meta_id: { type: Schema.Types.ObjectId, ref: 'Meta' },
+  status: { type: Boolean, default: true },
+  displayOrder: { type: Number, required: false, },
+  adminApproval: { type: Boolean, default: true },
   short_desc: { type: String, required: false },
   long_desc: { type: String, required: false },
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
-productSchema.virtual('products', { ref: 'ProductProductmeta', localField: '_id', foreignField: 'product_id', justOne: false });
+productSchema.virtual('productMeta', { ref: 'ProductProductmeta', localField: '_id', foreignField: 'product_id', justOne: false });
+productSchema.virtual('productFeature', { ref: 'ProductProductFeature', localField: '_id', foreignField: 'product_id', justOne: false });
+productSchema.virtual('productBrand', { ref: 'ProductProductBrand', localField: '_id', foreignField: 'product_id', justOne: false });
+productSchema.virtual('productIngridient', { ref: 'ProductIngridient', localField: '_id', foreignField: 'product_id', justOne: false });
 
 productSchema.virtual('productmetas').get(function (this: ProductDocument) {
   if (!this.metas || !Array.isArray(this.metas)) return [];
