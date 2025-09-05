@@ -1,5 +1,4 @@
-// useVendorId.ts
-
+// hooks >  useVendorId.ts
 import { useAuth } from "contexts/AuthContext";
 
 export const useVendorId = () => {

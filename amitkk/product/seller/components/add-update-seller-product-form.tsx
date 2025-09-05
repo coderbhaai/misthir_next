@@ -17,6 +17,7 @@ import StatusSelect from "@amitkk/basic/components/static/status-input";
 import SkuModal from "@amitkk/product/admin/SkuModal";
 import MediaPanel, { MediaPanelHandle } from "@amitkk/basic/components/media/media-panel";
 import { SubmitButton } from "@amitkk/basic/static/LoadingSubmit";
+import { useUserAccess } from "hooks/useUserSpatie";
 
 const CkEditor = dynamic(() => import("@amitkk/basic/components/static/ckeditor-input"), { 
   ssr: false, loading: () => <p>Loading editor...</p>,
@@ -29,13 +30,16 @@ export interface DataProps extends ProductProps {
 
 interface DataFormProps {
     dataId?: string;
+    vendorId?: string;
 }  
 
-export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
+export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendorId = "" }) => {
     const [loading, setLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const vendor_id = useVendorId();
+    const vendor_id = vendorId || useVendorId();
     const mediaPanelRef = useRef<MediaPanelHandle>(null);
+
+    const { hasAnyRole, hasPermission } = useUserAccess();
     
     const [formData, setFormData] = React.useState<DataProps>({
         name: '',
@@ -209,7 +213,11 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
             const result = await apiRequest("post", `product/product`, formDataToSend);
             hitToastr('success', 'Entry Done');
 
-            router.replace('/admin/seller/products');
+            if( hasAnyRole(["Vendor", "Staff"]) ){
+                router.replace('/admin/seller/products');
+            }else{
+                router.replace('/admin/products');
+            }
             
         } catch (error) { clo( error ); } finally { setIsSubmitting(false); }
     };

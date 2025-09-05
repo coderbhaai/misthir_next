@@ -1,5 +1,5 @@
 import {Types} from 'mongoose';
-import {useState, useCallback} from 'react';
+import {useState, useCallback, useEffect} from 'react';
 import Popover from '@mui/material/Popover';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
@@ -7,7 +7,7 @@ import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
 import MetaTableInput from '@amitkk/basic/components/static/meta-table-input';
-import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
+import { clo, Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import Link from 'next/link';
 import DateFormat from '@amitkk/basic/components/static/date-format';
@@ -19,6 +19,7 @@ import { ProductRawDocument } from 'lib/models/types';
 import { MediaCards } from '@amitkk/basic/components/static/MediaCards';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
 import { MetaRow } from '@amitkk/basic/components/static/MetaRow';
+import { useUserAccess } from 'hooks/useUserSpatie';
 
 export interface DataProps extends ProductRawDocument {
   selectedDataId: string | number | object | null;
@@ -39,23 +40,31 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
     setOpenPopover(null);
   }, []);
 
+  const { hasAnyRole, hasPermission } = useUserAccess();
+
   return (
     <Grid size={12} key={row._id.toString()}>
       <Card sx={{ boxShadow: 3, borderRadius: 2, p: 2 }}>
-        <CardHeader
-          title={
-            <Link href={`/${row.url}`} target="_blank">{row.name}</Link>
-          }
-          subheader={row.url}
-          action={
-            <IconButton onClick={handleOpenPopover}>
-              <Iconify icon='Edit'/>
-            </IconButton>
-          }
-        />
+        <CardHeader title={ <Link href={`/${row.url}`} target="_blank">{row.name}</Link> }subheader={row.url} action={ <IconButton onClick={handleOpenPopover}><Iconify icon='Edit'/></IconButton> }/>
         <Popover open={!!openPopover} anchorEl={openPopover} onClose={handleClosePopover} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>
         <MenuList disablePadding sx={{ p: 0.5, gap: 0.5, width: 140, display: 'flex', flexDirection: 'column', [`& .${menuItemClasses.root}`]: { px: 1, gap: 2, borderRadius: 0.75, [`&.${menuItemClasses.selected}`]: {bgcolor: 'action.selected'} } }}>
-          <MenuItem><Link href={`/admin/seller/add-update-product/${row._id}`}><Iconify icon='Edit' />Edit</Link></MenuItem>
+          {hasAnyRole(["Vendor", "Staff"]) && hasPermission("Product Vendor") &&(
+            <MenuItem><Link href={`/admin/seller/add-update-product/${row._id}`}><Iconify icon="Edit"/>Edit</Link></MenuItem>
+          )}
+
+          {hasAnyRole(["Owner", "Admin", "SEO"]) && (
+            <>
+              {hasPermission("Product Admin") && (
+                <MenuItem><Link href={`/admin/add-update-product/${row.vendor_id}/${row._id}`} target="_blank"><Iconify icon="Edit"/> Edit</Link></MenuItem>
+              )}
+              {hasPermission("Page") && (
+                <>
+                  <MenuItem><Link href={`/admin/faqs/Product/${row._id}`} target="_blank"><Iconify icon="Edit"/> FAQs</Link></MenuItem>
+                  <MenuItem><Link href={`/admin/testimonials/Product/${row._id}`} target="_blank"><Iconify icon="Edit"/> Testimonial</Link></MenuItem>
+                </>
+              )}
+            </>
+          )}
         </MenuList>
       </Popover>
         <CardContent>

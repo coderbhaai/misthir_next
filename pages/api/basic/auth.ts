@@ -185,12 +185,30 @@ export async function register_or_login(req: NextApiRequest, res: NextApiRespons
   } catch (error) { log(error); }  
 }
 
+export async function check_user_access(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== "POST") { return res.status(405).json({ message: "Method not allowed", data: null }); }
+
+    const user_id = getUserIdFromToken(req);
+    if (!user_id) { return res.status(401).json({ message: "Unauthorized" }); }
+
+    const roles = await UserRole.find({ user_id }).populate("role_id", "_id name").lean();
+    const roleNames = roles.map(r => r.role_id?.name);
+
+    const permissions = await UserPermission.find({ user_id }).populate("permission_id", "_id name").lean();
+    const permissionNames = permissions.map((p) => p.permission_id?.name);
+
+    return res.status(200).json({ message: 'Welcome Aboard', data: { roles: roleNames, permissions: permissionNames } });
+  } catch (error) { log(error); }
+}
+
 const functions: HandlerMap = {
   login: login,
   register: register,
   reset_password:reset_password,
   generate_otp:generate_otp,
   register_or_login:register_or_login,
+  check_user_access:check_user_access,
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
