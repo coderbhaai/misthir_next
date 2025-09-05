@@ -446,7 +446,6 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
     if (!submenu) return res.status(404).json({ message: 'Checked Permissions - Menu MIssing', data: false });
 
     const hasPermission = await UserPermission.findOne({ user_id: user_id, permission_id: submenu.permission_id });
-    console.log("hasPermission", hasPermission)
     if (!hasPermission) { return res.status(403).json({ message: 'Permission Denied', data: false }); }
 
     return res.status(200).json({ message: 'Permission To Enter', data: true });
@@ -540,8 +539,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
-
-    console.log( "fnName", fnName) 
 
     if (!fnName || typeof fnName !== 'string') {
       return res.status(400).json({ message: 'Missing or invalid function name' });

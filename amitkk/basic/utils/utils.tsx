@@ -279,7 +279,10 @@ export async function checkPermission(slug: string | string[]): Promise<boolean>
   } catch (err) { clo(err); return false; }
 }
 
-
+export const arraysEqual = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false;
+  return a.every((val, i) => val === b[i]);
+};
 
 
 export default function test(){ <></>}

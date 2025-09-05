@@ -8,21 +8,7 @@ import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
 import { TableRowPropsBase, Iconify } from '@amitkk/basic/utils/utils';
-import { MediaProps } from '@amitkk/basic/types/page';
-import UserRow from '@amitkk/basic/static/UserRow';
-import { UserRowProps } from '@amitkk/blog/types/blog';
-
-export type DataProps = {
-  function: string;
-  alt: string;
-  path?: string;
-  createdAt?: string | Date;
-  updatedAt?: Date;
-  media_id?: string | Types.ObjectId | MediaProps;
-  user_id?: string | Types.ObjectId | null;
-  _id: string | Types.ObjectId;
-  selectedDataId: string | number | object | null;
-};
+import { DataProps } from '@amitkk/basic/components/media/admin-media-table';
 
 type UserTableRowProps = TableRowPropsBase & {
   row: DataProps;
@@ -38,14 +24,9 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
         <TableCell><img src={typeof row.media_id === 'object' && 'path' in row.media_id? row.media_id.path: row.path || '/placeholder.jpg'} style={{ width: "48px", height: "48px", objectFit: "cover" }} /></TableCell>
-
-        <TableCell><UserRow row={row.user_id as unknown as UserRowProps}/></TableCell>
-        <TableCell>{row.alt}</TableCell>
         <TableCell>{row.path}</TableCell>
         <TableCell>{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
-        <TableCell align='right'>
-          <IconButton id={row._id.toString()} onClick={(e) => handlePopover(e)}><Iconify icon='Edit'/></IconButton>
-        </TableCell>
+        {/* <TableCell align='right'><IconButton id={row._id.toString()} onClick={(e) => handlePopover(e)}><Iconify icon='Edit'/></IconButton></TableCell> */}
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

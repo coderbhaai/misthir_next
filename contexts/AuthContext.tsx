@@ -59,8 +59,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     Cookies.set('authToken', token, { expires: 7, path: '/' });
     setIsLoggedIn(true);
     setUser(userData);
-
-    console.log('userData', userData)
     loginListeners.forEach(cb => cb());
   };
 

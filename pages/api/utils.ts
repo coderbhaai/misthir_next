@@ -1,4 +1,4 @@
-import mongoose, { Model, PopulateOptions } from "mongoose";
+import mongoose, { FilterQuery, Model, PopulateOptions } from "mongoose";
 import { NextApiRequest } from "next";
 import jwt from "jsonwebtoken";
 import Page from "lib/models/basic/Page";
@@ -26,7 +26,6 @@ export async function pivotEntry(
   try {
     const parentObjectId = new mongoose.Types.ObjectId(parentId);
     await model.deleteMany({ [parentKey]: parentObjectId });
-
 
     if (Array.isArray(childIds) && childIds.length > 0) {
       const entries = childIds?.map((childId) => ({
@@ -167,28 +166,32 @@ export const generateSitemap =async () => {
   } catch (err) { log(err); }
 };
 
-interface QueryOptions {
-  filter?: Record<string, any>;
+type Projection = string | string[] | Record<string, 0 | 1 | boolean>;
+type Populate = PopulateOptions | PopulateOptions[] | string | string[];
+
+interface QueryOptions<TDoc> {
+  filter?: FilterQuery<TDoc>;
   sort?: Record<string, 1 | -1>;
-  populate?: (string | PopulateOptions)[];
-  select?: string;
+  populate?: Populate;
+  select?: Projection;
+  lean?: boolean; // default true
 }
 
-export async function fetchData<T>(
-  model: Model<T>,
-  { filter = {}, sort, populate = [], select }: QueryOptions = {}
-) {
-  let query = model.find(filter);
+export async function fetchData<TDoc, TResult = TDoc>(
+  model: Model<TDoc>,
+  { filter = {} as FilterQuery<TDoc>, sort, populate, select, lean = true }: QueryOptions<TDoc> = {}
+): Promise<TResult[]> {
+  let q = model.find(filter);
 
-  if (populate.length > 0) {
-    query = query.populate(populate);
+  if (populate) q = q.populate(populate as any);
+  if (select)   q = q.select(select as any);
+  q = q.sort(sort ?? { updatedAt: -1, createdAt: -1 });
+
+  if (lean) {
+    const res = await q.lean<TResult>().exec();
+    return res as TResult[];
   }
-
-  if (select) {
-    query = query.select(select);
-  }
-
-  query = query.sort(sort ?? { updatedAt: -1, createdAt: -1 });
-
-  return query.exec();
+  
+  const res = await q.exec();
+  return res as unknown as TResult[];
 }

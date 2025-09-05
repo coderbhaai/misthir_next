@@ -29,7 +29,7 @@ export function AdminProductBrand(){
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, vendor_id };
     const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
 
-    const fetchData = useCallback(async () => {
+    const initData = useCallback(async () => {
         try {
             const res_1 = await apiRequest("get", `product/basic?function=get_all_product_brands&vendor_id=${vendor_id}`);
             setData(res_1?.data ?? []);
@@ -37,7 +37,7 @@ export function AdminProductBrand(){
         } catch (error) { clo( error ); }
     }, []);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+   useEffect(() => { if (!vendor_id) return; initData(); }, [vendor_id]);
 
     useEffect(() => {
         if (updatedDataId) {

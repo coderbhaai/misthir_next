@@ -4,8 +4,8 @@ import connectDB from 'pages/lib/mongodb';
 import { IncomingForm, Fields, Files } from 'formidable';
 import fs from 'fs';
 import path from 'path';
-import { fetchData, generateSitemap, log } from '../utils';
-import { uploadMedia } from '../basic/media';
+import { fetchData, generateSitemap, log, pivotEntry } from '../utils';
+import { syncMediaHub, uploadMedia } from '../basic/media';
 import Productmeta from 'lib/models/product/Productmeta';
 import { slugify } from '@amitkk/basic/utils/utils';
 import { upsertMeta } from '../basic/meta';
@@ -19,7 +19,14 @@ import ProductFeature from 'lib/models/product/ProductFeature';
 import Commission from 'lib/models/product/Commission';
 import BankDetail from 'lib/models/product/BankDetail';
 import Documentation from 'lib/models/product/Documentation';
-import Product from 'lib/models/product/Product';
+import Product, { ProductDocument } from 'lib/models/product/Product';
+import ProductProductmeta from 'lib/models/product/ProductProductmeta';
+import ProductProductFeature from 'lib/models/product/ProductProductFeature';
+import ProductIngridient from 'lib/models/product/ProductIngridient';
+import ProductProductBrand from 'lib/models/product/ProductProductBrand';
+import { Sku, SkuDetail } from 'lib/models/product/Sku';
+import SkuProductFeature from 'lib/models/product/SkuProductFeature';
+import { ProductRawDocument } from 'lib/models/types';
 
 type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
@@ -38,8 +45,33 @@ interface ExtendedRequest extends NextApiRequest {
 
 export async function get_all_products(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const data = await Product.find().populate([ { path: 'media_id' }, { path: 'meta_id' }, { path: 'author_id' }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).exec();
-    return res.status(200).json({ message: 'Fetched all Products', data });
+    const { vendor_id } = req.query;
+    const filter: any = {};
+    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
+      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    }
+
+    const data = await fetchData<ProductDocument>(Product, { filter, sort: { name: 1 }, lean : false,
+      populate: [
+        { path: 'meta_id', select: '_id title description' },
+        { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
+        { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id name url' } },
+        { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
+        { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+        { path: "sku",
+          populate: [
+            { path: "details", model: "SkuDetail" },
+            { path: "flavors", populate: { path: "productFeature_id", model: "ProductFeature", select: "_id module name url" } },
+            { path: "colors", populate: { path: "productFeature_id", model: "ProductFeature", select: "_id module name url" } },
+          ] 
+        },
+      ] 
+    });
+
+    const cleanData = data.map(d => d.toJSON());
+
+    return res.status(200).json({ message: 'Fetched all Products', data:cleanData });
   } catch (error) { return log(error); }
 }
 
@@ -50,42 +82,67 @@ export async function get_single_product(req: NextApiRequest, res: NextApiRespon
     if (!id || !Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid or missing ID' });
     }
+
+    const { vendor_id } = req.query;
+    const filter: any = {};
+
+    filter._id = new mongoose.Types.ObjectId(id);
+    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
+      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    }
+
+    const data = await Product.findOne(filter)
+    .populate([
+      { path: 'meta_id', select: '_id title description' },
+      { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
+      { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+      { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
+      { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
+      { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+      { path: 'sku',
+        populate: [
+          { path: 'details', model: 'SkuDetail' },
+          { path: 'eggless_id', model: 'ProductFeature', select: '_id module name url' },
+          { path: 'sugarfree_id', model: 'ProductFeature', select: '_id module name url' },
+          { path: 'gluttenfree_id', model: 'ProductFeature', select: '_id module name url' },
+          { path: 'flavors',  populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+          { path: 'colors',   populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+        ],
+      },
+    ])
+    .lean(false).exec();
   
-    const data = await Product.findById(id).populate([ { path: 'media_id' }, { path: 'meta_id' }, { path: 'author_id' }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).exec();
-  
-    if (!data) { return res.status(404).json({ message: `Product meta with ID ${id} not found` }); }
+    if (!data) { return res.status(404).json({ message: `Product  with ID ${id} not found` }); }
     return res.status(200).json({ message: 'Fetched Single Product', data });
   }catch (error) { return log(error); }
 };
 
 export async function create_update_product(req: ExtendedRequest, res: NextApiResponse) {
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ message: 'Method Not Allowed' });
-    }
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
 
     const data = req.body;
 
-    if (!data?.name ) {
+    if (!data?.name || !data?.status || !data?.url ) {
       return res.status(400).json({ message: 'Required fields missing' });
     }
 
-    // || !data?.status
-
     const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
-
     const slug = await slugify(data.url, Product, modelId);
-
-    let media_id: string | null = null;
-    if (data.media_id && isValidObjectId(data.media_id)) { media_id = data.media_id; }
-    const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
-    
-    if (file) {
-      media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: data.vendor_id });
-    }    
-
     let meta_id: string | null = null;
-    meta_id = await upsertMeta({ meta_id: data.selected_meta_id ?? null, url: data.url, title: data.title, description: data.description });
+    meta_id = await upsertMeta({
+      meta_id: data?.selected_meta_id ?? null,
+      url: data?.url ?? data?.name,
+      title: data?.title ?? data?.name,
+      description: data?.description ?? data?.name,
+    });
+
+    const mediaArray: string[] = JSON.parse(data.selectedMediaIds || [] );
+    const productMeta: string[] = JSON.parse(data.productMeta || [] );
+    const storage: string[] = JSON.parse(data.storage || [] );
+    const ingridients: string[] = JSON.parse(data.ingridients || [] );
+    const brands: string[] = JSON.parse(data.brands || [] );
+    const skus = JSON.parse(data.skus || []);
 
     if (modelId && isValidObjectId(modelId)) {
       try {
@@ -95,16 +152,30 @@ export async function create_update_product(req: ExtendedRequest, res: NextApiRe
             vendor_id: data.vendor_id,
             name: data.name,
             url: slug,
+            gtin: data.gtin,
             meta_id: meta_id,
             status: data.status,
-            media_id: media_id ?? undefined,
-            author_id: data.author_id ?? undefined,
-            content: data.content,
+            displayOrder: data.displayOrder,
+            adminApproval: data.adminApproval,
+            dietary_type: data.dietary_type,
+            short_desc: data.short_desc,
+            long_desc: data.long_desc,
             updatedAt: new Date(),
           },
           { new: true }
         );
+        
+        await syncMediaHub({ module: data.module, module_id: updated._id, vendor_id: data.vendor_id, mediaArray });
+        await pivotEntry( ProductProductmeta, updated._id, productMeta, 'product_id', 'productmeta_id' );
+        await pivotEntry( ProductProductFeature, updated._id, storage, 'product_id', 'productFeature_id' );
+        await pivotEntry( ProductIngridient, updated._id, ingridients, 'product_id', 'ingridient_id' );
+        await pivotEntry( ProductProductBrand, updated._id, brands, 'product_id', 'productBrand_id' );
 
+        if (Array.isArray(skus)) {
+          for (const skuData of skus) {
+            await upsertSku({ ...skuData, product_id: updated._id });
+          }
+        }
         generateSitemap();
 
         if (updated) {
@@ -116,21 +187,33 @@ export async function create_update_product(req: ExtendedRequest, res: NextApiRe
     }
     
     const newEntry = new Product({
-      vendor_id: data.vendor_id,
-      name: data.name,
-      url: slug,
-      meta_id: meta_id,
-      status: data.status ?? true,
-      media_id: media_id ?? undefined,
-      author_id: data.author_id ?? undefined,
-      content: data.content,
+       vendor_id: data.vendor_id,
+        name: data.name,
+        url: slug,
+        gtin: data.gtin,
+        meta_id: meta_id,
+        status: data.status,
+        displayOrder: data.displayOrder,
+        adminApproval: data.adminApproval,
+        dietary_type: data.dietary_type,
+        short_desc: data.short_desc,
+        long_desc: data.long_desc,
+        createdAt: new Date(),
     });
 
     await newEntry.save();
 
-    const blogMetaIds = JSON.parse(req.body.blogmeta || '[]');
-    // await pivotEntry( BlogBlogmeta, newEntry._id, blogMetaIds, 'blog_id', 'blogmeta_id' );
-
+    await syncMediaHub({ module: data.module, module_id: newEntry._id, vendor_id: data.vendor_id, mediaArray });
+    await pivotEntry( ProductProductmeta, newEntry._id, productMeta, 'product_id', 'productmeta_id' );
+    await pivotEntry( ProductProductFeature, newEntry._id, storage, 'product_id', 'productFeature_id' );
+    await pivotEntry( ProductIngridient, newEntry._id, ingridients, 'product_id', 'ingridient_id' );
+    await pivotEntry( ProductProductBrand, newEntry._id, brands, 'product_id', 'productBrand_id' );
+    
+    if (Array.isArray(skus)) {
+      for (const skuData of skus) {
+        await upsertSku({ ...skuData, product_id: newEntry._id });
+      }
+    }
     generateSitemap();
     
     return res.status(201).json({ message: 'Entry created successfully', data: newEntry });
@@ -144,8 +227,8 @@ export async function get_product_modules(req: NextApiRequest, res: NextApiRespo
     if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
       filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
     }
+    
     const productBrand = await fetchData(ProductBrand, { filter, select: "_id name", sort: { name: 1 } });
-
     const category = await fetchData(Productmeta, { filter: { module: "Category" }, select: "_id name", sort: { name: 1 } });
     const tag = await fetchData(Productmeta, { filter: { module: "Tag" }, select: "_id name", sort: { name: 1 } });
     const productTypes = await fetchData(Productmeta, { filter: { module: "Type" }, select: "_id name", sort: { name: 1 } });
@@ -157,19 +240,86 @@ export async function get_product_modules(req: NextApiRequest, res: NextApiRespo
     const sugar = await fetchData(ProductFeature, { filter: { module: "Sugar Free" }, select: "_id name", sort: { name: 1 } });
     const storage = await fetchData(ProductFeature, { filter: { module: "Storage" }, select: "_id name", sort: { name: 1 } });
 
-
-  // const tag = await Productmeta.find({ module: 'Tag' }).select("_id name").exec();
-  // const productTypes = await Productmeta.find({ module: 'Type' }).select("_id name").exec();
-  // const productBrand = await ProductBrand.find(filter).select("_id name").exec();
-  // const ingridient = await Ingridient.find().select("_id name").exec();
-  // const flavors = await ProductFeature.find({ module: 'Flavor' }).select("_id name").exec();
-  // const colors = await ProductFeature.find({ module: 'Color' }).select("_id name").exec();
-  // const eggless = await ProductFeature.find({ module: 'Eggless' }).select("_id name").exec();
-  // const glutten = await ProductFeature.find({ module: 'Glutten Free' }).select("_id name").exec();
-  // const storage = await ProductFeature.find({ module: 'Storage' }).select("_id name").exec();
-
   return res.status(200).json({ message: 'Fetched all Products', data:{ category, tag, productTypes, productBrand, ingridient, flavors, colors, eggless, glutten, sugar, storage } });
   } catch (error) { return log(error); }
+}
+
+interface UpsertSkuInput {
+  _id?: string;
+  product_id: string | Types.ObjectId;
+  name: string;
+  price: number;
+  inventory: number;
+  status?: boolean;
+  displayOrder?: number;
+  adminApproval?: boolean;
+  eggless_id?: string;
+  sugarfree_id?: string;
+  gluttenfree_id?: string;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
+  preparationTime?: number;
+  flavors?: string[];
+  colors?: string[];
+}
+
+export async function upsertSku(data: UpsertSkuInput) {
+  try{
+    let sku;
+  
+    if (data._id) {
+      sku = await Sku.findByIdAndUpdate(
+        data._id,
+        {
+          product_id: data.product_id,
+          name: data.name,
+          price: data.price,
+          inventory: data.inventory,
+          status: data.status ?? true,
+          displayOrder: data.displayOrder ?? 0,
+          adminApproval: data.adminApproval ?? true,
+          eggless_id: data.eggless_id,
+          sugarfree_id: data.sugarfree_id,
+          gluttenfree_id: data.gluttenfree_id,
+          updatedAt: new Date(),
+        },{ new: true, upsert: true }
+      );
+    } else {
+      sku = new Sku({
+        product_id: data.product_id,
+        name: data.name,
+        price: data.price,
+        inventory: data.inventory,
+        status: data.status ?? true,
+        displayOrder: data.displayOrder ?? 0,
+        adminApproval: data.adminApproval ?? true,
+        eggless_id: data.eggless_id,
+        sugarfree_id: data.sugarfree_id,
+        gluttenfree_id: data.gluttenfree_id,
+      });
+      await sku.save();
+    }
+    
+    await SkuDetail.findOneAndUpdate(
+      { sku_id: sku._id },
+      {
+        weight: data.weight ?? 0,
+        length: data.length ?? 0,
+        width: data.width ?? 0,
+        height: data.height ?? 0,
+        preparationTime: data.preparationTime ?? 0,
+        updatedAt: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+  
+    const featureIds = [ ...(data.flavors || []), ...(data.colors || []) ];
+    await pivotEntry( SkuProductFeature, sku._id, featureIds, "sku_id", "productFeature_id" );
+  
+    return sku;
+  }catch (error) { log(error); }
 }
 
 const functions: HandlerMap = {

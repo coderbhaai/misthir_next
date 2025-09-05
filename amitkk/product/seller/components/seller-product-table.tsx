@@ -11,37 +11,18 @@ import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import Link from 'next/link';
 import DateFormat from '@amitkk/basic/components/static/date-format';
-import { IconButton } from '@mui/material';
+import { Box, Card, CardContent, CardHeader, Grid, IconButton, Typography } from '@mui/material';
 import { MediaProps, MetaTableProps } from '@amitkk/basic/types/page';
+import { ProductProps } from '@amitkk/product/types/product';
+import { GenericPills } from '@amitkk/basic/components/static/generic-pills';
+import { ProductRawDocument } from 'lib/models/types';
+import { MediaCards } from '@amitkk/basic/components/static/MediaCards';
+import StatusSwitch from '@amitkk/basic/components/static/status-switch';
+import { MetaRow } from '@amitkk/basic/components/static/MetaRow';
 
-export type DataProps = {
-  _id: string | Types.ObjectId;
-  name: string;
-  url: string;
-  status: boolean;
-  content: string;
-  meta_id: MetaTableProps;
-  author_id: {
-    _id: string | Types.ObjectId;
-    name: string;
-  };
-  metas?: BlogmetaItem[];
-  media_id: string | Types.ObjectId | MediaProps;
-  createdAt: string | Date;
-  updatedAt: Date;
+export interface DataProps extends ProductRawDocument {
   selectedDataId: string | number | object | null;
-};
-
-export type BlogmetaItem = {
-  _id: string;
-  blog_id: string;
-  blogmeta_id: {
-    _id: string;
-    type: 'category' | 'tag';
-    name: string;
-    url: string;
-  };
-};
+}
 
 type UserTableRowProps = TableRowPropsBase & {
   row: DataProps;
@@ -59,45 +40,73 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
   }, []);
 
   return (
-    <>
-      <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
-        { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
-        <TableCell>
-          <Link href={`/${row.url}`} target="_blank">{row.name}<br/>{row.url}</Link>
-        </TableCell>
-        <TableCell><Link href={`/${row.url}`} target="_blank"><MediaImage media={row.media_id as MediaProps}/></Link></TableCell>
-        <TableCell>
-          {row.metas?.some(m => m.blogmeta_id.type === 'category') && (
-            <div>
-              Category:{" "}
-              {row.metas.filter(m => m.blogmeta_id.type === 'category')?.map((m) => (
-                  <Link key={m.blogmeta_id._id} href={m.blogmeta_id.url} style={{ marginRight: '8px' }}>{m.blogmeta_id.name}</Link>
-                ))}
-            </div>
-          )}
-          {row.metas?.some(m => m.blogmeta_id.type === 'tag') && (
-            <div>
-              Tags:{" "}
-              {row.metas.filter(m => m.blogmeta_id.type === 'tag')?.map((m) => (
-                  <Link key={m.blogmeta_id._id} href={m.blogmeta_id.url} style={{ marginRight: '8px' }}>{m.blogmeta_id.name}</Link>
-              ))}
-            </div>
-          )}
-        </TableCell>
-
-        <TableCell>{row.author_id?.name}</TableCell>
-        <TableCell><MetaTableInput meta={row.meta_id} /></TableCell>
-        <TableCell><DateFormat date={row.createdAt} /></TableCell>
-        <TableCell align='right'><IconButton id={row._id.toString()} onClick={handleOpenPopover}><Iconify icon='Edit'/></IconButton></TableCell>
-      </TableRow>
-
-      <Popover open={!!openPopover} anchorEl={openPopover} onClose={handleClosePopover} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>
+    <Grid size={12} key={row._id.toString()}>
+      <Card sx={{ boxShadow: 3, borderRadius: 2, p: 2 }}>
+        <CardHeader
+          title={
+            <Link href={`/${row.url}`} target="_blank">{row.name}</Link>
+          }
+          subheader={row.url}
+          action={
+            <IconButton onClick={handleOpenPopover}>
+              <Iconify icon='Edit'/>
+            </IconButton>
+          }
+        />
+        <Popover open={!!openPopover} anchorEl={openPopover} onClose={handleClosePopover} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>
         <MenuList disablePadding sx={{ p: 0.5, gap: 0.5, width: 140, display: 'flex', flexDirection: 'column', [`& .${menuItemClasses.root}`]: { px: 1, gap: 2, borderRadius: 0.75, [`&.${menuItemClasses.selected}`]: {bgcolor: 'action.selected'} } }}>
-          <MenuItem><Link href={`/admin/add-update-blog/${row._id}`}><Iconify icon='Edit' />Edit</Link></MenuItem>
-          <MenuItem><Link href={`/admin/faqs/Blog/${row._id}`} target="_blank"><Iconify icon='Edit' />FAQs</Link></MenuItem>
-          <MenuItem><Link href={`/admin/testimonials/Blog/${row._id}`} target="_blank"><Iconify icon='Edit' />Testimonial</Link></MenuItem>
+          <MenuItem><Link href={`/admin/seller/add-update-product/${row._id}`}><Iconify icon='Edit' />Edit</Link></MenuItem>
         </MenuList>
       </Popover>
-    </>
+        <CardContent>
+          <Typography variant="subtitle2">{row.dietary_type}</Typography>
+          <Box sx={{ mt: 2, mb: 2 }}>
+            {["Category", "Tag", "Type"].map((module) => (
+              <MetaRow key={module} label={module} items={row.metas?.filter((m) => m.module === module)} basePath="/product-meta"/>
+            ))}
+            <MetaRow label="Ingredients" items={row.ingridients} clickable={false} />
+            <MetaRow label="Brands" items={row.brands} basePath="/product-brand" />
+          </Box>
+          <Box>
+            {/* SKUs Section */}
+            {row.skus?.map((i) => (
+              <Box
+                key={i._id.toString()} mb={2} p={2}
+                border="1px solid #ddd" borderRadius={1}
+                bgcolor="background.paper"
+                sx={{ "&:hover": { backgroundColor: "action.hover" } }}
+              >
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="h6">{i.name}</Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={6}>
+                      <Typography variant="body2"><strong>Price:</strong> ₹{i.price}</Typography>
+                      <Typography variant="body2"><strong>Inventory:</strong> {i.inventory}</Typography>
+                      <Typography variant="body2"><strong>Weight:</strong> {i.details?.weight || 0} units</Typography>
+                    </Grid>
+                    <Grid size={6}>
+                      <Typography variant="body2">
+                        <strong>Dimensions:</strong> {i.details?.length || 0}L × {i.details?.width || 0}W × {i.details?.height || 0}H
+                      </Typography>
+                      <Typography variant="body2"><strong>Prep Time:</strong> {i.details?.preparationTime || 0} mins</Typography>
+                      <Typography variant="body2"><strong>Display Order:</strong> {i.displayOrder || 0}</Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+                <MetaRow label="Flavors" items={i.flavors} basePath="/flavor"/>
+                <MetaRow label="Colors" items={i.colors} basePath="/color"/>
+                {!i.status &&
+                  <Typography variant="caption" color="error">Inactive</Typography>
+                }
+              </Box>
+            ))}
+          </Box>
+          <MediaCards items={row.medias} height={50} width={60} />
+          <Box mt={2}>
+            <StatusSwitch id={row._id.toString()} status={row.status} modelName="Product" />
+          </Box>
+        </CardContent>
+      </Card>
+    </Grid>
   );
 }

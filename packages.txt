@@ -14,6 +14,8 @@ node-fetch
 dayjs
 jwt-decode
 react-countup
+@mui/lab
+
 
 
 
@@ -42,3 +44,5 @@ typescript
 @types/nodemailer
 @types/date-fns
 cross-env
+ts-node-dev
+concurrently

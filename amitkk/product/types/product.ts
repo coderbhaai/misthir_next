@@ -70,7 +70,7 @@ export interface ProductProps {
     url: string;
     gtin?: string;
     adminApproval: boolean;
-    status: boolean;
+    status: boolean | null;
     displayOrder?: number;
     short_desc?: string;
     long_desc?: string;
@@ -79,4 +79,25 @@ export interface ProductProps {
     _id: string | Types.ObjectId;
     createdAt: string | Date;
     updatedAt: Date;
+}
+
+export interface SkuProps {
+    _id?: string | Types.ObjectId | null;
+    product_id: string | Types.ObjectId;
+    name: string;
+    price: number | string;
+    inventory: number | string;
+    status: boolean;
+    displayOrder?: number;
+    adminApproval?: boolean;
+    eggless_id: string;
+    sugarfree_id: string;
+    gluttenfree_id: string;
+    weight?: number;
+    length?: number;
+    width?: number;
+    height?: number;
+    preparationTime?: number;
+    flavors: string[];
+    colors: string[];
 }

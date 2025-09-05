@@ -10,6 +10,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import connectDB from 'pages/lib/mongodb';
 import { sanitizeText } from '@amitkk/basic/utils/utils';
 import { uploadMediaToS3 } from 'services/uploadMediaToS3';
+import MediaHub from 'lib/models/basic/MediaHub';
 
 const MEDIA_PATH = path.join(process.cwd(), 'public', 'storage');
 
@@ -77,8 +78,8 @@ export const deleteOldImage = async ( mediaModel: Model<any>, media_id: string |
 
 export const uploadMedia = async ({ file, name, pathType, media_id = null, user_id = null }: UploadMediaParams): Promise<string | null> => {
   try {
-    // return await uploadMediaToS3({ file, name, pathType, media_id });
-    return uploadMediaToLocal({ file, name, pathType, media_id });
+    // return await uploadMediaToS3({ file, name, pathType, media_id, user_id });
+    return uploadMediaToLocal({ file, name, pathType, media_id, user_id });
   } catch (error) { log(error); return null; } 
 };
 
@@ -112,7 +113,7 @@ export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null
     if (file && media_id && isValidObjectId(media_id)) {
       entry = await Media.findByIdAndUpdate(
         media_id,
-        { media: filename, path: storagePath },
+        { media: filename, path: storagePath, user_id : user_id },
         { new: true }
       );
     } else {
@@ -140,11 +141,15 @@ interface ExtendedRequest extends NextApiRequest {
 
 export async function get_all_media(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // const data = await Media.find().populate('media_id').exec();
-    // return res.status(200).json({ message: 'Fetched all Authors', data });
+    const { vendor_id, limit } = req.query;
+    const filter: any = {};
+    if (vendor_id && vendor_id !== "null" && mongoose.isValidObjectId(vendor_id)) {
+      filter.user_id = new mongoose.Types.ObjectId(vendor_id as string);
+    }
+    const parsedLimit = typeof limit === "string" && !isNaN(Number(limit)) ? Math.min(Number(limit), 200) : 50;
 
-    const data = await Media.find().exec();
-    return res.status(200).json({ message: 'Fetched all Authors', data })
+    const data = await Media.find(filter).populate('user_id').limit(parsedLimit).exec();
+    return res.status(200).json({ message: 'Fetched all Media', data })
 
   } catch (error) { return log(error); }
 }
@@ -157,7 +162,7 @@ export async function get_single_media(req: NextApiRequest, res: NextApiResponse
       return res.status(400).json({ message: 'Invalid or missing ID' });
     }
     
-    const data = await Media.findById(id).exec();
+    const data = await Media.findById(id).populate('user_id').exec();
     if(!data) { return res.status(404).json({message:`Media meta with ID ${id} not found`}); }
     
     return res.status(200).json({ message: '✅ Single Entry Fetched', data });
@@ -165,8 +170,7 @@ export async function get_single_media(req: NextApiRequest, res: NextApiResponse
   }catch (error) { return log(error); }
 };
 
-export async function create_update_media(req: ExtendedRequest, res: NextApiResponse) {
- 
+export async function create_update_media(req: ExtendedRequest, res: NextApiResponse) { 
   try {
     if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
 
@@ -195,10 +199,71 @@ export async function create_update_media(req: ExtendedRequest, res: NextApiResp
   } catch (error) { return log(error); }
 }
 
+export async function create_update_media_library(req: ExtendedRequest, res: NextApiResponse) { 
+  try {
+    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
+
+    const data = req.body;
+    const files = Array.isArray(req.files?.["images[]"]) ? req.files?.["images[]"] : req.files?.image ? [req.files.image] : [];
+    if (!files.length) { return res.status(400).json({ message: "No files uploaded" }); }
+
+    const results: any[] = [];
+
+    for (const file of files) {
+      const media_id = data._id && isValidObjectId(data._id) ? data._id : null;
+      const uploaded = await uploadMedia({ file, name: 'Image', pathType: data.module, media_id, user_id: data.user_id });
+      results.push(uploaded);
+    }
+
+    return res.status(201).json({ message: "✅ Files uploaded successfully", data: results });
+  } catch (error) { log(error); return res.status(500).json({ message: "Server error", error });}
+}
+
+export async function get_selected_media(req: ExtendedRequest, res: NextApiResponse) { 
+  try {
+    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
+    let { ids } = req.body;
+    
+    if (typeof ids === 'string') {
+      ids = [ids];
+    }
+
+    if (!Array.isArray(ids)) { return res.status(400).json({ message: "IDs must be provided as an array" }); }
+
+    const data = await Media.find({ _id: { $in: ids } }).populate('user_id').exec();
+
+    if(!data) { return res.status(404).json({message:`Media meta with ID ${ids} not found`}); }
+
+    return res.status(201).json({ message: "✅ Files uploaded successfully", data });
+  } catch (error) { log(error); return res.status(500).json({ message: "Server error", error });}
+}
+
+interface SyncMediaHubOptions {
+  module: "Product" | "Blog" | "Destination" | "Page";
+  module_id: Types.ObjectId | string;
+  vendor_id: Types.ObjectId | string;
+  mediaArray: string[];
+}
+
+export async function syncMediaHub({ module, module_id, vendor_id, mediaArray }: SyncMediaHubOptions) {
+  if (!Array.isArray(mediaArray)) { throw new Error("mediaArray must be an array"); }
+
+  for (const [index, i] of mediaArray.entries()) {
+    await MediaHub.findOneAndUpdate({ module, module_id, vendor_id, media_id: i },
+      { $setOnInsert: { primary: index === 0, status: true, displayOrder: index, }, },
+      { upsert: true, new: true }
+    );
+  }
+
+  await MediaHub.deleteMany({ module, module_id, vendor_id, media_id: { $nin: mediaArray } });
+}
+
 const functions: HandlerMap = {
   get_all_media: get_all_media,
   get_single_media: get_single_media,
   create_update_media: create_update_media,
+  create_update_media_library: create_update_media_library,
+  get_selected_media: get_selected_media,
 };
 
 const tmpDir = path.join(process.cwd(), 'tmp');

@@ -11,8 +11,9 @@ import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import Link from 'next/link';
 import DateFormat from '@amitkk/basic/components/static/date-format';
-import { IconButton } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import { MediaProps, MetaTableProps } from '@amitkk/basic/types/page';
+import { GenericPills } from '@amitkk/basic/components/static/generic-pills';
 
 export type DataProps = {
   _id: string | Types.ObjectId;

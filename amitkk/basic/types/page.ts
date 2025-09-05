@@ -90,3 +90,10 @@ export type FaqProps = {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface ProductMetaRef {
+  _id: Types.ObjectId | string;
+  module: string;
+  name: string;
+  url?: string;
+}

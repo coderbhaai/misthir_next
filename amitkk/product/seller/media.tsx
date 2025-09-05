@@ -3,10 +3,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
-import DataModal from "@amitkk/basic/components/media/media-modal";
-import { AdminDataTable, DataProps } from "@amitkk/basic/components/media/admin-media-table";
+import DataModal from "@amitkk/product/seller/components/seller-media-modal";
+import { AdminDataTable } from "@amitkk/product/seller/components/seller-media-table";
+import { useVendorId } from "hooks/useVendorId";
+import { DataProps } from '@amitkk/basic/components/media/admin-media-table';
 
-export function AdminMedia(){
+export function SellerMedia(){
+    const vendor_id = useVendorId();
     const showCheckBox = false;
     const table = useTable();
     const [open, setOpen] = useState(false);
@@ -29,12 +32,13 @@ export function AdminMedia(){
 
     const initData = useCallback(async () => {
         try {
-            const res = await apiRequest("get", "basic/media?function=get_all_media");
-            setData(res?.data ?? []);
+            const res_1 = await apiRequest("get", `basic/media?function=get_all_media&vendor_id=${vendor_id}`);
+            setData(res_1?.data ?? []);
+
         } catch (error) { clo( error ); }
     }, []);
 
-    useEffect(() => { initData(); }, [initData]);
+   useEffect(() => { if (!vendor_id) return; initData(); }, [vendor_id]);
 
     useEffect(() => {
         if (updatedDataId) {
@@ -68,8 +72,6 @@ export function AdminMedia(){
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
                     { id: "media", label: "Media" },
-                    { id: "user", label: "Vendor" },
-                    { id: "alt", label: "Alt" },
                     { id: "path", label: "Path" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
@@ -84,4 +86,4 @@ export function AdminMedia(){
     )
 }
 
-export default withAuth(AdminMedia);
+export default withAuth(SellerMedia);

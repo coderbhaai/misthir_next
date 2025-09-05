@@ -29,8 +29,20 @@ const skuSchema = new Schema<SkuDocument>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-skuSchema.virtual('flavors', { ref: 'SkuProductFeature', localField: '_id', foreignField: 'sku_id', justOne: false });
-skuSchema.virtual('colors', { ref: 'SkuProductFeature', localField: '_id', foreignField: 'sku_id', justOne: false });
+skuSchema.virtual("flavors", {
+  ref: "SkuProductFeature",
+  localField: "_id",
+  foreignField: "sku_id",
+  justOne: false,
+});
+
+skuSchema.virtual("colors", {
+  ref: "SkuProductFeature",
+  localField: "_id",
+  foreignField: "sku_id",
+  justOne: false,
+});
+skuSchema.virtual("details", { ref: "SkuDetail", localField: "_id", foreignField: "sku_id", justOne: true });
 
 export const Sku = models.Sku || model<SkuDocument>("Sku", skuSchema);
 

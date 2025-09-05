@@ -38,19 +38,23 @@ import ProductProductSpecification from "./product/ProductProductSpecification";
 import { Sku, SkuDetail } from "./product/Sku";
 import SkuProductFeature from "./product/SkuProductFeature";
 import Vendor from "./product/Vendor";
+import mongoose from "mongoose";
 
-export default{
-  Blog, Author, Blogmeta, BlogBlogmeta,
-  CommentModel, Faq, Testimonial, Media, Page, PageDetail,
-  User, Otp, SpatieRole, SpatiePermission, RolePermission, UserRole, UserPermission, SpatieMenu, SpatieSubmenu, MenuSubmenu,
-  BankDetail, Commission, Documentation, Ingridient, Product, ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, Sku, SkuDetail, SkuProductFeature, Vendor, 
+const models = {
+  ...Blog, ...Author, ...Blogmeta, ...BlogBlogmeta,
+  ...CommentModel, ...Faq, ...Testimonial, ...Media, ...Page, ...PageDetail,
+  ...User, ...Otp, ...SpatieRole, ...SpatiePermission, ...RolePermission, ...UserRole, ...UserPermission, ...SpatieMenu, ...SpatieSubmenu, ...MenuSubmenu,
+  ...BankDetail, ...Commission, ...Documentation, ...Ingridient, ...Product, ...ProductBrand, ...ProductFeature, ...ProductIngridient, ...Productmeta, ...ProductSpecification, ...ProductProductBrand, ...ProductProductFeature, ...ProductProductmeta, ...ProductProductSpecification, ...Sku, ...SkuDetail, ...SkuProductFeature, ...Vendor, 
 };
 
-if (process.env.NODE_ENV !== "production") {
-  (global as any).mongooseModels = {
-    Blog, Author, Blogmeta, BlogBlogmeta,
-    CommentModel, Faq, Testimonial, Media, Page, PageDetail,
-    User, Otp, SpatieRole, SpatiePermission, RolePermission, UserRole, UserPermission, SpatieMenu, SpatieSubmenu, MenuSubmenu,
-    BankDetail, Commission, Documentation, Ingridient, Product, ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, Sku, SkuDetail, SkuProductFeature, Vendor, 
-  };
+
+if (process.env.MODE !== "production") {
+  (global as any).mongooseModels = (global as any).mongooseModels || {};
+  
+  Object.entries(models).forEach(([name, model]) => {
+    if (mongoose.models[name]) delete mongoose.models[name];
+    (global as any).mongooseModels[name] = model;
+  });
 }
+
+export default models;

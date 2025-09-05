@@ -3,26 +3,28 @@ import Box from '@mui/material/Box';
 import {SelectChangeEvent} from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import type {DataProps} from './admin-media-table';
+import { DataProps } from '@amitkk/basic/components/media/admin-media-table';
 import { useState } from 'react';
 import ImageUpload from '@amitkk/basic/components/static/file-input';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import CustomModal from '@amitkk/basic/static/CustomModal';
 import { TableDataFormProps, apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
 import { MediaProps } from '@amitkk/basic/types/page';
+import { useVendorId } from 'hooks/useVendorId';
 
 type DataFormProps = TableDataFormProps & {
   onUpdate: (updatedData: DataProps) => void;
 };
 
 export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
+  const vendor_id = useVendorId();
   const initialFormData: DataProps = {
     function : 'create_update_media',
-    alt: '',
+    alt: 'Image',
     createdAt: new Date(),
     updatedAt: new Date(),
     _id: '',
-    user_id: '',
+    user_id: vendor_id,
     selectedDataId,
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
@@ -37,11 +39,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;
-  
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: name === "status" ? value === "true" : value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
   };
 
   React.useEffect(() => {
