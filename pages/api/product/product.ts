@@ -92,25 +92,24 @@ export async function get_single_product(req: NextApiRequest, res: NextApiRespon
     }
 
     const data = await Product.findOne(filter)
-    .populate([
-      { path: 'meta_id', select: '_id title description' },
-      { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
-      { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
-      { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
-      { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
-      { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
-      { path: 'sku',
-        populate: [
-          { path: 'details', model: 'SkuDetail' },
-          { path: 'eggless_id', model: 'ProductFeature', select: '_id module name url' },
-          { path: 'sugarfree_id', model: 'ProductFeature', select: '_id module name url' },
-          { path: 'gluttenfree_id', model: 'ProductFeature', select: '_id module name url' },
-          { path: 'flavors',  populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
-          { path: 'colors',   populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
-        ],
-      },
-    ])
-    .lean(false).exec();
+      .populate([
+        { path: 'meta_id', select: '_id title description' },
+        { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
+        { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+        { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
+        { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+        { path: 'sku',
+          populate: [
+            { path: 'details', model: 'SkuDetail' },
+            { path: 'eggless_id', model: 'ProductFeature', select: '_id module name url' },
+            { path: 'sugarfree_id', model: 'ProductFeature', select: '_id module name url' },
+            { path: 'gluttenfree_id', model: 'ProductFeature', select: '_id module name url' },
+            { path: 'flavors',  populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+            { path: 'colors',   populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+          ],
+        },
+      ]).lean(false).exec();
   
     if (!data) { return res.status(404).json({ message: `Product  with ID ${id} not found` }); }
     return res.status(200).json({ message: 'Fetched Single Product', data });
@@ -322,12 +321,35 @@ export async function upsertSku(data: UpsertSkuInput) {
   }catch (error) { log(error); }
 }
 
+export async function get_products(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { vendor_id } = req.query;
+    const filter: any = {};
+    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
+      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    }
+
+    const data = await fetchData<ProductDocument>(Product, { filter, sort: { name: 1 }, lean : false,
+      populate: [
+        { path: 'meta_id', select: '_id title description' },
+        { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+      ] 
+    });
+
+    const cleanData = data.map(d => d.toJSON());
+
+    return res.status(200).json({ message: 'Fetched all Products', data:cleanData });
+  } catch (error) { return log(error); }
+}
+
 const functions: HandlerMap = {
   get_all_products: get_all_products,
   get_single_product: get_single_product,
   create_update_product: create_update_product,
 
   get_product_modules: get_product_modules,
+  get_products: get_products,
 };
 
 const tmpDir = path.join(process.cwd(), 'tmp');
@@ -375,6 +397,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
     }
+
+    console.log("fnName", fnName)
 
     if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }    
 

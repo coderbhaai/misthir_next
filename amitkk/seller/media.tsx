@@ -1,15 +1,14 @@
 "use client"
-
 import { useState, useEffect, useCallback } from "react";
-import DataModal from "@amitkk/product/seller/components/seller-brand-modal";
-import { AdminDataTable } from "@amitkk/product/seller/components/seller-product-brand-table";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
+import DataModal from "amitkk/seller/components/seller-media-modal";
+import { AdminDataTable } from "amitkk/seller/components/seller-media-table";
 import { useVendorId } from "hooks/useVendorId";
-import { DataProps } from "../admin/admin-product-brand-table";
+import { DataProps } from '@amitkk/basic/components/media/admin-media-table';
 
-export function AdminProductBrand(){
+export function SellerMedia(){
     const vendor_id = useVendorId();
     const showCheckBox = false;
     const table = useTable();
@@ -24,14 +23,16 @@ export function AdminProductBrand(){
     const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
     const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
     const [filterData, setFilterData] = useState("");
+    const [permissions, setPermissions] = useState<{_id: string; name: string}[]>([]);
+
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, vendor_id };
+    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["path"] );
+    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, permissions };
     const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
 
     const initData = useCallback(async () => {
         try {
-            const res_1 = await apiRequest("get", `product/basic?function=get_all_product_brands&vendor_id=${vendor_id}`);
+            const res_1 = await apiRequest("get", `basic/media?function=get_all_media&vendor_id=${vendor_id}`);
             setData(res_1?.data ?? []);
 
         } catch (error) { clo( error ); }
@@ -43,10 +44,10 @@ export function AdminProductBrand(){
         if (updatedDataId) {
             const fetchData = async () => {
                 try {
-                    const res = await apiRequest("get", `product/basic?function=get_single_product_brand&id=${updatedDataId}`);
+                    const res = await apiRequest("get", `basic/media?function=get_single_media&id=${updatedDataId}`);
                     const data = res?.data;
                     if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
-
+    
                     setData((prevData = []) => {
                         const exists = prevData.some(i => String(i._id) === String(data._id));
     
@@ -58,7 +59,6 @@ export function AdminProductBrand(){
                     });
 
                     handleClose();
-
                 } catch (error) { clo( error ); }
             };
             fetchData();
@@ -67,13 +67,12 @@ export function AdminProductBrand(){
     
     return(
         <AdminTableLayout<DataProps>
-            title="Brands" addButtonLabel="New Brand" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
+            title="Media" addButtonLabel="New Media" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
-                    { id: "name", label: "Name" },
                     { id: "media", label: "Media" },
-                    { id: "status", label: "Status" },
+                    { id: "path", label: "Path" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
                 ]}/>
@@ -87,4 +86,4 @@ export function AdminProductBrand(){
     )
 }
 
-export default withAuth(AdminProductBrand);
+export default withAuth(SellerMedia);

@@ -20,8 +20,7 @@ interface CurrentUser {
 
 const navItems = [
   { label: 'Home', to: '/' },
-  { label: 'Services', to: '/services' },
-  { label: 'Clients', to: '/client' },
+  { label: 'Shop', to: '/shop' },
 ];
 
 
