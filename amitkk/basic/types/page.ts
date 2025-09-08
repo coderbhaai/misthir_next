@@ -91,6 +91,16 @@ export type FaqProps = {
   updatedAt: Date;
 }
 
+export type TestimonialProps = {
+  _id: string | Types.ObjectId;
+  question: string;
+  answer: string;
+  status: boolean;
+  displayOrder?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ProductMetaRef {
   _id: Types.ObjectId | string;
   module: string;

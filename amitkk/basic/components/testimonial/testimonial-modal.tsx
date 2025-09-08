@@ -65,10 +65,17 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
             if ( formData.module === "Blog") {
               route       = `blog/blogs?function=get_blogs_module`;
             }
+
+            if ( formData.module === "Page") {
+              route       = `basic/page?function=get_page_module`;
+            }
+
+            if ( formData.module === "Product") {
+              route       = `product/product?function=get_product_module`;
+            }
   
             const res = await apiRequest("get", route);
-            setModuleOptions(res?.data ?? []);
-  
+            setModuleOptions(res?.data ?? []);  
           } catch (error) { clo( error ); }
         };
         fetchData();
@@ -106,8 +113,6 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
             _id: res?.data?._id || '',
             selectedDataId: res?.data?._id || '',
           });
-
-
 
         } catch (error) { clo( error ); }
       };
@@ -149,7 +154,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const title = selectedDataId ? 'Add Testimonial' : 'Update Testimonial';
+  const title = !selectedDataId ? 'Add Testimonial' : 'Update Testimonial';
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>

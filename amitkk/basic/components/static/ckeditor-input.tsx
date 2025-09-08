@@ -4,6 +4,7 @@ import { Typography } from "@mui/material";
 import { Editor } from "@tinymce/tinymce-react";
 
 interface CkEditorProps {
+  label: string;
   name: string;
   value?: string;
   required?: boolean;
@@ -11,9 +12,11 @@ interface CkEditorProps {
   onChange: (name: string, value: string) => void;
 }
 
-const CkEditor: React.FC<CkEditorProps> = ({ name, value, error, onChange }) => {
+const CkEditor: React.FC<CkEditorProps> = ({ label, name, value, error, onChange }) => {
   return (
     <div className="w-full">
+      <Typography variant="h4" flexGrow={1}>{label}</Typography>
+
       {error && <Typography color="error" variant="caption">{error}</Typography>}
       <Editor
         apiKey="j351fapr77gabh0a6m4jirkdoog77h2hafpxext02zwk590q"

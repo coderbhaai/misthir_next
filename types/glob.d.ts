@@ -8,7 +8,7 @@ interface ImportMeta {
 }
 
 interface SingleProductProps {
-  _id: string;
+  _id: Types.ObjectId | string;
   name: string;
   dietary_type:string;
   titleamt?: string;
@@ -17,4 +17,25 @@ interface SingleProductProps {
   url?: string;
   media_id?: MediaProps;
   medias?: MediaProps[];
+}
+
+interface RelatedContent {
+  faq: FaqProps[];
+  testimonials: ITestimonialProps[];
+  blogs: BlogDocument[];
+  products: ProductRawDocument[];
+}
+
+interface BlogProps{
+  _id: Types.ObjectId | string;
+  name: string;
+  url: string;
+  media_id?: Types.ObjectId;
+  author_id?: Types.ObjectId;
+  meta_id?: Types.ObjectId;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  metas?: BlogmetaReference[];
+  blogmetas?: { _id: Types.ObjectId; name: string; url: string }[]; 
 }

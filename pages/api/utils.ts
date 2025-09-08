@@ -9,6 +9,9 @@ import { format } from "date-fns";
 import { isValidObjectId } from "@amitkk/basic/utils/utils";
 import Media from "lib/models/basic/Media";
 import connectDB from "pages/lib/mongodb";
+import Faq from "lib/models/basic/Faq";
+import Testimonial from "lib/models/basic/Testimonial";
+import Product from "lib/models/product/Product";
 
 export const log = (...args: any[]) => {
   if (process.env.MODE !== 'production') {
@@ -181,17 +184,48 @@ export async function fetchData<TDoc, TResult = TDoc>(
   model: Model<TDoc>,
   { filter = {} as FilterQuery<TDoc>, sort, populate, select, lean = true }: QueryOptions<TDoc> = {}
 ): Promise<TResult[]> {
-  let q = model.find(filter);
-
-  if (populate) q = q.populate(populate as any);
-  if (select)   q = q.select(select as any);
-  q = q.sort(sort ?? { updatedAt: -1, createdAt: -1 });
-
-  if (lean) {
-    const res = await q.lean<TResult>().exec();
-    return res as TResult[];
-  }
+  try{
+    let q = model.find(filter);
   
-  const res = await q.exec();
-  return res as unknown as TResult[];
+    if (populate) q = q.populate(populate as any);
+    if (select)   q = q.select(select as any);
+    q = q.sort(sort ?? { updatedAt: -1, createdAt: -1 });
+  
+    if (lean) {
+      const res = await q.lean<TResult>().exec();
+      return res as TResult[];
+    }
+    
+    const res = await q.exec();
+    return res as unknown as TResult[];
+  }catch (err) { log(err); return []; }
+}
+
+interface RelatedContentParams {
+  module: string;
+  moduleId: string;
+  blogId?: string | null;
+  productId?: string | null;
+}
+
+export async function getRelatedContent({ module, moduleId, blogId = null, productId = null }: RelatedContentParams) {
+  try{
+    const [faq, testimonials, blogs, products] = await Promise.all([
+      Faq.find({ module, module_id: moduleId, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      Testimonial.find({ module, module_id: moduleId, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      Blog.find({ status: true, ...(blogId ? { _id: { $ne: blogId } } : {}), }).populate([ { path: 'media_id' }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).limit(10).lean().exec(),
+
+      Product.find({ status: true, ...(productId ? { _id: { $ne: productId } } : {}), })
+        .populate([
+          { path: 'meta_id', select: '_id title description' },
+          { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
+          { path: 'mediaHubs', populate: { path: 'media_id', model: 'Media', select: '_id path alt' }
+          }
+        ]).limit(10).exec(),
+    ]);
+
+    const serializedProducts = products.map(p => p.toJSON()); 
+  
+    return { faq, testimonials, blogs, products:serializedProducts };
+  }catch (err) { log(err); }
 }

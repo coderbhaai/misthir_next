@@ -1,25 +1,15 @@
 import { MUICarousel } from "@amitkk/basic/static/MUICarousel";
-import { apiRequest, clo } from "@amitkk/basic/utils/utils";
-import { SingleBlogItem } from "@amitkk/blog/static/single-blog-item";
-import { SingleBlogProps } from "@amitkk/blog/types/blog";
 import { Container, Typography } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Grid from '@mui/material/Grid';
+import { SingleProductItem } from "./single-product-item";
+import { ProductRawDocument } from "lib/models/types";
 
-export default function SuggestBlogs() {
-  const [blogs, setBlogs] = useState<SingleBlogProps[]>([]);
-    
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {        
-        const res_one = await apiRequest("post", "blog/blogs", { function : 'get_blogs', skip: 0, limit: 5 });
-        setBlogs(res_one?.data ?? []);
-      } catch (err) { clo(err); }
-    };
+export interface ProductFinalProps {
+  products: ProductRawDocument[];
+}
 
-    fetchBlogs();
-  }, []);
-
+export default function SuggestProducts({ products }: ProductFinalProps) {
   const settings = {
     dots: true,
     infinite: true,
@@ -37,20 +27,20 @@ export default function SuggestBlogs() {
     ]
   };
 
-  if (!blogs || blogs.length === 0) return null;
+  if (!products || products.length === 0) return null;
 
   return (
-    <Container>
-      <Typography variant="h3" gutterBottom>Interesting Reads</Typography>
-      {blogs.length < 4 ? (
+    <Grid size={12} sx={{ py: 5 }}>
+      <Typography variant="h3" gutterBottom>Our Products</Typography>
+      {products.length < 4 ? (
         <Grid container spacing={3}>
-          {blogs.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
+          {products.map((i) => ( <SingleProductItem key={i._id.toString()} row={i}/>))}
         </Grid>
       ) : (
         <MUICarousel settings={settings}>
-          {blogs.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
+          {products.map((i) => ( <SingleProductItem key={i._id.toString()} row={i}/>))}
         </MUICarousel>
       )}
-    </Container>
+    </Grid>
   );
 }

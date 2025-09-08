@@ -28,7 +28,6 @@ const DynamicAdminPage = () => {
         }
         setHasAccess(true);
 
-
         if (baseSlug && adminComponentMap[baseSlug]) {
           const PageComponent = await adminComponentMap[baseSlug]();
           setComponent(() => PageComponent.default);

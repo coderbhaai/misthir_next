@@ -43,9 +43,9 @@ export interface SkuProps {
   status: boolean;
   displayOrder?: number;
   adminApproval: boolean;
-  eggless_id?: Types.ObjectId | string;
-  sugarfree_id?: Types.ObjectId | string;
-  gluttenfree_id?: Types.ObjectId | string;
+  eggless_id?: Types.ObjectId | string | ModuleProps;
+  sugarfree_id?: Types.ObjectId | string | ModuleProps;
+  gluttenfree_id?: Types.ObjectId | string | ModuleProps;
   createdAt: Date;
   updatedAt: Date;
   details?: SkuDetailProps | null;

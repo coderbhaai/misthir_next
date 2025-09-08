@@ -3,10 +3,22 @@
         
       <url>
         <loc>http://localhost:3000</loc>
-        <lastmod>2025-09-05T15:59:20+05:30</lastmod>
+        <lastmod>2025-09-08T14:05:58+05:30</lastmod>
         <priority>1</priority>
       </url>
     
         
         
+      <url>
+        <loc>http://localhost:3000/blog-a</loc>
+        <lastmod>2025-09-08T14:05:58+05:30</lastmod>
+        <priority>0.8</priority>
+      </url>
+    
+      <url>
+        <loc>http://localhost:3000/blog-b</loc>
+        <lastmod>2025-09-08T14:05:58+05:30</lastmod>
+        <priority>0.8</priority>
+      </url>
+    
       </urlset>

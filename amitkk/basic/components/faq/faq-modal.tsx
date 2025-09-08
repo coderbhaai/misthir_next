@@ -49,26 +49,30 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
   };
 
   React.useEffect(() => {
-    if (formData.module) {
-      const fetchData = async () => {
-        try {
-          let route = '';
-          
-          if ( formData.module === "Blog") {
-            route       = `blog/blogs?function=get_blogs_module`;
-          }
+    if (!formData.module) { return; }
+    
+    const fetchData = async () => {
+      try {
+        let route = '';
+        
+        if ( formData.module === "Blog") {
+          route       = `blog/blogs?function=get_blogs_module`;
+        }
 
-          if ( formData.module === "Page") {
-            route       = `basic/page?function=get_page_module`;
-          }
+        if ( formData.module === "Page") {
+          route       = `basic/page?function=get_page_module`;
+        }
 
-          const res = await apiRequest("get", route);
-          setModuleOptions(res?.data ?? []);
+        if ( formData.module === "Product") {
+          route       = `product/product?function=get_product_module`;
+        }
 
-        } catch (error) { clo( error ); }
-      };
-      fetchData();
-    }
+        const res = await apiRequest("get", route);
+        setModuleOptions(res?.data ?? []);
+
+      } catch (error) { clo( error ); }
+    };
+    fetchData();
   }, [formData.module]);
 
   const handleSelectChange = (event: SelectChangeEvent<unknown>, child: React.ReactNode) => {
@@ -136,7 +140,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
               <Select labelId="type-simple-select-label" id="type-simple-select" name="module" value={formData.module || ""} onChange={handleSelectChange} >
                 <MenuItem value="Blog">Blog</MenuItem>
                 <MenuItem value="Page">Page</MenuItem>
-                <MenuItem value="Destination">Destination</MenuItem>
+                <MenuItem value="Product">Product</MenuItem>
               </Select>
             </FormControl>
             <FormControl sx={{ width: "100%"}}>

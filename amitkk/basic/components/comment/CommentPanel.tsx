@@ -13,7 +13,7 @@ interface CommentProps {
   createdAt?: string;
 }
 
-export default function CommentPanel({ module, module_id, module_name }: { module: string; module_id?: string; module_name?: string;  }) {
+export default function CommentPanel({ module, module_id, module_name }: { module: string; module_id: string | Types.ObjectId; module_name?: string;  }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [data, setData] = useState<CommentProps[]>([]);
 

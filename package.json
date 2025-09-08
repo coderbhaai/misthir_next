@@ -26,6 +26,7 @@
     "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.15",
+    "dompurify": "^3.2.6",
     "form-data": "^4.0.4",
     "formidable": "^3.5.4",
     "jsonwebtoken": "^9.0.2",

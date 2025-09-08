@@ -1,5 +1,5 @@
 import React from 'react';
-import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Container,} from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, Container, Grid,} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { FaqProps } from '@amitkk/basic/types/page';
 
@@ -11,7 +11,7 @@ export default function FaqPanel({ faq }: FaqFinalProps) {
   if (!faq || faq.length === 0) { return null; }
 
   return (
-    <Box sx={{px:10, py:6}}>
+    <Grid size={12} sx={{ py: 5 }}>
       {faq?.map((i, index) => (
         <Accordion key={index}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -22,6 +22,6 @@ export default function FaqPanel({ faq }: FaqFinalProps) {
             </AccordionDetails>
         </Accordion>
       ))}
-    </Box>
+    </Grid>
   );
 };

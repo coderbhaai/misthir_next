@@ -2,10 +2,12 @@ import { Box, Button, SelectChangeEvent, TextField } from "@mui/material";
 import React, { useCallback, useEffect, useState } from "react";
 import { useForm, apiRequest, hitToastr, clo } from "@amitkk/basic/utils/utils";
 import { CommentProps } from "@amitkk/blog/types/blog";
+import { Types } from "mongoose";
 
-export default function CommentForm({ module, module_id, }: { module: string; module_id?: string; }){
+export default function CommentForm({ module, module_id, }: { module: string; module_id: string | Types.ObjectId; }){
   const { formData, setFormData, handleChange } = useForm<CommentProps>({
     function : 'create_update_comment',
+    _id: '',
     name: '',
     email: '',
     content: '',
@@ -30,12 +32,13 @@ export default function CommentForm({ module, module_id, }: { module: string; mo
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedData: CommentProps = {...formData, module:module, module_id:module_id, function: 'create_update_comment', updatedAt: new Date(), _id: formData.selectedDataId as string };
+    const updatedData: CommentProps = {...formData, module:module, module_id:module_id as string, function: 'create_update_comment', updatedAt: new Date(), _id: formData.selectedDataId as string | Types.ObjectId };
     try {
       const res = await apiRequest("post", `basic/comment`, updatedData);
 
       setFormData({
         function: 'create_update_comment',
+        _id: res?.data?._id,
         name: res?.data?.name,
         email: res?.data?.email,
         content: res?.data?.content,

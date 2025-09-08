@@ -1,14 +1,13 @@
-const fs = require("fs");
+const fs = require("fs"); 
 const path = require("path");
 
 const amitkkRoot = path.resolve(__dirname);
 const outputPath = path.resolve(amitkkRoot, "componentMaps.ts");
 
-// folder configs
+// Folder configurations
 const includeFolders = {
-  admin: [], // handled by default rule (direct subfolders)
-  seller: ["product/seller"],
-  user: ["product/user"],
+  seller: ["seller"],
+  user: ["user"],
 };
 
 function collectFiles(folderPath, baseRoot) {
@@ -32,7 +31,7 @@ function collectFiles(folderPath, baseRoot) {
 function getAdminFiles(root) {
   const result = {};
   const subfolders = fs.readdirSync(root, { withFileTypes: true })
-    .filter(entry => entry.isDirectory());
+    .filter(entry => entry.isDirectory() && entry.name !== 'seller' && entry.name !== 'user');
 
   for (const folder of subfolders) {
     const folderPath = path.join(root, folder.name);
@@ -42,12 +41,11 @@ function getAdminFiles(root) {
   return result;
 }
 
-function getFilesFromFolders(root, folders) {
+
+function getFilesFromFixedFolder(folderName) {
   const result = {};
-  for (const folder of folders) {
-    const specialPath = path.join(root, folder);
-    Object.assign(result, collectFiles(specialPath, root));
-  }
+  const folderPath = path.join(amitkkRoot, folderName);
+  Object.assign(result, collectFiles(folderPath, amitkkRoot));
   return result;
 }
 
@@ -56,27 +54,25 @@ function formatMap(name, files) {
     .map(([key, importPath]) => `  "${key}": () => import("${importPath}"),`)
     .join("\n");
 
-  return `export const ${name}: Record<string, () => Promise<any>> = {
-${entries}
-};\n`;
+  return `export const ${name}: Record<string, () => Promise<any>> = {\n${entries}\n};\n`;
 }
 
 try {
   const adminFiles = getAdminFiles(amitkkRoot);
-  const sellerFiles = getFilesFromFolders(amitkkRoot, includeFolders.seller);
-  const userFiles = getFilesFromFolders(amitkkRoot, includeFolders.user);
+  const sellerFiles = getFilesFromFixedFolder("seller");
+  const userFiles = getFilesFromFixedFolder("user");
 
   const output = `// AUTO-GENERATED FILE. DO NOT EDIT.
 
-${formatMap("adminComponentMap", adminFiles)}
-${formatMap("sellerComponentMap", sellerFiles)}
-${formatMap("userComponentMap", userFiles)}
+  ${formatMap("adminComponentMap", adminFiles)}
+  ${formatMap("sellerComponentMap", sellerFiles)}
+  ${formatMap("userComponentMap", userFiles)}
 
-export default {
-  adminComponentMap,
-  sellerComponentMap,
-  userComponentMap,
-};
+  export default {
+    adminComponentMap,
+    sellerComponentMap,
+    userComponentMap,
+  };
 `;
 
   fs.writeFileSync(outputPath, output);

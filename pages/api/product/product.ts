@@ -4,7 +4,7 @@ import connectDB from 'pages/lib/mongodb';
 import { IncomingForm, Fields, Files } from 'formidable';
 import fs from 'fs';
 import path from 'path';
-import { fetchData, generateSitemap, log, pivotEntry } from '../utils';
+import { fetchData, generateSitemap, getRelatedContent, log, pivotEntry } from '../utils';
 import { syncMediaHub, uploadMedia } from '../basic/media';
 import Productmeta from 'lib/models/product/Productmeta';
 import { slugify } from '@amitkk/basic/utils/utils';
@@ -243,6 +243,27 @@ export async function get_product_modules(req: NextApiRequest, res: NextApiRespo
   } catch (error) { return log(error); }
 }
 
+export async function get_single_product_module(req: NextApiRequest, res: NextApiResponse){
+  const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
+
+  if (!id || !Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid or missing ID' });
+  }
+
+  const entry = await Product.findById(id).exec();
+  if (!entry) { return res.status(404).json({ message: `Product with ID ${id} not found` }); }
+
+  return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
+};
+
+export async function get_product_module(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await Product.find().select("_id name").exec();
+
+      return res.status(200).json({ message: 'Fetched all Product Modules', data });
+    } catch (error) { log(error); }
+  }
+
 interface UpsertSkuInput {
   _id?: string;
   product_id: string | Types.ObjectId;
@@ -343,6 +364,43 @@ export async function get_products(req: NextApiRequest, res: NextApiResponse) {
   } catch (error) { return log(error); }
 }
 
+export async function get_single_product_by_url(req: NextApiRequest, res: NextApiResponse){
+  try{
+    const url = (req.method === 'GET' ? req.query.url : req.body.url) as string;
+    if (!url) { return res.status(400).json({ message: 'Invalid or missing URL' }); }
+
+    const data = await Product.findOne({ url })
+      .populate([
+        { path: 'meta_id', select: '_id title description' },
+        { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
+        { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+        { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
+        { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+        { path: 'sku',
+          populate: [
+            { path: 'details', model: 'SkuDetail' },
+            { path: 'eggless_id', model: 'ProductFeature', select: '_id module name url' },
+            { path: 'sugarfree_id', model: 'ProductFeature', select: '_id module name url' },
+            { path: 'gluttenfree_id', model: 'ProductFeature', select: '_id module name url' },
+            { path: 'flavors',  populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+            { path: 'colors',   populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
+          ],
+        },
+      ]).lean(false).exec() as ProductRawDocument | null;;
+  
+    if (!data) { return res.status(404).json({ message: `Product  with ID ${url} not found` }); }
+
+    const relatedContent = await getRelatedContent({
+      module: "Product",
+      moduleId: data._id.toString(),
+      productId: data._id.toString(),
+      blogId : null
+    });
+    return res.status(200).json({ message: 'Fetched Single Product', data, relatedContent });
+  }catch (error) { return log(error); }
+};
+
 const functions: HandlerMap = {
   get_all_products: get_all_products,
   get_single_product: get_single_product,
@@ -350,6 +408,9 @@ const functions: HandlerMap = {
 
   get_product_modules: get_product_modules,
   get_products: get_products,
+  get_single_product_module: get_single_product_module,
+  get_single_product_by_url: get_single_product_by_url,
+  get_product_module: get_product_module,
 };
 
 const tmpDir = path.join(process.cwd(), 'tmp');

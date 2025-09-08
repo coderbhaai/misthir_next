@@ -211,12 +211,11 @@ export async function status_switch(req: NextApiRequest, res: NextApiResponse) {
 
   export async function get_page_module(req: NextApiRequest, res: NextApiResponse) {
     try {
-      const data = await Page.find().exec();
+      const data = await Page.find().select("_id name").exec();
 
-      return res.status(200).json({ message: 'Fetched all Searches', data });
+      return res.status(200).json({ message: 'Fetched all Page Modules', data });
     } catch (error) { log(error); }
   }
-
 // PAGE
 
 // FAQs

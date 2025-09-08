@@ -111,6 +111,9 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
                     description: res?.data.meta_id?.description || '',
                 });
 
+                setShortDesc(res?.data.short_desc || "");
+                setLongDesc(res?.data.long_desc || "");
+
                 const metas = res?.data?.metas || [];
                 const categoryIds = metas.filter((m: any) => m.module === "Category").map((m: any) => m._id);
                 const tagIds = metas.filter((m: any) => m.module === "Tag").map((m: any) => m._id);
@@ -181,6 +184,14 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
         if( !skus || !skus.length ){ hitToastr('success', 'SKUs are Required'); setOpenSkuModal(true); return; }
         if( !selectedMediaIds || !selectedMediaIds.length ){ hitToastr('success', 'Images are Required'); mediaPanelRef.current?.open(); return; }
 
+        if (hasAnyRole(["Owner", "Admin", "Seo"])) {
+            setShortDescError(!short_desc ? "Short Description is required." : null);
+            if (!short_desc?.trim()) { hitToastr("error", "Short Description is required!"); return; }
+
+            setLongDescError(!long_desc ? "Long Description is required." : null);
+            if (!long_desc?.trim()) { hitToastr("error", "Long Description is required!"); return; }
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -192,8 +203,8 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
             formDataToSend.append("_id", formData._id);
             formDataToSend.append("name", formData.name);
             formDataToSend.append("url", formData.url);
-            formDataToSend.append("short_desc", formData.short_desc as string);
-            formDataToSend.append("long_desc", formData.long_desc as string);
+            formDataToSend.append("short_desc", short_desc as string);
+            formDataToSend.append("long_desc", long_desc as string);
             formDataToSend.append("dietary_type", formData.dietary_type);
             formDataToSend.append("gtin", formData.gtin as string);
             formDataToSend.append("status", String(formData.status));
@@ -227,6 +238,15 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
         setFormData((prevData) => ({ ...prevData, [name]: value === "true" ? true : value === "false" ? false : value })); 
     };
 
+    const [short_desc, setShortDesc] = useState("");
+    const [shortDescError, setShortDescError] = useState<string | null>(null);
+
+    const [long_desc, setLongDesc] = useState("");
+    const [longDescError, setLongDescError] = useState<string | null>(null);
+
+    const handleShortEditorChange = (name: string, value: string) => { setShortDesc(value); };
+    const handleLongEditorChange = (name: string, value: string) => { setLongDesc(value); };
+
     const title = !dataId ? 'Add Product' : 'Update Product';
 
     return(
@@ -258,6 +278,10 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
                                 <MultiSelectDropdown label="Storage" options={storage} selected={selectedStorage} onChange={(e) => handleMultiSelectChange(e, setSelectedStorage)}/>
                                 <MultiSelectDropdown label="Ingridients" options={ingridient} selected={selectedIngridient} onChange={(e) => handleMultiSelectChange(e, setSelectedIngridient)}/>
                             </Box>
+
+                            {hasAnyRole(["Owner", "Admin", "Seo"]) && (
+                                <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
+                            )}
                         </Box>
                     </Grid>
                     <Grid size={3}>
@@ -304,6 +328,13 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
                         </Box>
                     )}
                 </Box>
+
+                {hasAnyRole(["Owner", "Admin", "Seo"]) && (
+                    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2, width: "100%", marginTop: "2em" }}>
+                        <CkEditor label="Short Description" name="shortDesc" value={short_desc} onChange={handleShortEditorChange} required error={shortDescError} />
+                        <CkEditor label="Long Description" name="longDesc" value={long_desc} onChange={handleLongEditorChange} required error={longDescError} />
+                    </Box>
+                )}
 
                 <SubmitButton loading={isSubmitting} title={title}/>
             </form>

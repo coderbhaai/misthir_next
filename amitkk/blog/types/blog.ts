@@ -1,4 +1,5 @@
 import { MediaProps } from "@amitkk/basic/types/page";
+import { Types } from "mongoose";
 
 export interface BlogMetaProps {
   _id: number;
@@ -27,12 +28,10 @@ export interface SingleBlogProps {
     media_id?: MediaProps;
     author_id?: AuthorProps;
     blogmetas?: BlogMetaProps[];
-    createdAt?: string;
-    updatedAt?: string;
 }
 
 export interface CommentProps {
-  _id?: string;
+  _id: string | Types.ObjectId;
   function: string;
   module?: string;
   module_id?: string;

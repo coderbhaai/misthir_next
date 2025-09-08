@@ -33,10 +33,10 @@ export default function AdminFaq({ module = "", module_id = "" }: AdminModulePro
   const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, module, module_id };
 
   const getCleanHref = (url?: string) => {
-        if (!url || url === '/') return '/';
-        const cleanUrl = url.replace(/^\/+/, '');
-        return `/${cleanUrl}`;
-      };
+    if (!url || url === '/') return '/';
+    const cleanUrl = url.replace(/^\/+/, '');
+    return `/${cleanUrl}`;
+  };
 
   const handleEdit = (row: DataProps) => {
     setSelectedDataId(row?._id?.toString());
@@ -58,6 +58,7 @@ export default function AdminFaq({ module = "", module_id = "" }: AdminModulePro
             router.push('/404');
         }
       }
+
       const res = await apiRequest("get", `basic/page?function=${apiFunction}`);
       setData(res?.data ?? []);
 
@@ -68,6 +69,10 @@ export default function AdminFaq({ module = "", module_id = "" }: AdminModulePro
 
       if ( module === "Page") {
         route      = `basic/page?function=get_single_page_module&id=${module_id}`
+      }
+
+      if ( module === "Product") {
+        route      = `product/product?function=get_single_product_module&id=${module_id}`
       }
       
       const res_2 = await apiRequest("get", route);

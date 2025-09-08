@@ -20,7 +20,8 @@ interface BlogDocument extends Document {
   createdAt: Date;
   updatedAt: Date;
   metas?: BlogmetaReference[];
-  blogmetas?: { _id: Types.ObjectId; name: string; url: string }[]; }
+  blogmetas?: { _id: Types.ObjectId; name: string; url: string }[]; 
+}
 
 const blogSchema = new Schema<BlogDocument>({
   name: { type: String, required: true },

@@ -6,40 +6,91 @@ import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUt
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
 import { AdminModuleProps } from "@amitkk/basic/utils/types";
+import router from "next/router";
 
 export default function AdminTestimonial({ module = "", module_id = "" }: AdminModuleProps) {
     const table = useTable();
-      const [open, setOpen] = useState(false);
-      const [data, setData] = useState<DataProps[]>([]);
-      const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
-      const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
-      const [filterData, setFilterData] = useState("");
+    const [open, setOpen] = useState(false);
+    const [data, setData] = useState<DataProps[]>([]);
+    const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
+    const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
+    const [filterData, setFilterData] = useState("");
+    const [title, setTitle] = useState<string>("All testimonials");
+
+    const handleClose = () => {
+    setOpen(false);
+    setSelectedDataId(null);
+    setUpdatedDataId(null);
+    };
+
+    const updateData = async (i: DataProps) => {
+    setUpdatedDataId(i?._id?.toString());
+    };
+
+    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, module, module_id };
+
+    const getCleanHref = (url?: string) => {
+        if (!url || url === '/') return '/';
+        const cleanUrl = url.replace(/^\/+/, '');
+        return `/${cleanUrl}`;
+    };
     
-      const handleClose = () => {
-        setOpen(false);
-        setSelectedDataId(null);
-        setUpdatedDataId(null);
-      };
+    const handleEdit = (row: DataProps) => {
+    setSelectedDataId(row?._id?.toString());
+    setOpen(true);
+    };
+
+    // const fetchData = useCallback(async () => {
+    //     try {
+    //         const res = await apiRequest("get", `basic/page?function=get_all_testimonials`);
+    //         setData(res?.data ?? []);
+    //     } catch (error) { clo( error ); }
+    // }, []);
     
-      const updateData = async (i: DataProps) => {
-        setUpdatedDataId(i?._id?.toString());
-      };
-    
-      const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-      const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, module, module_id };
-    
-      const handleEdit = (row: DataProps) => {
-        setSelectedDataId(row?._id?.toString());
-        setOpen(true);
-      };
+    // useEffect(() => { fetchData(); }, [fetchData]);
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await apiRequest("get", `basic/page?function=get_all_testimonials`);
-            setData(res?.data ?? []);
-        } catch (error) { clo( error ); }
-    }, []);
-    
+        let apiFunction = `get_all_testimonials`;
+        if (module && module_id) {
+            const isValidModule = typeof module === "string" && module.trim().length > 0;
+            const isValidModuleId = typeof module_id === "string" && module_id.trim().length > 0;
+
+            if (isValidModule && isValidModuleId) {
+            apiFunction = `get_testimonial&module=${encodeURIComponent(module)}&module_id=${encodeURIComponent(
+                module_id
+            )}`;
+            } else {
+                // router.push('/404');
+            }
+        }
+        
+        const res = await apiRequest("get", `basic/page?function=${apiFunction}`);
+        setData(res?.data ?? []);
+
+        let route = '';
+        if ( module === "Blog") {
+            route      = `blog/blogs?function=get_single_blog_module&id=${module_id}`
+        }
+
+        if ( module === "Page") {
+            route      = `basic/page?function=get_single_page_module&id=${module_id}`
+        }
+
+        if ( module === "Product") {
+            route      = `product/product?function=get_single_product_module&id=${module_id}`
+        }
+        
+        const res_2 = await apiRequest("get", route);
+        
+        if( res_2 && res_2.data){
+            const href = getCleanHref(res_2?.data?.url);
+            setTitle(`<a href="${href}" target="_blank">Testimonials For ${res_2?.data?.name}</a>`);
+        }
+        } catch (error) { clo(error); }
+    }, [module, module_id]);
+
     useEffect(() => { fetchData(); }, [fetchData]);
 
     useEffect(() => {
@@ -69,12 +120,13 @@ export default function AdminTestimonial({ module = "", module_id = "" }: AdminM
     
     return(
         <AdminTableLayout<DataProps>
-            title="Testimonials" addButtonLabel="New Testimonial" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
+            title={ <span dangerouslySetInnerHTML={{ __html: title }} /> } addButtonLabel="New testimonial" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
                     { id: "model", label: "Module" },
                     { id: "model_id", label: "Model" },
+                    { id: "media", label: "Media" },
                     { id: "client", label: "Client" },
                     { id: "testimonial", label: "Testimonial" },
                     { id: "status", label: "Status" },

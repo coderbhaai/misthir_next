@@ -146,7 +146,6 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setContentError(!content ? "Content is required." : null);
-
         if (!content.trim() ) { hitToastr("error", "Content is required!"); return; }
 
         try {
@@ -175,7 +174,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
             const result = await apiRequest("post", `blog/blogs`, formDataToSend);
             hitToastr('success', 'Entry Done');
 
-            router.replace('/admin/blog/blogs');
+            router.replace('/admin/blogs');
             
         } catch (error) { clo( error ); }
     };
@@ -231,7 +230,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
 
                     <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
 
-                    <CkEditor name="content" value={content} onChange={handleEditorChange} required error={contentError} />
+                    <CkEditor label="Blog Content" name="content" value={content} onChange={handleEditorChange} required error={contentError} />
                     <Button type="submit" variant="contained" color="primary">{title}</Button>
                 </Box>
             </form>

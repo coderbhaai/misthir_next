@@ -47,22 +47,20 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
       <Card sx={{ boxShadow: 3, borderRadius: 2, p: 2 }}>
         <CardHeader title={ <Link href={`/${row.url}`} target="_blank">{row.name}</Link> }subheader={row.url} action={ <IconButton onClick={handleOpenPopover}><Iconify icon='Edit'/></IconButton> }/>
         <Popover open={!!openPopover} anchorEl={openPopover} onClose={handleClosePopover} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>
+          
         <MenuList disablePadding sx={{ p: 0.5, gap: 0.5, width: 140, display: 'flex', flexDirection: 'column', [`& .${menuItemClasses.root}`]: { px: 1, gap: 2, borderRadius: 0.75, [`&.${menuItemClasses.selected}`]: {bgcolor: 'action.selected'} } }}>
           {hasAnyRole(["Vendor", "Staff"]) && hasPermission("Product Vendor") &&(
             <MenuItem><Link href={`/admin/seller/add-update-product/${row._id}`}><Iconify icon="Edit"/>Edit</Link></MenuItem>
           )}
 
-          {hasAnyRole(["Owner", "Admin", "SEO"]) && (
+          {hasAnyRole(["Owner", "Admin", "SEO"]) && hasPermission("Product Admin") && (
+            <MenuItem><Link href={`/admin/add-update-product/${row.vendor_id}/${row._id}`} target="_blank"><Iconify icon="Edit" /> Edit</Link></MenuItem>
+          )}
+
+          {hasAnyRole(["Owner", "Admin", "SEO"]) && hasPermission("Page") && (
             <>
-              {hasPermission("Product Admin") && (
-                <MenuItem><Link href={`/admin/add-update-product/${row.vendor_id}/${row._id}`} target="_blank"><Iconify icon="Edit"/> Edit</Link></MenuItem>
-              )}
-              {hasPermission("Page") && (
-                <>
-                  <MenuItem><Link href={`/admin/faqs/Product/${row._id}`} target="_blank"><Iconify icon="Edit"/> FAQs</Link></MenuItem>
-                  <MenuItem><Link href={`/admin/testimonials/Product/${row._id}`} target="_blank"><Iconify icon="Edit"/> Testimonial</Link></MenuItem>
-                </>
-              )}
+              <MenuItem><Link href={`/admin/faqs/Product/${row._id}`} target="_blank"><Iconify icon="Edit" /> FAQs</Link></MenuItem>
+              <MenuItem><Link href={`/admin/testimonials/Product/${row._id}`} target="_blank"><Iconify icon="Edit" /> Testimonial</Link></MenuItem>
             </>
           )}
         </MenuList>
@@ -79,12 +77,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
           <Box>
             {/* SKUs Section */}
             {row.skus?.map((i) => (
-              <Box
-                key={i._id.toString()} mb={2} p={2}
-                border="1px solid #ddd" borderRadius={1}
-                bgcolor="background.paper"
-                sx={{ "&:hover": { backgroundColor: "action.hover" } }}
-              >
+              <Box key={i._id.toString()} mb={2} p={2} border="1px solid #ddd" borderRadius={1} bgcolor="background.paper" sx={{ "&:hover": { backgroundColor: "action.hover" } }}>
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="h6">{i.name}</Typography>
                   <Grid container spacing={2}>

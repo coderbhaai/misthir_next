@@ -33,12 +33,9 @@ export function SellerProducts(){
             {dataFiltered
                 .slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
                 .map((i) => (
-                    <AdminDataTable
-                    row={i}
+                    <AdminDataTable key={i._id.toString()} row={i} showCheckBox={false}
                     selected={table.selected.includes(i._id.toString())}
-                    onSelectRow={() => table.onSelectRow(i._id.toString())}
-                    showCheckBox={false}
-                    />
+                    onSelectRow={() => table.onSelectRow(i._id.toString())} />
                 ))
             }
         </Grid>

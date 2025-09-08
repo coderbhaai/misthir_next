@@ -1,24 +1,13 @@
 import { MUICarousel } from "@amitkk/basic/static/MUICarousel";
-import { apiRequest, clo } from "@amitkk/basic/utils/utils";
 import { SingleBlogItem } from "@amitkk/blog/static/single-blog-item";
-import { SingleBlogProps } from "@amitkk/blog/types/blog";
 import { Container, Typography } from "@mui/material";
-import { useState, useEffect } from "react";
 import Grid from '@mui/material/Grid';
 
-export default function SuggestBlogs() {
-  const [blogs, setBlogs] = useState<SingleBlogProps[]>([]);
-    
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {        
-        const res_one = await apiRequest("post", "blog/blogs", { function : 'get_blogs', skip: 0, limit: 5 });
-        setBlogs(res_one?.data ?? []);
-      } catch (err) { clo(err); }
-    };
-
-    fetchBlogs();
-  }, []);
+export interface BlogFinalProps {
+  blogs: BlogProps[];
+}
+  
+export default function SuggestBlogs({ blogs }: BlogFinalProps) {
 
   const settings = {
     dots: true,
@@ -40,17 +29,17 @@ export default function SuggestBlogs() {
   if (!blogs || blogs.length === 0) return null;
 
   return (
-    <Container>
+    <Grid size={12} sx={{ py: 5 }}>
       <Typography variant="h3" gutterBottom>Interesting Reads</Typography>
-      {blogs.length < 4 ? (
+      {blogs?.length < 4 ? (
         <Grid container spacing={3}>
-          {blogs.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
+          {blogs?.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
         </Grid>
       ) : (
         <MUICarousel settings={settings}>
-          {blogs.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
+          {blogs?.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
         </MUICarousel>
       )}
-    </Container>
+    </Grid>
   );
 }
