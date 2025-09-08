@@ -9,19 +9,18 @@ import Portfolio from "@amitkk/basic/components/Portfolio";
 import MobileSecond from "@amitkk/basic/components/MobileSecond";
 import Admin from "@amitkk/basic/components/admin";
 import { apiRequest } from "@amitkk/basic/utils/utils";
-import { FaqProps } from "@amitkk/basic/types/page";
 import FaqPanel from "@amitkk/basic/components/faq/FaqPanel";
+import CommentPanel from "@amitkk/basic/components/comment/CommentPanel";
+import SuggestTestimonial from "@amitkk/basic/components/testimonial/suggest-testimonial";
+import SuggestProducts from "@amitkk/product/static/suggest-products";
+import SuggestBlogs from "@amitkk/blog/static/suggest-blog";
 
 interface HomePageProps {
-  meta: {
-    title: string;
-    description: string;
-  };
-  faq: FaqProps[];
-  testimonials: any[];
+  page: PageProps;
+  relatedContent: RelatedContent;
 }
 
-export default function HomePage({ meta, faq, testimonials }: HomePageProps) {
+export default function HomePage({ page, relatedContent }: HomePageProps) {
   return (
     <Box>
       <HomeSlider />
@@ -31,18 +30,19 @@ export default function HomePage({ meta, faq, testimonials }: HomePageProps) {
       <MobileSecond />
       <Portfolio />
       <Admin />
+      <FaqPanel faq={relatedContent.faq} />
+      <SuggestTestimonial testimonials={relatedContent.testimonials} />
+      <SuggestProducts products={relatedContent.products} />
+      <SuggestBlogs blogs={relatedContent.blogs}/>
+      {page && ( <CommentPanel module="Page" module_id={page?._id} module_name={page?.name}/> )}
     </Box>
   );
 }
 
 export async function getServerSideProps() {
-  // const res = await apiRequest("get", `basic/page?function=get_page_data&url=/&module=Page`);
-  // const meta = res?.data?.meta || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
-  // const faq = res?.data?.faq || [];
-  // const testimonials = res?.data?.testimonials || [];
-  const meta = { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
-  // const faq = [];
-  // const testimonials = [];
-
-  return { props: { meta } };
+  const res = await apiRequest("get", `basic/page?function=get_page_data&url=/&module=Page`);
+  const meta = res?.data?.meta_id || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
+  const page = res?.data || null;
+  const relatedContent = res?.relatedContent || { faq: [], testimonials: [], blogs: [], products: [] };
+  return { props: { page, relatedContent } };
 }

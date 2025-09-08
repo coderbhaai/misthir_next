@@ -39,3 +39,32 @@ interface BlogProps{
   metas?: BlogmetaReference[];
   blogmetas?: { _id: Types.ObjectId; name: string; url: string }[]; 
 }
+
+interface PageProps {
+    module: string;
+    name: string;
+    url: string;
+    media: string | MediaProps;
+    media_id: string | MediaProps;
+    content: string;
+    status: boolean;
+    schema_status: boolean;
+    sitemap: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    _id: string;
+    
+    meta_id: string | null;
+    title: string;
+    description: string;
+    
+    page_detail_id: string | null;
+    faq_title: string;
+    faq_text: string;
+    blog_title: string;
+    blog_text: string;
+    contact_title: string;
+    contact_text: string;
+    testimonial_title: string;
+    testimonial_text: string;
+}

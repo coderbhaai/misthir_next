@@ -10,11 +10,11 @@ import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
 import DateFormat from '@amitkk/basic/components/static/date-format';
-import MetaTableInput, { MetaTableProps } from '@amitkk/basic/components/static/meta-table-input';
+import MetaTableInput from '@amitkk/basic/components/static/meta-table-input';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import Link from 'next/link';
-import { MediaProps } from '@amitkk/basic/types/page';
+import { MediaProps, MetaTableProps } from '@amitkk/basic/types/page';
 
 export type DataProps = {
   _id: string | Types.ObjectId;

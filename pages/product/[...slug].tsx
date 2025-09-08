@@ -22,15 +22,10 @@ import { MUICarousel } from "@amitkk/basic/static/MUICarousel";
 
 interface ProductPageProps {
   product: ProductRawDocument;
-  meta: {
-    title: string;
-    description: string;
-  };
   relatedContent: RelatedContent;
 }
 
-export default function ProductPage({ product, meta, relatedContent }: ProductPageProps) {
-  const { faq, testimonials, blogs, products } = relatedContent;
+export default function ProductPage({ product, relatedContent }: ProductPageProps) {
   const weightOptions = [
     { weight: "500g", price: 19.0 },
     { weight: "1kg", price: 34.0 },
@@ -69,9 +64,6 @@ export default function ProductPage({ product, meta, relatedContent }: ProductPa
       { breakpoint: 1200, settings: { slidesToShow: 3, slidesToScroll: 1, } },
     ]
   };
-
-  console.log("skus", skus)
-  console.log("selectedSku", selectedSku)
 
   return (
     <>
@@ -169,21 +161,19 @@ export default function ProductPage({ product, meta, relatedContent }: ProductPa
             <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>With this look</Typography>
           {/* <ImageSlider /> */}
         </Grid>
-        
-        <CommentPanel module="Product" module_id={product._id} module_name={product?.name}/>
+
         <FaqPanel faq={relatedContent.faq} />
         <SuggestTestimonial testimonials={relatedContent.testimonials} />
         <SuggestProducts products={relatedContent.products} />
         <SuggestBlogs blogs={relatedContent.blogs} />
+        {product && ( <CommentPanel module="Product" module_id={product?._id} module_name={product?.name}/> )}
       </Grid>
-
     </>
   );
 }
 
 export async function getServerSideProps(context: any) {
   const slug = context.params.slug[0];
-
   const res = await apiRequest("get", `product/product?function=get_single_product_by_url&url=${slug}`);
 
   const meta = res?.data?.meta_id || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };

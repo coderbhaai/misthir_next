@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { upsertMeta } from './meta';
 import PageDetail from 'lib/models/basic/PageDetail';
-import { getUserIdFromToken, log } from '../utils';
+import { getRelatedContent, getUserIdFromToken, log } from '../utils';
 
 import models from "lib/models";
 import Faq from 'lib/models/basic/Faq';
@@ -505,14 +505,16 @@ export async function get_page_data(req: NextApiRequest, res: NextApiResponse) {
     const module = (req.method === 'GET' ? req.query.module : req.body.module) as string;
     if (!url) { return res.status(400).json({ message: 'Invalid or missing URL' }); }
 
-    const meta = await Meta.findOne({ url }).exec();
-    if (!meta) { return res.status(404).json({ message: `Meta with URL ${url} not found` }); }
+    const data = await Page.findOne({ url }).populate([ { path: 'media_id' }, { path: 'meta_id' }, { path: 'details' } ]).exec();
 
-    const page = await Page.findOne({ url }).exec();
-    const faq = await Faq.find({ module, module_id:page?._id }).exec();
-    const testimonials = await Testimonial.find({ module, module_id:page?._id }).exec();
+    const relatedContent = await getRelatedContent({
+          module: "Page",
+          moduleId: data._id.toString(),
+          productId: null,
+          blogId : null
+        });
 
-    return res.status(200).json({ message: 'Fetched Page Data', data:{ meta, page, faq, testimonials } });
+    return res.status(200).json({ message: 'Fetched Page Data', data, relatedContent });
   } catch (error) { log(error); }
 }
 

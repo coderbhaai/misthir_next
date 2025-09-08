@@ -17,41 +17,12 @@ const CkEditor = dynamic(() => import("@amitkk/basic/components/static/ckeditor-
   ssr: false, loading: () => <p>Loading editor...</p>,
 });
 
-export interface DataProps {
-    module: string;
-    name: string;
-    url: string;
-    media: string | MediaProps;
-    media_id: string | MediaProps;
-    content: string;
-    status: boolean;
-    schema_status: boolean;
-    sitemap: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    _id: string;
-    
-    meta_id: string | null;
-    title: string;
-    description: string;
-    
-    page_detail_id: string | null;
-    faq_title: string;
-    faq_text: string;
-    blog_title: string;
-    blog_text: string;
-    contact_title: string;
-    contact_text: string;
-    testimonial_title: string;
-    testimonial_text: string;
-}
-
 interface BlogFormProps {
     selectedDataId?: string;
 }
 
 export const PageForm: React.FC<BlogFormProps> = ({ selectedDataId = '' }) => {
-    const [formData, setFormData] = React.useState<DataProps>({
+    const [formData, setFormData] = React.useState<PageProps>({
         module: 'Page',
         name: '',
         url: '',
@@ -213,7 +184,7 @@ export const PageForm: React.FC<BlogFormProps> = ({ selectedDataId = '' }) => {
                             </div>
                         </Box>
                         <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
-                        <CkEditor name="content" value={content} onChange={handleEditorChange} required error={contentError} />
+                        <CkEditor label="Content" name="content" value={content} onChange={handleEditorChange} required error={contentError} />
                         <Button type="submit" variant="contained" color="primary" sx={{ mt: 5 }}>{selectedDataId ? "Update Page" : "Add Page"}</Button>
                     </Grid>
                     <Grid size={4}>
