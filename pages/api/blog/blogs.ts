@@ -1,16 +1,13 @@
 import { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from 'pages/lib/mongodb';
 import Blog from 'lib/models/blog/Blog';
 import { uploadMedia } from '../basic/media';
-import { IncomingForm, Fields, Files } from 'formidable';
-import fs from 'fs';
-import path from 'path';
 import { upsertMeta } from '../basic/meta';
 import BlogBlogmeta from 'lib/models/blog/BlogBlogmeta';
 import { generateSitemap, log, pivotEntry } from '../utils';
 import Blogmeta from 'lib/models/blog/Blogmeta';
 import { slugify } from '@amitkk/basic/utils/utils';
+import { createApiHandler, ExtendedRequest } from '../apiHandler';
 
 export async function get_all_blogs(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -45,8 +42,6 @@ export async function create_update_blog(req: ExtendedRequest, res: NextApiRespo
     if (!data?.name ) {
       return res.status(400).json({ message: 'Required fields missing' });
     }
-
-    // || !data?.status
 
     const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
 
@@ -172,91 +167,15 @@ export async function get_single_blog_sidebar(req: NextApiRequest, res: NextApiR
   } catch (error) { return log(error); }
 }
 
-type HandlerMap = {
-  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
+const functions = {
+  get_blogs,
+  get_all_blogs,
+  get_single_blog,
+  create_update_blog,
+  get_single_blog_by_url,
+  get_blogs_module,
+  get_single_blog_module,
+  get_single_blog_sidebar,
 };
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-interface ExtendedRequest extends NextApiRequest {
-  file?: File;
-  files?: { [key: string]: File | File[] };
-}
-
-const functions: HandlerMap = {
-  get_blogs: get_blogs,
-  get_all_blogs: get_all_blogs,
-  get_single_blog: get_single_blog,
-  create_update_blog: create_update_blog,
-  get_single_blog_by_url: get_single_blog_by_url,
-  get_blogs_module: get_blogs_module,
-  get_single_blog_module: get_single_blog_module,
-  get_single_blog_sidebar: get_single_blog_sidebar,
-};
-
-const tmpDir = path.join(process.cwd(), 'tmp');
-if (!fs.existsSync(tmpDir)) { fs.mkdirSync(tmpDir); }
-
-function normalizeFormFields(fields: Record<string, any>): Record<string, any> {
-  const result: Record<string, any> = {};
-  for (const key in fields) {
-    const value = fields[key];
-    const v = Array.isArray(value) && value.length === 1 ? value[0] : value;
-    result[key] = v === 'null' || v === '' ? undefined : v;
-  }
-  return result;
-}
-
-export const parseForm = async ( req: NextApiRequest ): Promise<{ fields: Fields; files: Files }> => {
-  return new Promise((resolve, reject) => {
-    const form = new IncomingForm({
-      uploadDir: tmpDir,
-      keepExtensions: true,
-      multiples: true,
-    });
-
-    form.parse(req, (err: Error | null, fields: Fields, files: Files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ fields, files });
-      }
-    });
-  });
-};
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    let fnName: string;
-    let body: any = req.body;
-    let files: any = null;
-
-    if (req.method === 'POST') {
-      const parsed = await parseForm(req);
-      body = normalizeFormFields(parsed.fields);
-      files = parsed.files;
-      fnName = body.function;
-    } else {
-      fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-    }
-
-    if (!fnName || typeof fnName !== 'string') {
-      return res.status(400).json({ message: 'Missing or invalid function name' });
-    }    
-
-    const targetFn = functions[fnName];
-    if (!targetFn) {
-      return res.status(400).json({ message: `Invalid function name: ${fnName}` });
-    }
-
-    await connectDB();
-
-    req.body = body;
-    if (files) (req as any).files = files;
-    await targetFn(req, res);
-  } catch (error) { return log(error); }
-}
+export default createApiHandler(functions);

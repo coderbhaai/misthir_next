@@ -10,10 +10,7 @@ import RolePermission from "lib/models/spatie/RolePermission";
 import SpatieRole, { IRoleWithPermissions } from "lib/models/spatie/SpatieRole";
 import UserPermission from "lib/models/spatie/UserPermission";
 import UserRole from "lib/models/spatie/UserRole";
-
-type HandlerMap = {
-  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
-};
+import { createApiHandler } from "../apiHandler";
 
 export async function login(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -202,24 +199,13 @@ export async function check_user_access(req: NextApiRequest, res: NextApiRespons
   } catch (error) { log(error); }
 }
 
-const functions: HandlerMap = {
-  login: login,
-  register: register,
-  reset_password:reset_password,
-  generate_otp:generate_otp,
-  register_or_login:register_or_login,
-  check_user_access:check_user_access,
+const functions = {
+  login,
+  register,
+  reset_password,
+  generate_otp,
+  register_or_login,
+  check_user_access,
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-  if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }
-  
-  const targetFn = functions[fnName];
-  if (!targetFn) { return res.status(400).json({ message: `Invalid function name: ${fnName}` }); }
-  
-  try {
-    await connectDB();
-    await targetFn(req, res);
-  } catch (error) { log(error); }
-}
+export default createApiHandler(functions);

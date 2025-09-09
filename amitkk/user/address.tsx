@@ -2,11 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
-import DataModal from "@amitkk/address/admin/city-modal";
-import { AdminDataTable } from "@amitkk/address/admin/admin-city-table";
-import { CityProps } from "@amitkk/address/types/address";
+import DataModal from "@amitkk/user/admin/user-address-modal";
+import { AdminDataTable, DataProps } from "@amitkk/user/admin/user-address-table";
 
-export  function AdminCity(){
+export  function UserAddress(){
     const showCheckBox = false;
     const table = useTable();
     const [open, setOpen] = useState(false);
@@ -16,19 +15,20 @@ export  function AdminCity(){
         setSelectedDataId(null);
         setUpdatedDataId(null);
     }
-    const [data, setData] = useState<CityProps[]>([]);
+    const [data, setData] = useState<DataProps[]>([]);
     const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
     const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
     const [filterData, setFilterData] = useState("");
+    const [permissions, setPermissions] = useState<{_id: string; name: string}[]>([]);
 
-    const updateData = async (i: CityProps) => { setUpdatedDataId(i?._id?.toString()); };
-    const dataFiltered = useTableFilter<CityProps>( data, table.order, table.orderBy as keyof CityProps, filterData, ["name"] );
-    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData };
-    const handleEdit = (row: CityProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
+    const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
+    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, permissions };
+    const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await apiRequest("get", "address/address?function=get_all_city");
+            const res = await apiRequest("get", "address/address?function=get_my_addresses");
             setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
@@ -39,7 +39,7 @@ export  function AdminCity(){
         if (updatedDataId) {
             const fetchData = async () => {
                 try {
-                    const res = await apiRequest("get", `address/address?function=get_single_city&id=${updatedDataId}`);
+                    const res = await apiRequest("get", `address/address?function=get_my_single_address&id=${updatedDataId}`);
                     const data = res?.data;
                     if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
     
@@ -61,15 +61,14 @@ export  function AdminCity(){
     }, [updatedDataId]);
     
     return(
-        <AdminTableLayout<CityProps>
-            title="Cities" addButtonLabel="New City" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
+        <AdminTableLayout<DataProps>
+            title="My Addresses" addButtonLabel="New Address" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
-                    { id: "country", label: "Country" },
-                    { id: "state", label: "State" },
-                    { id: "name", label: "Name" },
+                    { id: "address", label: "Address" },
                     { id: "status", label: "Status" },
+                    { id: "date", label: "Date" },
                     { id: "", label: "" },
                 ]}/>
             }
@@ -82,4 +81,4 @@ export  function AdminCity(){
     )
 }
 
-export default withAuth(AdminCity);
+export default withAuth(UserAddress);

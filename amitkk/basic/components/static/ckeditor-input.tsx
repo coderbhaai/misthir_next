@@ -12,7 +12,7 @@ interface CkEditorProps {
   onChange: (name: string, value: string) => void;
 }
 
-const CkEditor: React.FC<CkEditorProps> = ({ label, name, value, error, onChange }) => {
+const CkEditor: React.FC<CkEditorProps> = ({ label = "Content", name, value, error, onChange }) => {
   return (
     <div className="w-full">
       <Typography variant="h4" flexGrow={1}>{label}</Typography>

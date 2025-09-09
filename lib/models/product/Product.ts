@@ -15,18 +15,18 @@
     adminApproval: boolean;
     createdAt: Date;
     updatedAt: Date;
-    productMeta?: { _id: Types.ObjectId | string; productmeta_id?: ModuleProps; }[];
+    productMeta?: { _id: string | Types.ObjectId; productmeta_id?: ModuleProps; }[];
     metas?: { _id: string; module: string; name: string; url: string; }[];
-    productFeature?: { _id: Types.ObjectId | string; productFeature_id?: ModuleProps; }[];
+    productFeature?: { _id: string | Types.ObjectId; productFeature_id?: ModuleProps; }[];
     features?: ArrayProps[];
-    productIngridient?: { _id: Types.ObjectId | string; ingridient_id?: ModuleProps; }[];
+    productIngridient?: { _id: string | Types.ObjectId; ingridient_id?: ModuleProps; }[];
     ingridients?: ArrayProps[];
-    productBrand?: { _id: Types.ObjectId | string; productBrand_id?: ModuleProps; }[];
+    productBrand?: { _id: string | Types.ObjectId; productBrand_id?: ModuleProps; }[];
     brands?: ArrayProps[];
-    mediaHubs?: { _id: Types.ObjectId | string; media_id?: MediaProps }[];
+    mediaHubs?: { _id: string | Types.ObjectId; media_id?: MediaProps }[];
     medias?: MediaProps[];
     sku?: {
-      _id: Types.ObjectId | string;
+      _id: string | Types.ObjectId;
       details?: SkuDetailProps | null;
       flavors?: { productFeature_id?: ModuleProps  }[];
       colors?: { productFeature_id?: ModuleProps  }[];

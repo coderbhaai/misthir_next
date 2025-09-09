@@ -19,15 +19,16 @@ export interface MyAppProps extends AppProps {
 
 export default function App({ Component, pageProps, emotionCache = clientSideEmotionCache }: MyAppProps) {
   const router = useRouter();
-  const isAdminRoute = router.pathname.startsWith("/admin");
-  const isVendorRoute = router.pathname.startsWith("/vendor");
+  const adminLayout = ["/admin", "/vendor", "/user"].some(prefix =>
+    router.pathname.startsWith(prefix)
+  );
 
   return (
     <CacheProvider value={emotionCache}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
-          {isAdminRoute ? (
+          {adminLayout ? (
             <AdminLayout>
               <Component {...pageProps} />
             </AdminLayout>

@@ -153,7 +153,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
             </FormControl>
             <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
             <TextField label='Question' variant='outlined' value={formData.question} name='question' fullWidth onChange={handleChange} required/>
-            <CkEditor name="answer" value={formData.answer} onChange={handleEditorChange} required error={contentError} />
+            <CkEditor label="Answer" name="answer" value={formData.answer} onChange={handleEditorChange} required error={contentError} />
             <Button type='submit' variant='contained' color='primary'>{title}</Button>
           </Box>
         </form>

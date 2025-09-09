@@ -2,7 +2,7 @@ import { Box, Chip } from "@mui/material";
 import { Types } from "mongoose";
 
 interface PillItem {
-  _id: Types.ObjectId | string;
+  _id: string | Types.ObjectId;
   name: string;
   url?: string; // Make URL optional
   color?: string;

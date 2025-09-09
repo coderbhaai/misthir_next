@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface IFaqProps extends Document {
   module: string;
-  module_id: Types.ObjectId | string;
+  module_id: string | Types.ObjectId;
   question: string;
   answer: string;
   status: boolean;

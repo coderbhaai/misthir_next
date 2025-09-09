@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface UserBrowsingHistoryProps extends Document {
   module: "Blog" | "Destination" | "Page" | "Product";
-  module_id: Types.ObjectId | string;
+  module_id: string | Types.ObjectId;
   user_id?: mongoose.Types.ObjectId;
   frequency?: number;
   createdAt?: Date;

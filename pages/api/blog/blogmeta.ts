@@ -1,16 +1,12 @@
 import { Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from 'pages/lib/mongodb';
 import Blogmeta from 'lib/models/blog/Blogmeta';
 import { upsertMeta } from '../basic/meta';
 import { log } from '../utils';
 import { slugify } from '@amitkk/basic/utils/utils';
+import { createApiHandler } from '../apiHandler';
 
-type HandlerMap = {
-  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
-};
-
-async function create_update_blog_meta(req: NextApiRequest, res: NextApiResponse) {
+export async function create_update_blog_meta(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
   
@@ -92,23 +88,12 @@ export async function get_single_blog_meta(req: NextApiRequest, res: NextApiResp
   return res.status(200).json({ message: 'Fetched Single Blog', data });
 };
 
-const functions: HandlerMap = {
-  create_update_blog_meta: create_update_blog_meta,
-  get_all_blog_meta: get_all_blog_meta,
-  get_category: get_category,
-  get_tag: get_tag,
-  get_single_blog_meta: get_single_blog_meta,
+const functions = {
+  create_update_blog_meta,
+  get_all_blog_meta,
+  get_category,
+  get_tag,
+  get_single_blog_meta,
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-  if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }
-
-  const targetFn = functions[fnName];
-  if (!targetFn) { return res.status(400).json({ message: `Invalid function name: ${fnName}` }); }
-
-  try {
-    await connectDB();
-    await targetFn(req, res);
-  } catch (error) { return log(error); }
-}
+export default createApiHandler(functions);

@@ -1,12 +1,8 @@
 import { Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from 'pages/lib/mongodb';
 import { getUserIdFromToken, log } from '../utils';
 import CommentModel from 'lib/models/basic/CommentModel';
-
-type HandlerMap = {
-  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
-};
+import { createApiHandler } from '../apiHandler';
 
 export async function create_update_comment(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -59,7 +55,6 @@ export async function get_single_comment(req: NextApiRequest, res: NextApiRespon
   return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
 };
 
-
 export async function get_comments(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { module, module_id } = req.body;
@@ -73,22 +68,11 @@ export async function get_comments(req: NextApiRequest, res: NextApiResponse) {
   } catch (error) { log(error); }
 }
 
-const functions: HandlerMap = {
-  create_update_comment: create_update_comment,
-  get_all_comments: get_all_comments,
-  get_single_comment: get_single_comment,
-  get_comments: get_comments,
+const functions = {
+  create_update_comment,
+  get_all_comments,
+  get_single_comment,
+  get_comments,
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-  if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }
-
-  const targetFn = functions[fnName];
-  if (!targetFn) { return res.status(400).json({ message: `Invalid function name: ${fnName}` }); }
-
-  try {
-    await connectDB();
-    await targetFn(req, res);
-  } catch (error) { return log(error); }
-}
+export default createApiHandler(functions);

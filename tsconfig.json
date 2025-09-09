@@ -17,12 +17,7 @@
     "typeRoots": ["./node_modules/@types", "./emotion-server.d.ts"],
     "types": ["node"],
     "paths": {
-      "@amitkk/basic/*": ["amitkk/basic/*"],
-      "@amitkk/blog/*": ["amitkk/blog/*"],
-      "@amitkk/seo/*": ["amitkk/seo/*"],
-      "@amitkk/product/*": ["amitkk/product/*"],
-      "@amitkk/ecom/*": ["amitkk/ecom/*"],
-      "@amitkk/address/*": ["amitkk/address/*"],
+      "@amitkk/*": ["amitkk/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", "amitkk/generateComponentMap.js", "amitkk/basic/components/ProductSlider.jsx", "amitkk/basic/components/CustomSlider.tsx"],

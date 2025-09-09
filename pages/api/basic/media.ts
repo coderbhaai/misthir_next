@@ -3,14 +3,14 @@ import fs from 'fs';
 import sharp from 'sharp';
 import Media from 'lib/models/basic/Media';
 import { v4 as uuidv4 } from 'uuid';
-import { Fields, Files, IncomingForm, type File } from 'formidable';
+import { type File } from 'formidable';
 import mongoose, { isValidObjectId, Model, Types } from 'mongoose';
 import { log } from '../utils';
 import { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from 'pages/lib/mongodb';
 import { sanitizeText } from '@amitkk/basic/utils/utils';
 import { uploadMediaToS3 } from 'services/uploadMediaToS3';
 import MediaHub from 'lib/models/basic/MediaHub';
+import { createApiHandler } from '../apiHandler';
 
 const MEDIA_PATH = path.join(process.cwd(), 'public', 'storage');
 
@@ -240,8 +240,8 @@ export async function get_selected_media(req: ExtendedRequest, res: NextApiRespo
 
 interface SyncMediaHubOptions {
   module: "Product" | "Blog" | "Destination" | "Page";
-  module_id: Types.ObjectId | string;
-  vendor_id: Types.ObjectId | string;
+  module_id: string | Types.ObjectId;
+  vendor_id: string | Types.ObjectId;
   mediaArray: string[];
 }
 
@@ -258,75 +258,12 @@ export async function syncMediaHub({ module, module_id, vendor_id, mediaArray }:
   await MediaHub.deleteMany({ module, module_id, vendor_id, media_id: { $nin: mediaArray } });
 }
 
-const functions: HandlerMap = {
-  get_all_media: get_all_media,
-  get_single_media: get_single_media,
-  create_update_media: create_update_media,
-  create_update_media_library: create_update_media_library,
-  get_selected_media: get_selected_media,
+const functions = {
+  get_all_media,
+  get_single_media,
+  create_update_media,
+  create_update_media_library,
+  get_selected_media,
 };
 
-const tmpDir = path.join(process.cwd(), 'tmp');
-if (!fs.existsSync(tmpDir)) {
-  fs.mkdirSync(tmpDir);
-}
-
-function normalizeFormFields(fields: Record<string, any>): Record<string, any> {
-  const result: Record<string, any> = {};
-  for (const key in fields) {
-    const value = fields[key];
-    const v = Array.isArray(value) && value.length === 1 ? value[0] : value;
-    result[key] = v === 'null' || v === '' ? undefined : v;
-  }
-  return result;
-}
-
-export const parseForm = async ( req: NextApiRequest ): Promise<{ fields: Fields; files: Files }> => {
-  return new Promise((resolve, reject) => {
-    const form = new IncomingForm({
-      uploadDir: tmpDir,
-      keepExtensions: true,
-      multiples: true,
-    });
-
-    form.parse(req, (err: Error | null, fields: Fields, files: Files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ fields, files });
-      }
-    });
-  });
-};
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    let fnName: string;
-    let body: any = req.body;
-    let files: any = null;
-
-    if (req.method === 'POST') {
-      const parsed = await parseForm(req);
-      body = normalizeFormFields(parsed.fields);
-      files = parsed.files;
-      fnName = body.function;
-    } else {
-      fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-    }
-
-    if (!fnName || typeof fnName !== 'string') {
-      return res.status(400).json({ message: 'Missing or invalid function name' });
-    }  
-    const targetFn = functions[fnName];
-    if (!targetFn) {
-      return res.status(400).json({ message: `Invalid function name: ${fnName}` });
-    }
-
-    await connectDB();
-
-    req.body = body;
-    if (files) (req as any).files = files;
-
-    await targetFn(req, res);
-  } catch (error) { return log(error); }
-}
+export default createApiHandler(functions);

@@ -1,5 +1,5 @@
 import mongoose, { FilterQuery, Model, PopulateOptions } from "mongoose";
-import { NextApiRequest } from "next";
+import { NextApiRequest, NextApiResponse } from "next";
 import jwt from "jsonwebtoken";
 import Page from "lib/models/basic/Page";
 import Blog from "lib/models/blog/Blog";

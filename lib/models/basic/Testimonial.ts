@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface ITestimonialProps extends Document {
   module: "Blog" | "Destination" | "Page" | "Product";
-  module_id: Types.ObjectId | string;
+  module_id: string | Types.ObjectId;
   media_id?: mongoose.Types.ObjectId;
   name: string;
   role: string;

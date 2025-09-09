@@ -165,7 +165,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export const sanitizeText = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
-export const slugify = async ( url: string, model: Model<any>, model_id?: Types.ObjectId | string | null ): Promise<string> => {
+export const slugify = async ( url: string, model: Model<any>, model_id?: string | Types.ObjectId | null ): Promise<string> => {
   const id = model_id instanceof Types.ObjectId ? model_id.toString() : model_id;
 
   let slug = url.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -206,14 +206,20 @@ export function useForm<T>(initialState: T) {
   return { formData, setFormData, handleChange };
 }
 
-export const getLayoutLinks = async(): Promise<string[]> => {
+export interface LayoutLinks {
+  adminLinks: any[];
+  userSubmenus: any[];
+}
+
+
+export const getLayoutLinks = async (): Promise<LayoutLinks> => {
   const token                 = getCookie("authToken") || "";
-  if( !token ){ return []; }
+  if( !token ){ return { adminLinks: [], userSubmenus: [] }; }
 
   const res = await apiRequest("get", `basic/spatie?function=get_admin_menu`);
   const links = res?.data;
 
-  return links;
+  return links || { adminLinks: [], userSubmenus: [] };
 };
 
 export type IconifyProps = SvgIconProps & {

@@ -7,26 +7,34 @@ import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
-import { CountryProps } from '@amitkk/address/types/address';  
+import { AddressProps } from '@amitkk/address/types/address';
+import { Types } from 'mongoose';
+import { fullAddress } from '@amitkk/address/utils/addressUtils';
+
+export interface DataProps extends AddressProps {
+  function: string;
+  _id: string;
+  city_new: string;
+  country_id: string | Types.ObjectId;
+  state_id: string | Types.ObjectId;
+};
 
 type UserTableRowProps = TableRowPropsBase & {
-  row: CountryProps;
-  onEdit: (row: CountryProps) => void;
+  row: DataProps;
+  onEdit: (row: DataProps) => void;
 };
 
 export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit}: UserTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
   const handlePopover = useCallback( (e: React.MouseEvent<HTMLButtonElement> | null) => setOpenPopover(e?.currentTarget || null), [] );
-
+  
   return (
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
-        <TableCell>{row.name}</TableCell>
-        <TableCell>{row.capital}</TableCell>
-        <TableCell>{row.code}<br/>{row.calling_code}</TableCell>
-        <TableCell>{row.flag}</TableCell>        
-        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="Country"/></TableCell>
+       <TableCell>{fullAddress(row)}</TableCell>
+        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="Address"/></TableCell>
+        <TableCell>{new Date(row.createdAt ?? new Date()).toLocaleDateString()}</TableCell>
         <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 

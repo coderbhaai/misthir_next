@@ -3,8 +3,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useForm, apiRequest, hitToastr, clo } from "@amitkk/basic/utils/utils";
 import { CommentProps } from "@amitkk/blog/types/blog";
 import { Types } from "mongoose";
+import { useAuth } from "contexts/AuthContext";
 
 export default function CommentForm({ module, module_id, }: { module: string; module_id: string | Types.ObjectId; }){
+  const { isLoggedIn, user } = useAuth();
   const { formData, setFormData, handleChange } = useForm<CommentProps>({
     function : 'create_update_comment',
     _id: '',
@@ -16,19 +18,15 @@ export default function CommentForm({ module, module_id, }: { module: string; mo
     updatedAt: new Date(),
   });
 
-  const [loggedIn, setLoggedIn] = useState(false);
-  const loadUser = useCallback(() => {
-    if (typeof window !== "undefined") {
-      if ( localStorage.getItem("authToken") ) {
-        setLoggedIn(true);
-      }
-    }
-  }, []);
-
   useEffect(() => {
-    loadUser();
-    // const handleAuthChange = () => loadUser();
-  }, [loadUser]);
+    if (isLoggedIn && user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name ?? '',
+        email: user.email ?? '',
+      }));
+    }
+  }, [isLoggedIn, user]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

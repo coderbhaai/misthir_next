@@ -1,15 +1,11 @@
 import mongoose, { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from 'pages/lib/mongodb';
 import Meta from 'lib/models/basic/Meta';
 import { log } from '../utils';
 import { clo, slugify } from '@amitkk/basic/utils/utils';
 import Blog from 'lib/models/blog/Blog';
 import Page from 'lib/models/basic/Page';
-
-type HandlerMap = {
-  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
-};
+import { createApiHandler } from '../apiHandler';
 
 type MetaInput = {
   meta_id: mongoose.Types.ObjectId | string | null;
@@ -110,22 +106,11 @@ export async function get_sitemap_links(req: NextApiRequest, res: NextApiRespons
   } catch (error) { log(error); }
 }
 
-const functions: HandlerMap = {
-  create_update_meta: create_update_meta,
-  get_all_meta: get_all_meta,
-  get_single_meta: get_single_meta,
-  get_sitemap_links: get_sitemap_links,
+const functions = {
+  create_update_meta,
+  get_all_meta,
+  get_single_meta,
+  get_sitemap_links,
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-  if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }
-
-  const targetFn = functions[fnName];
-  if (!targetFn) { return res.status(400).json({ message: `Invalid function name: ${fnName}` }); }
-
-  try {
-    await connectDB();
-    await targetFn(req, res);
-  } catch (error) { log(error); }
-}
+export default createApiHandler(functions);

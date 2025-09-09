@@ -53,12 +53,8 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-    const { name, value } = e.target;
-  
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: name === "status" ? value === "true" : value,
-    }));
+    const { name, value } = e.target;  
+    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
   };
 
   React.useEffect(() => {
@@ -152,7 +148,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
             <MediaImage media={formData.media_id as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
             <ImageUpload name="image" label="Upload Image" required={!selectedDataId} error={imageError} onChange={(name, file) => { setImage(file); }}/>
           </div>
-          <CkEditor name="content" value={formData.content} onChange={handleEditorChange} required={!selectedDataId} error={contentError} />
+          <CkEditor label="Content" name="content" value={formData.content} onChange={handleEditorChange} required={!selectedDataId} error={contentError} />
           <Button type="submit" variant="contained" color="primary">{title}</Button>
         </Box>
       </form>

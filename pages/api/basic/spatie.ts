@@ -1,21 +1,36 @@
 import { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from 'pages/lib/mongodb';
 import { getUserIdFromToken, log, pivotEntry } from '../utils';
 import SpatiePermission from 'lib/models/spatie/SpatiePermission';
 import SpatieRole from 'lib/models/spatie/SpatieRole';
 import RolePermission from 'lib/models/spatie/RolePermission';
 import UserRole from 'lib/models/spatie/UserRole';
 import UserPermission from 'lib/models/spatie/UserPermission';
-import { IncomingForm, Fields, Files } from 'formidable';
-import fs from 'fs';
-import path from 'path';
 import SpatieMenu from 'lib/models/spatie/SpatieMenu';
 import MenuSubmenu from 'lib/models/spatie/MenuSubmenu';
 import SpatieSubmenu from 'lib/models/spatie/SpatieSubmenu';
 import { uploadMedia } from './media';
 import { MediaProps } from '@amitkk/basic/types/page';
 import User from 'lib/models/spatie/User';
+import { createApiHandler, ExtendedRequest } from '../apiHandler';
+
+export interface SpatieMenuWithSubmenus {
+  _id: string;
+  name: string;
+  media_id?: { path?: string; alt?: string };
+  submenusAttached?: Array<{
+    submenu_id?: {
+      name: string;
+      url: string;
+      media_id?: { path?: string };
+    };
+  }>;
+}
+
+export interface SubmenuAttachedProps {
+  _id: string;
+  submenu_id: SubmenuProps | null;
+}
 
 export interface SubmenuProps {
   _id: string;
@@ -24,15 +39,17 @@ export interface SubmenuProps {
   media_id?: MediaProps | null;
 }
 
-export interface SubmenuAttachedProps {
-  submenu_id?: SubmenuProps | null;
-}
-
 export interface MenuProps {
   _id: string;
   name: string;
   media_id?: MediaProps | null;
   submenusAttached?: SubmenuAttachedProps[];
+}
+
+export interface SimpleSubmenu {
+  name: string;
+  url: string;
+  media: string | null;
 }
 
 // User
@@ -408,7 +425,7 @@ export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) 
 
     const userPermissions = await UserPermission.find({ user_id }).select("permission_id").lean();
     const permissionIds = userPermissions?.map(up => up.permission_id);
-    const menus = await SpatieMenu.find({ status: true }).populate([ { path: "media_id", model: "Media", select: "path alt" }, { path: "submenusAttached", populate: { path: "submenu_id",  model: "SpatieSubmenu", match: { status: true, permission_id: { $in: permissionIds } }, populate: [ { path: "media_id", model: "Media", select: "path alt" }, ] } }]).lean();
+    const menus = await SpatieMenu.find({ status: true }).populate([ { path: "media_id", model: "Media", select: "path alt" }, { path: "submenusAttached", populate: { path: "submenu_id", model: "SpatieSubmenu", match: { status: true, permission_id: { $in: permissionIds } }, populate: [ { path: "media_id", model: "Media", select: "path alt" }, ] } }]).lean();
 
     const adminLinks = menus
       ?.map(menu => {
@@ -430,7 +447,38 @@ export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) 
         };
       }).filter(Boolean);
 
-      return res.status(200).json({ message: 'Fetched User Menus', data: adminLinks });
+
+      const userMenuRaw = await SpatieMenu.findOne({ name: 'User', status: true })
+      .populate([
+        { path: "media_id", model: "Media", select: "path alt" },
+        {
+          path: "submenusAttached",
+          populate: {
+            path: "submenu_id",
+            model: "SpatieSubmenu",
+            match: { status: true },
+            populate: [{ path: "media_id", model: "Media", select: "path alt" }],
+          }
+        }
+      ])
+      .lean();
+
+      const userMenu = userMenuRaw as unknown as SpatieMenuWithSubmenus;
+
+      let userSubmenus: SimpleSubmenu[] = [];
+      if (userMenu && userMenu.name) {
+        userSubmenus = (userMenu.submenusAttached || [])
+          .map(ms => ms.submenu_id)
+          .filter((submenu): submenu is { _id: string; name: string; url: string; media_id?: { path?: string } } => Boolean(submenu))
+          .map(sub => ({
+            _id: sub._id,
+            name: sub.name,
+            url: sub.url,
+            media: sub.media_id?.path || null,
+          }));
+      }
+
+      return res.status(200).json({ message: 'Fetched User Menus', data : { adminLinks, userSubmenus } });
   } catch (error) { return log(error); }
 }
 
@@ -441,6 +489,10 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
 
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ message: 'Checked Permissions - URL MIssing', data: false });
+    
+    if (url.includes('/user/')) {
+      return res.status(200).json({ message: 'Auto-allowed because of /user/', data: true });
+    }
 
     const submenu = await SpatieSubmenu.findOne({ url });
     if (!submenu) return res.status(404).json({ message: 'Checked Permissions - Menu MIssing', data: false });
@@ -452,108 +504,29 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
   } catch (error) { log(error); return res.status(500).json({ allowed: false }); }
 }
 
-type HandlerMap = {
-  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
-};
+const functions = {
+  create_update_role,
+  get_all_roles,
+  get_single_role,
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-interface ExtendedRequest extends NextApiRequest {
-  file?: File;
-  files?: { [key: string]: File | File[] };
-}
-
-const functions: HandlerMap = {
-  create_update_role: create_update_role,
-  get_all_roles: get_all_roles,
-  get_single_role: get_single_role,
-
-  create_update_permission: create_update_permission,
-  get_all_permissions: get_all_permissions,
-  get_single_permission: get_single_permission,
+  create_update_permission,
+  get_all_permissions,
+  get_single_permission,
   
-  get_all_users: get_all_users,
-  get_single_user: get_single_user,
-  create_update_user: create_update_user,
+  get_all_users,
+  get_single_user,
+  create_update_user,
 
-  create_update_menu: create_update_menu,
-  get_all_menus: get_all_menus,
-  get_single_menu: get_single_menu,
+  create_update_menu,
+  get_all_menus,
+  get_single_menu,
 
-  create_update_submenu: create_update_submenu,
-  get_all_submenus: get_all_submenus,
-  get_single_submenu: get_single_submenu,
+  create_update_submenu,
+  get_all_submenus,
+  get_single_submenu,
 
-  get_admin_menu: get_admin_menu,
-  check_permission: check_permission,
+  get_admin_menu,
+  check_permission,
 };
 
-const tmpDir = path.join(process.cwd(), 'tmp');
-if (!fs.existsSync(tmpDir)) {
-  fs.mkdirSync(tmpDir);
-}
-
-function normalizeFormFields(fields: Record<string, any>): Record<string, any> {
-  const result: Record<string, any> = {};
-  for (const key in fields) {
-    const value = fields[key];
-    const v = Array.isArray(value) && value.length === 1 ? value[0] : value;
-    result[key] = v === 'null' || v === '' ? undefined : v;
-  }
-  return result;
-}
-
-export const parseForm = async ( req: NextApiRequest ): Promise<{ fields: Fields; files: Files }> => {
-  return new Promise((resolve, reject) => {
-    const form = new IncomingForm({
-      uploadDir: tmpDir,
-      keepExtensions: true,
-      multiples: true,
-    });
-
-    form.parse(req, (err: Error | null, fields: Fields, files: Files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ fields, files });
-      }
-    });
-  });
-};
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    let fnName: string;
-    let body: any = req.body;
-    let files: any = null;
-    
-    if ( req.method === 'POST' ) {      
-      const parsed = await parseForm(req);
-      body = normalizeFormFields(parsed.fields);
-      files = parsed.files;
-      fnName = body.function;
-    } else {
-      fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-    }
-
-    if (!fnName || typeof fnName !== 'string') {
-      return res.status(400).json({ message: 'Missing or invalid function name' });
-    }
-
-    const targetFn = functions[fnName];
-    if (!targetFn) {
-      return res.status(400).json({ message: `Invalid function name: ${fnName}` });
-    }
-
-    await connectDB();
-
-    req.body = body;
-    if (files) (req as any).files = files;
-
-    await targetFn(req, res);
-  } catch (error) { return log(error); }
-}
+export default createApiHandler(functions);

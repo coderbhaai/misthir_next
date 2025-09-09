@@ -8,7 +8,7 @@ interface ImportMeta {
 }
 
 interface SingleProductProps {
-  _id: Types.ObjectId | string;
+  _id: string | Types.ObjectId;
   name: string;
   dietary_type:string;
   titleamt?: string;
@@ -27,7 +27,7 @@ interface RelatedContent {
 }
 
 interface BlogProps{
-  _id: Types.ObjectId | string;
+  _id: string | Types.ObjectId;
   name: string;
   url: string;
   media_id?: Types.ObjectId;

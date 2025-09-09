@@ -102,7 +102,7 @@ export type TestimonialProps = {
 }
 
 export interface ProductMetaRef {
-  _id: Types.ObjectId | string;
+  _id: string | Types.ObjectId;
   module: string;
   name: string;
   url?: string;

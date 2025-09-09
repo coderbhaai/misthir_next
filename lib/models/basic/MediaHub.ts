@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface IMediaHubProps extends Document {
   module: string;
-  module_id: Types.ObjectId | string;
+  module_id: string | Types.ObjectId;
   media_id: Types.ObjectId;
   vendor_id: Types.ObjectId;
   primary: boolean;

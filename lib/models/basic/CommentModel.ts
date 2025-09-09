@@ -2,8 +2,8 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface ICommentProps extends Document {
   module: "Blog" | "Product";
-  module_id: Types.ObjectId | string;
-  user_id?: Types.ObjectId | string;
+  module_id: string | Types.ObjectId;
+  user_id?: string | Types.ObjectId;
   name: string;
   email: string;
   content: string;

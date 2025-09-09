@@ -5,29 +5,14 @@ import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
-import MetaTableInput, { MetaTableProps } from '@amitkk/basic/components/static/meta-table-input';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
-
-export type DataProps = {
-  function: string;
-  type: string;
-  name: string;
-  url: string;
-  status: boolean;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  _id: string;
-  meta_id: MetaTableProps;
-  selected_meta_id: String;
-  title: String;
-  description: String;
-  selectedDataId?: string | number | object | null;
-};
+import { StateProps } from '@amitkk/address/types/address';  
+import { isPopulatedCountryProps } from '../utils/addressUtils';
 
 type UserTableRowProps = TableRowPropsBase & {
-  row: DataProps;
-  onEdit: (row: DataProps) => void;
+  row: StateProps;
+  onEdit: (row: StateProps) => void;
 };
 
 export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit}: UserTableRowProps) {
@@ -38,15 +23,10 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
-        <TableCell>{row.type}</TableCell>
+        <TableCell>{isPopulatedCountryProps(row.country_id) ? row.country_id.name : '-'}</TableCell>
         <TableCell>{row.name}</TableCell>
-        <TableCell>{row.url}</TableCell>
-        <TableCell><MetaTableInput title={row.meta_id?.title} description={row.meta_id?.description}/></TableCell>
-        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="Blogmeta"/></TableCell>
-        <TableCell>{new Date(row.createdAt ?? new Date()).toLocaleDateString()}</TableCell>
-        <TableCell align='right'>
-          <MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem>
-        </TableCell>
+        <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="State"/></TableCell>
+        <TableCell align='right'><MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

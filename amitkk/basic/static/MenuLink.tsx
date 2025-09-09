@@ -7,10 +7,13 @@ export default function MenuLink() {
   const [open, setOpen] = useState(true);
   const [submenuOpen, setSubmenuOpen] = useState<{ [key: string]: boolean }>({});
   const [menu, setMenu] = useState<any[]>([]);
+  const [userLinks, setUserLinks] = useState<any[]>([]);
+  
   useEffect(() => {
     async function fetchMenu() {
       const data = await getLayoutLinks();
-      setMenu(data);
+      setMenu(data.adminLinks);
+      setUserLinks(data.userSubmenus);
     }
     fetchMenu();
   }, []);
@@ -49,6 +52,19 @@ export default function MenuLink() {
                 </List>
               </Collapse>
             )}
+        </div>
+      ))}
+
+      {userLinks?.map((i) => (
+        <div key={i._id as string}>
+          <List key={`${i.name}-${i.url || i.name}`}>
+            <ListItem component="a" href={i.url}>
+              {i.media && (
+                <img src={i.media} alt={i.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: "50%", marginRight: 8, }}/>
+              )}
+              <ListItemText primary={i.name} />
+            </ListItem>
+          </List>
         </div>
       ))}
     </List>

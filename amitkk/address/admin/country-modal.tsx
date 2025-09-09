@@ -1,37 +1,37 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, {SelectChangeEvent} from '@mui/material/Select';
+import {SelectChangeEvent} from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import { Checkbox, FormHelperText, ListItemText } from '@mui/material';
-
-import type {DataProps} from './admin-city-table';
-import MetaInput from '@amitkk/basic/components/static/meta-input';
-import StatusSelect from '@amitkk/basic/components/static/status-input';
 import CustomModal from '@amitkk/basic/static/CustomModal';
 import { TableDataFormProps, apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
+import { CountryProps } from '@amitkk/address/types/address';
+import StatusDisplay from '@amitkk/basic/components/static/status-display-input';
 
 type DataFormProps = TableDataFormProps & {
   onUpdate: (updatedData: DataProps) => void;
 };
 
+export interface DataProps extends CountryProps {
+  function?: string;
+  selectedDataId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
-    function : 'create_update_blog_meta',
-    type: '',
+    function: 'create_update_country',
+    _id: '',
     name: '',
-    url: '',
+    capital: '',
+    code: '',
+    calling_code: '',
+    flag: '',
     status: true,
+    displayOrder: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
-    _id: '',
-    selectedDataId,
-    selected_meta_id: '', 
-    meta_id: {}, 
-    title: '', description: '',
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
   
@@ -42,32 +42,26 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;  
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: name === "status" ? value === "true" : value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
   };
 
   React.useEffect(() => {
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `blog/blogmeta?function=get_single_blog_meta&id=${selectedDataId}`);
+          const res = await apiRequest("get", `address/address?function=get_single_country&id=${selectedDataId}`);
 
           setFormData({
-            function: 'create_update_blog_meta',
-            type: res?.data?.type || '',
+            function: 'create_update_country',
+            _id: res?.data?._id || '',
             name: res?.data?.name || '',
-            url: res?.data?.url || '',
+            capital: res?.data?.capital || '',
+            code: res?.data?.code || '',
+            calling_code: res?.data?.calling_code || '',
+            flag: res?.data?.flag || '',
             status: res?.data?.status ?? true,
             createdAt: res?.data?.createdAt || new Date(),
             updatedAt: new Date(),
-            _id: res?.data?._id || '',
-            selectedDataId: res?.data?._id || '',
-            selected_meta_id: res?.data?.meta_id?._id || '',
-            title: res?.data?.meta_id?.title || '',
-            description: res?.data?.meta_id?.description || '',
-            meta_id: {},
           });
         } catch (error) { clo( error ); }
       };
@@ -77,9 +71,9 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedData: DataProps = {...formData, function: 'create_update_blog_meta', updatedAt: new Date(), _id: selectedDataId as string};
+    const updatedData: CountryProps = {...formData };
     try {
-      const res = await apiRequest("post", `blog/blogmeta`, updatedData);
+      const res = await apiRequest("post", `address/address`, updatedData);
 
       if( res?.data ){
         setFormData(initialFormData);
@@ -89,24 +83,17 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     } catch (error) { clo( error ); }
   };
 
-  const title = !selectedDataId ? 'Add Blog Meta' : 'Update Blog Meta';
+  const title = !selectedDataId ? 'Add Country' : 'Update Country';
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
       <form onSubmit={handleSubmit}>
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
-          <FormControl sx={{width: '100%'}}>
-            <InputLabel id="type-simple-select-label">Type <span style={{ color: 'red' }}>*</span></InputLabel>
-            <Select labelId="type-simple-select-label" id="type-simple-select" label="Type" name="type" value={formData.type} onChange={handleChange}>
-              <MenuItem value="category">Category</MenuItem> 
-              <MenuItem value="tag">Tag</MenuItem> 
-            </Select>
-            {(formData.status === undefined || formData.status === null) && ( <FormHelperText>Status is required</FormHelperText> )}
-          </FormControl>
           <TextField label='Name' variant='outlined' value={formData.name} name='name' fullWidth onChange={handleChange} required/>
-          <TextField label='URL' variant='outlined' value={formData.url} name='url' fullWidth onChange={handleChange} required/>
-          <StatusSelect value={formData.status} onChange={handleChange}/>
-          <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
+          <TextField label='Captial' variant='outlined' value={formData.capital} name='capital' fullWidth onChange={handleChange} required/>
+          <TextField label='Code' variant='outlined' value={formData.code} name='code' fullWidth onChange={handleChange} required/>
+          <TextField label='Calling Code' variant='outlined' value={formData.calling_code} name='calling_code' fullWidth onChange={handleChange} required/>
+          <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
           <Button type='submit' variant='contained' color='primary'>{title}</Button>
         </Box>
       </form>

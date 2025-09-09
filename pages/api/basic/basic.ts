@@ -1,28 +1,10 @@
 import { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from 'pages/lib/mongodb';
 import { uploadMedia } from './media';
-import { IncomingForm, Fields, Files } from 'formidable';
-import fs from 'fs';
-import path from 'path';
 import { log } from '../utils';
 import Client from 'lib/models/basic/Client';
 import Contact from 'lib/models/basic/Contact';
-
-type HandlerMap = {
-  [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
-};
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-interface ExtendedRequest extends NextApiRequest {
-  file?: File;
-  files?: { [key: string]: File | File[] };
-}
+import { createApiHandler, ExtendedRequest } from '../apiHandler';
 
 // Client
   export async function get_all_clients(req: NextApiRequest, res: NextApiResponse) {
@@ -177,73 +159,15 @@ interface ExtendedRequest extends NextApiRequest {
   }
 // Contact
 
-const functions: HandlerMap = {
-  get_all_clients: get_all_clients,
-  get_single_client: get_single_client,
-  create_update_client: create_update_client,
-  get_all_client_options: get_all_client_options,
+const functions = {
+  get_all_clients,
+  get_single_client,
+  create_update_client,
+  get_all_client_options,
 
-  get_all_contacts: get_all_contacts,
-  get_single_contact: get_single_contact,
-  create_update_contact: create_update_contact,
+  get_all_contacts,
+  get_single_contact,
+  create_update_contact,
 };
 
-const tmpDir = path.join(process.cwd(), 'tmp');
-if (!fs.existsSync(tmpDir)) { fs.mkdirSync(tmpDir); }
-
-function normalizeFormFields(fields: Record<string, any>): Record<string, any> {
-  const result: Record<string, any> = {};
-  for (const key in fields) {
-    const value = fields[key];
-    const v = Array.isArray(value) && value.length === 1 ? value[0] : value;
-    result[key] = v === 'null' || v === '' ? undefined : v;
-  }
-  return result;
-}
-
-export const parseForm = async ( req: NextApiRequest ): Promise<{ fields: Fields; files: Files }> => {
-  return new Promise((resolve, reject) => {
-    const form = new IncomingForm({
-      uploadDir: tmpDir,
-      keepExtensions: true,
-      multiples: true,
-    });
-
-    form.parse(req, (err: Error | null, fields: Fields, files: Files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ fields, files });
-      }
-    });
-  });
-};
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    let fnName: string;
-    let body: any = req.body;
-    let files: any = null;
-
-    if (req.method === 'POST') {
-      const parsed = await parseForm(req);
-      body = normalizeFormFields(parsed.fields);
-      files = parsed.files;
-      fnName = body.function;
-    } else {
-      fnName = req.method === 'GET' ? (req.query.function as string) : req.body.function;
-    }
-
-    if (!fnName || typeof fnName !== 'string') { return res.status(400).json({ message: 'Missing or invalid function name' }); }    
-
-    const targetFn = functions[fnName];
-    if (!targetFn) { return res.status(400).json({ message: `Invalid function name: ${fnName}` }); }
-
-    await connectDB();
-
-    req.body = body;
-    if (files) (req as any).files = files;
-
-    await targetFn(req, res);
-  } catch (error) { return log(error); }
-}
+export default createApiHandler(functions);

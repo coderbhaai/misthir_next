@@ -5,7 +5,7 @@ export interface ISubmenuProps extends Document {
   url: string;
   status: boolean;
   displayOrder?: number;
-  permission_id: mongoose.Types.ObjectId;
+  permission_id?: mongoose.Types.ObjectId;
   media_id?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -17,7 +17,7 @@ const spatieSubmenuSchema = new Schema<ISubmenuProps>({
   status: { type: Boolean, required: true },
   displayOrder: { type: Number, required: false },
   media_id: { type: Schema.Types.ObjectId, ref: 'Media' },
-  permission_id: { type: Schema.Types.ObjectId, ref: "SpatiePermission", required: true },
+  permission_id: { type: Schema.Types.ObjectId, ref: "SpatiePermission", required: false },
 }, { timestamps: true });
 
 spatieSubmenuSchema.virtual("permissionAttached", { ref: "SpatiePermission", localField: "permission_id", foreignField: "_id", justOne: true });
