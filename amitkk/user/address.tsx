@@ -18,13 +18,18 @@ export  function UserAddress(){
     const [data, setData] = useState<DataProps[]>([]);
     const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
     const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
+    const [userId, setUserId] = useState<string | undefined>("");
     const [filterData, setFilterData] = useState("");
-    const [permissions, setPermissions] = useState<{_id: string; name: string}[]>([]);
 
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, permissions };
-    const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
+    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, userId };
+    const handleEdit = (row: DataProps) => { 
+        console.log('row', row)
+        setSelectedDataId(row._id.toString()); 
+        setOpen(true); 
+        setUserId(row.user_id?.toString());
+    };
 
     const fetchData = useCallback(async () => {
         try {
@@ -39,7 +44,7 @@ export  function UserAddress(){
         if (updatedDataId) {
             const fetchData = async () => {
                 try {
-                    const res = await apiRequest("get", `address/address?function=get_my_single_address&id=${updatedDataId}`);
+                    const res = await apiRequest("post", `address/address`, { function : "get_single_address", id: updatedDataId, user_id : userId });
                     const data = res?.data;
                     if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
     

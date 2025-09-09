@@ -20,9 +20,10 @@ import { useEffect, useState } from 'react';
 
 type DataFormProps = TableDataFormProps & {
   onUpdate: (updatedData: DataProps) => void;
+  userId: string | undefined;
 };
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
+export default function DataModal({ open, handleClose, selectedDataId, onUpdate, userId }: DataFormProps) {
   const [isLoadingStates, setIsLoadingStates] = React.useState(false);
   const { isLoggedIn, user } = useAuth();
   const initialFormData: DataProps = {
@@ -140,11 +141,12 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `address/address?function=get_my_single_address&id=${selectedDataId}`);
+          const res = await apiRequest("post", `address/address`, { function : "get_single_address", id: selectedDataId, user_id : userId });
 
           setFormData({
             function: 'create_update_address',
             _id: res?.data?._id || '',
+            user_id: res?.data?.user_id || '',
             name: res?.data?.name || '',
             email: res?.data?.email || '',
             phone: res?.data?.phone || '',
@@ -200,28 +202,13 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
           </Box>
           <GenericSelect label="State" name="state_id" value={formData.state_id?.toString() ?? ""} options={stateOptions} onChange={(val) => setFormData({ ...formData, state_id: val as string })}/>
          
-         
-         <GenericSelectInput
-  label="City"
-  name="city"
-  value={cityOptions.find(opt => opt._id === formData.city_id) || null}
-  options={cityOptions}
-  onChange={({ id, new: city_new }) => {
-    setFormData(prev => ({
-      ...prev,
-      city_id: id ?? '',
-      city_new: city_new ?? '',
-    }));
-  }}
-/>
-
-
-
-
+         <GenericSelectInput label="City" name="city" value={cityOptions.find(opt => opt._id === formData.city_id) || null} 
+          options={cityOptions}
+          onChange={({ id, new: city_new }) => {
+            setFormData(prev => ({ ...prev, city_id: id ?? '', city_new: city_new ?? '' }));
+          }}/>
 
           <TextField label='Address 1' variant='outlined' value={formData.address1} name='address1' fullWidth onChange={handleChange} required/>
-
-
           <TextField label='Address 2' variant='outlined' value={formData.address2} name='address2' fullWidth onChange={handleChange}/>
           <TextField label='PIN' variant='outlined' value={formData.pin} name='pin' fullWidth onChange={handleChange} required/>
           <TextField label='Landmark' variant='outlined' value={formData.landmark} name='landmark' fullWidth onChange={handleChange}/>

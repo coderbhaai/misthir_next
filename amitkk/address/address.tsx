@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
-import DataModal from "@amitkk/blog/components/blog-meta-modal";
-import { AdminDataTable, DataProps } from "@amitkk/blog/components/admin-blog-meta-table";
+import DataModal from "@amitkk/user/admin/user-address-modal";
+import { AdminDataTable, DataProps } from "@amitkk/address/admin/admin-address-table";
 
-export  function AdminBlogMeta(){
+export  function AdminAddress(){
     const showCheckBox = false;
     const table = useTable();
     const [open, setOpen] = useState(false);
@@ -17,18 +17,24 @@ export  function AdminBlogMeta(){
     }
     const [data, setData] = useState<DataProps[]>([]);
     const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
+    const [userId, setUserId] = useState<string | undefined>("");
     const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
     const [filterData, setFilterData] = useState("");
-    const [permissions, setPermissions] = useState<{_id: string; name: string}[]>([]);
 
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, permissions };
-    const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
+    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, userId };
+    const handleEdit = (row: DataProps) => { 
+        console.log('row', row)
+        setSelectedDataId(row._id.toString()); 
+        const userId = typeof row.user_id === 'object' && '_id' in row.user_id ? row.user_id._id.toString() : row.user_id?.toString() || '';
+        setUserId(userId);
+        setOpen(true);
+    };
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await apiRequest("get", "blog/blogmeta?function=get_all_blog_meta");
+            const res = await apiRequest("get", "address/address?function=get_all_addresses");
             setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
@@ -39,7 +45,8 @@ export  function AdminBlogMeta(){
         if (updatedDataId) {
             const fetchData = async () => {
                 try {
-                    const res = await apiRequest("get", `blog/blogmeta?function=get_single_blog_meta&id=${updatedDataId}`);
+                    const res = await apiRequest("post", `address/address`, { function : "get_single_address", id: updatedDataId, user_id : userId });
+
                     const data = res?.data;
                     if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
     
@@ -62,14 +69,12 @@ export  function AdminBlogMeta(){
     
     return(
         <AdminTableLayout<DataProps>
-            title="Blogmetas" addButtonLabel="New Blogmeta" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
+            title="Addresses" addButtonLabel="New Address" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
-                    { id: "type", label: "Type" },
-                    { id: "name", label: "Name" },
-                    { id: "url", label: "URL" },
-                    { id: "meta", label: "Meta" },
+                    { id: "user", label: "User" },
+                    { id: "address", label: "Address" },
                     { id: "status", label: "Status" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
@@ -84,4 +89,4 @@ export  function AdminBlogMeta(){
     )
 }
 
-export default withAuth(AdminBlogMeta);
+export default withAuth(AdminAddress);

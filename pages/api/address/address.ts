@@ -280,24 +280,33 @@ import Address from 'lib/models/address/Address';
     } catch (error) { return log(error); }
   }
 
-  export async function get_my_single_address(req: NextApiRequest, res: NextApiResponse) {
+  export async function get_single_address(req: NextApiRequest, res: NextApiResponse) {
     try {
-      const id = req.query.id as string;
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const data = req.body;
+
+      console.log('data', data)
+
+      const id = data.id;
       if (!id) return res.status(400).json({ message: 'ID MIssing', data: false });
 
-      const user_id = getUserIdFromToken(req);
+      const user_id = data.user_id;
+      if (!user_id) return res.status(400).json({ message: 'User ID MIssing', data: false });
       
-      const data = await Address.findOne({ _id: id, user_id }).populate({
-          path: 'city_id',
-          select: '_id name state_id',
-          populate: {
-            path: 'state_id',
-            select: '_id name country_id',
-            populate: { path: 'country_id', select: '_id name' }
-          }
-        }).exec();
+      const singleAddress = await Address.findOne({ _id: id, user_id }).populate([
+          { path: 'user_id', select: '_id name email phone' },
+          {
+            path: 'city_id',
+            select: '_id name state_id',
+            populate: {
+              path: 'state_id',
+              select: '_id name country_id',
+              populate: { path: 'country_id', select: '_id name' }
+            }
+          }]).exec();
 
-      return res.status(200).json({ message: 'Fetched all City', data });
+      return res.status(200).json({ message: 'Fetched all City', data: singleAddress });
     } catch (error) { return log(error); }
   }
 
@@ -310,7 +319,7 @@ import Address from 'lib/models/address/Address';
 
       const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
 
-      const user_id = getUserIdFromToken(req);
+      const user_id = data.user_id || getUserIdFromToken(req);
 
       let cityId = data.city_id;
 
@@ -382,6 +391,25 @@ import Address from 'lib/models/address/Address';
       return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
     } catch (error) { return log(error); }
   }
+
+  export async function get_all_addresses(req: NextApiRequest, res: NextApiResponse) {
+    try {      
+      const data = await Address.find()
+        .populate([
+          { path: 'user_id', select: '_id name email phone' },
+          {
+          path: 'city_id',
+          select: '_id name state_id',
+          populate: {
+            path: 'state_id',
+            select: '_id name country_id',
+            populate: { path: 'country_id', select: '_id name' }
+          }
+        }]).exec();
+
+      return res.status(200).json({ message: 'Fetched all Addresses', data });
+    } catch (error) { return log(error); }
+  }
 // Address
 
 const functions = {
@@ -402,8 +430,9 @@ const functions = {
   get_cities_of_state,
 
   get_my_addresses,
-  get_my_single_address,
+  get_single_address,
   create_update_address,
+  get_all_addresses
 
 };
 
