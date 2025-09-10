@@ -286,8 +286,6 @@ import Address from 'lib/models/address/Address';
 
       const data = req.body;
 
-      console.log('data', data)
-
       const id = data.id;
       if (!id) return res.status(400).json({ message: 'ID MIssing', data: false });
 

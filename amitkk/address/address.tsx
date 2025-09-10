@@ -24,8 +24,7 @@ export  function AdminAddress(){
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, userId };
-    const handleEdit = (row: DataProps) => { 
-        console.log('row', row)
+    const handleEdit = (row: DataProps) => {
         setSelectedDataId(row._id.toString()); 
         const userId = typeof row.user_id === 'object' && '_id' in row.user_id ? row.user_id._id.toString() : row.user_id?.toString() || '';
         setUserId(userId);

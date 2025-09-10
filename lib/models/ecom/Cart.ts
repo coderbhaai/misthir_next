@@ -69,6 +69,9 @@ const cartSkuSchema = new Schema<CartSkuProps>({
 
 cartSchema.virtual('cartSkus', { ref: 'CartSku', localField: '_id', foreignField: 'cart_id', justOne: false });
 cartSchema.virtual('cartCharges', { ref: 'CartCharges', localField: '_id', foreignField: 'cart_id', justOne: true });
+cartSkuSchema.virtual('product', { ref: 'Product', localField: 'product_id', foreignField: '_id', justOne: true, });
+cartSkuSchema.virtual('vendor', { ref: 'User', localField: 'vendor_id', foreignField: '_id', justOne: true, });
+cartSkuSchema.virtual('sku', { ref: 'Sku', localField: 'sku_id', foreignField: '_id', justOne: true, });
 
 export const Cart = models.Cart || model<CartProps>("Cart", cartSchema);
 export const CartSku = models.CartSku || model<CartSkuProps>("CartSku", cartSkuSchema);

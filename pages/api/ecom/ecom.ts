@@ -5,6 +5,7 @@ import { getUserIdFromToken, log } from '../utils';
 import { deleteCookie, getCartIdFromRequest, setCookie } from '../cartUtils';
 import { Cart, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
 import { Sku, SkuDocument } from 'lib/models/product/Sku';
+import Product from 'lib/models/product/Product';
 
 export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -13,19 +14,16 @@ export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
     if( !cart_id ){
       cart_id = await create_cart(req, res);
     }
-
-    if( !cart_id ){
-      return res.status(200).json({ status: false, message: 'Cart not found' });
-    }
+    if( !cart_id ){ return res.status(200).json({ status: false, message: 'Cart not found' }); }
 
     const cartSkuResponse = await update_cart(req, cart_id);
+
     if (cartSkuResponse.status) {
-      return res.status(200).json(cartSkuResponse);
+      return res.status(200).json({ ...cartSkuResponse });
     } else {
-      return res.status(400).json(cartSkuResponse);
+      return res.status(400).json({ ...cartSkuResponse });
     }
 
-    
   } catch (error) { return log(error); }
 }
 
@@ -108,6 +106,14 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
       }
     }
 
+    await recalculateCart(cart_id);
+
+    return { status: true, message };
+  } catch (error) { log(error); return {status: false, message: "" } }
+}
+
+export async function recalculateCart ( cart_id: string){
+  try{
     const updatedCart = await Cart.findById(cart_id).populate([ { path: 'cartSkus', populate: { path: 'sku_id', model: 'Sku' } }, { path: 'cartCharges' } ]).exec();
     
     let total = updatedCart.cartSkus.reduce((sum: number, cartSku: CartSkuProps & { sku_id: SkuDocument | null }) => {
@@ -129,24 +135,98 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
     updatedCart.total = total;
     updatedCart.payable_amount = payable_amount;
 
-    console.log("TP", total, payable_amount)
-
     await updatedCart.save();
-
-    return { status: true, message };
-  } catch (error) { 
-    return {status: false, message: "" }
-    log(error); }
+  }catch (error) { log(error); }
 }
 
+export async function get_cart_data(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    let cart_id = await getCartIdFromRequest(req, res);
+    if( !cart_id ){ return res.status(200).json({ message: 'Cart not found', data: null }); }
 
+    const data = await Cart.findById(cart_id).populate([ { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }, { path: 'cartCharges' }]).exec();
 
+    const cartProductIds = data?.cartSkus.map((item: any) => item.product_id._id);
+    const relatedProducts = await Product.find().populate({ path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } }).exec();
 
+    // { _id: { $nin: cartProductIds }, }
 
+    return res.status(200).json({ message: 'Cart Fetched', data, relatedProducts });
+  } catch (error) { return log(error); }
+}
 
+export async function increment_cart(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { cart_sku_id } = req.body;
+    if (!cart_sku_id) { return res.status(400).json({ status: false, message: 'cart_sku_id is required' }); }
+    
+    let cart_id = await getCartIdFromRequest(req, res);
+    if( !cart_id ){ return res.status(200).json({ status: false, message: 'Cart not found' }); }
+    
+    let cartSku = await CartSku.findOne({ cart_id, _id: cart_sku_id });
+    if (!cartSku) { return res.status(400).json({ status: false, message: 'Cart item not found' }); }
+    
+    cartSku.quantity += 1;
+    await cartSku.save();
+
+    await recalculateCart(cart_id);
+
+    return res.status(200).json({ status: true, message: 'Quantity incremented successfully' });
+  } catch (error) { return log(error); }
+}
+
+export async function decrement_cart(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { cart_sku_id } = req.body;
+    if (!cart_sku_id) { return res.status(400).json({ status: false, message: 'cart_sku_id is required' }); }
+
+    const cart_id = await getCartIdFromRequest(req, res);
+    if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
+
+    let cartSku = await CartSku.findOne({ cart_id, _id: cart_sku_id });
+    if (!cartSku) { return res.status(400).json({ status: false, message: 'Cart item not found' }); }
+
+    cartSku.quantity -= 1;
+
+    let message = "";
+    if (cartSku.quantity <= 0) {
+      await CartSku.deleteOne({ _id: cartSku._id });
+      message =  'Cart item removed from cart';
+    } else {
+      await cartSku.save();
+      message = 'Quantity decremented successfully';
+    }    
+    
+    await recalculateCart(cart_id);
+
+    return res.status(200).json({ status: true, message });
+  } catch (error) { return log(error); }
+};
+
+export async function update_user_remarks(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { user_remarks } = req.body;
+    if (!user_remarks) { return res.status(400).json({ status: false, message: 'user_remarks is required' }); }
+
+    const cart_id = await getCartIdFromRequest(req, res);
+    if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
+
+    let cart = await Cart.findOne({ _id: cart_id });
+    if (!cart) { return res.status(400).json({ status: false, message: 'Cart not found' }); }
+
+    cart.user_remarks = user_remarks;
+    await cart.save();
+
+    return res.status(200).json({ status: true, message: "Order Note Updated" });
+  } catch (error) { return log(error); }
+};
 
 const functions = {
   add_to_cart,
+  get_cart_data,
+  increment_cart,
+  decrement_cart,
+  update_user_remarks
 };
 
 export default createApiHandler(functions);

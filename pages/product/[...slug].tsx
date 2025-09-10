@@ -66,7 +66,7 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
   useEffect(() => { setQuantity(1); }, [selectedSku]);
 
   const handleAddToCart = () => {
-    sendAction('ADD_TO_CART', {
+    sendAction('add_to_cart', {
       action: 'add_to_cart',
       sku_id: selectedSku?._id,
       quantity,

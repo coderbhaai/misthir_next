@@ -1,9 +1,11 @@
 // context/EcomContext.tsx
 import { apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 type EcomContextType = {
+  relatedProducts?:any;
   cartId?: string;
+  cart?: any;
   cartItemCount: number;
   sendAction: (action: string, payload?: any) => void;
 };
@@ -14,6 +16,8 @@ const EcomContext = createContext<EcomContextType>({
 });
 
 export function EcomProvider({ children }: { children: ReactNode }) {
+  const [cart, setCart] = useState<any>(null);
+  const [relatedProducts, setRelatedProducts] = useState<any>(null);
   const [cartId, setCartId] = useState<string | undefined>(undefined);
   const [cartItemCount, setCartItemCount] = useState<number>(0);
 
@@ -21,28 +25,49 @@ export function EcomProvider({ children }: { children: ReactNode }) {
     try{
       console.log('Global Action Triggered:', action, payload);
   
-      if (action === 'ADD_TO_CART') {
+      if (action === 'add_to_cart') {
         payload.function = 'add_to_cart';
-        const res = await apiRequest("post", `ecom/ecom`, payload);
-        hitToastr(res?.status? 'success' : 'error', res?.message);
-
-        await fetchCartItemCount();  
       }
+
+      if (action === 'increment_cart') {
+        payload.function = 'increment_cart';
+      }
+
+      if (action === 'decrement_cart') {
+        payload.function = 'decrement_cart';
+      }
+
+      if (action === 'update_user_remarks') {
+        payload.function = 'update_user_remarks';
+      }
+
+      const res = await apiRequest("post", `ecom/ecom`, payload);
+      if (res?.status && res.message) {
+        await fetchCart();
+        hitToastr(res?.status? 'success' : 'error', res?.message);
+      }
+
     }catch (error) { clo( error ); }
   };
 
-  const fetchCartItemCount = async () => {
+  const fetchCart = async () => {
     try {
-      
-      const res = await apiRequest('get', 'ecom/cart-item-count');
-      if (res?.status && typeof res.count === 'number') {
-        setCartItemCount(res.count);
+      const res = await apiRequest('get', `ecom/ecom?function=get_cart_data`);
+      if (res?.data) {
+        setCart(res?.data);
+        setRelatedProducts( res?.relatedProducts );
+        const count = res?.data?.cartSkus.reduce( (sum: number, cartSku: any) => sum + (cartSku.quantity ?? 0), 0 );
+        setCartItemCount(count);
       }
+
     } catch (error) { clo(error); }
   };
 
+  useEffect(() => { fetchCart(); }, []);
+
+
   return (
-    <EcomContext.Provider value={{ cartId, cartItemCount, sendAction }}>
+    <EcomContext.Provider value={{ cartId, cart, cartItemCount, sendAction, relatedProducts }}>
       {children}
     </EcomContext.Provider>
   );

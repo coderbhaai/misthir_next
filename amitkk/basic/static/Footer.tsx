@@ -4,6 +4,8 @@ import CopyRight from './CopyRight';
 import ExploreDestinations from './ExploreDestinations';
 import FreeDownload from './FreeDownload';
 import TrustReviews from './TrustReviews';
+import CartSidebar from '@amitkk/ecom/static/CartSidebar';
+import { useState } from 'react';
 
 const Footer = () => {
   return (
@@ -118,6 +120,7 @@ const Footer = () => {
       </Container>
 
       <CopyRight/>
+      <CartSidebar/>
     </Box>
   );
 };

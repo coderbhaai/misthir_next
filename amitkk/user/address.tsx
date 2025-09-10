@@ -25,7 +25,6 @@ export  function UserAddress(){
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, userId };
     const handleEdit = (row: DataProps) => { 
-        console.log('row', row)
         setSelectedDataId(row._id.toString()); 
         setOpen(true); 
         setUserId(row.user_id?.toString());

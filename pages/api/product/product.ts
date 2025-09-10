@@ -33,7 +33,7 @@ export async function get_all_products(req: NextApiRequest, res: NextApiResponse
         { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id name url' } },
         { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
         { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
-        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } },
         { path: "sku",
           populate: [
             { path: "details", model: "SkuDetail" },
@@ -73,7 +73,7 @@ export async function get_single_product(req: NextApiRequest, res: NextApiRespon
         { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
         { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
         { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
-        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } },
         { path: 'sku',
           populate: [
             { path: 'details', model: 'SkuDetail' },
@@ -329,7 +329,7 @@ export async function get_products(req: NextApiRequest, res: NextApiResponse) {
       populate: [
         { path: 'meta_id', select: '_id title description' },
         { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
-        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } },
       ] 
     });
 
@@ -351,7 +351,7 @@ export async function get_single_product_by_url(req: NextApiRequest, res: NextAp
         { path: 'productFeature', populate: { path: 'productFeature_id', model: 'ProductFeature', select: '_id module name url' } },
         { path: 'productBrand', populate: { path: 'productBrand_id', model: 'ProductBrand', select: '_id name url' } },
         { path: 'productIngridient', populate: { path: 'ingridient_id', model: 'Ingridient', select: '_id name url' } },
-        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt cloudflare" } },
+        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } },
         { path: 'sku',
           populate: [
             { path: 'details', model: 'SkuDetail' },
