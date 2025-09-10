@@ -33,11 +33,7 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
           {[0, 1].map((index) => (
             <ListItem key={index} disablePadding sx={{ mb: 2 }}>
               <Card sx={{ display: "flex", width: "100%", p: 1, alignItems: "center" }}>
-                <CardMedia
-                  component="img"
-                  sx={{ width: 80, height: 80, objectFit: "cover", borderRadius: 1 }}
-                  image="/images/cake33.jpg"
-                  alt="choco-image"
+                <CardMedia  component="img"  sx={{ width: 80, height: 80, objectFit: "cover", borderRadius: 1 }}  image="/images/cake33.jpg"  alt="choco-image"
                 />
                 <Box sx={{ flex: 1, ml: 2, display: "flex", flexDirection: "column", justifyContent: "center" }}>
                   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -45,16 +41,14 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                       <IconButton
                         onClick={() => handleDecrease(index)}
                         size="small"
-                        sx={{ border: "1px solid #ccc", width: 24, height: 24, p: 0.3 }}
-                      >
+                        sx={{ border: "1px solid #ccc", width: 24, height: 24, p: 0.3 }}>
                         <Remove sx={{ fontSize: 12 }} />
                       </IconButton>
                       <Typography variant="body1">{counts[index]}</Typography>
                       <IconButton
                         onClick={() => handleIncrease(index)}
                         size="small"
-                        sx={{ border: "1px solid #ccc", width: 24, height: 24, p: 0.3 }}
-                      >
+                        sx={{ border: "1px solid #ccc", width: 24, height: 24, p: 0.3 }}>
                         <Add sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Box>

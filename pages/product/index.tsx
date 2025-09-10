@@ -30,7 +30,7 @@ export default function ProductPage() {
   
   return (
     <Grid container spacing={4} sx={{ px: 2, py: 4, width: "85vw", mx: "auto" }} gap={4}>
-      <Grid size={5}>
+      <Grid size={{ xs: 12, sm: 5 }}>
         <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
           <CardMedia sx={{ position: "relative", height: 570, width: 460 }}>
             <Image src="/images/cake-img.jpg" alt="Chocolate Cake" fill style={{ objectFit: "cover", borderRadius: "8px", objectPosition: "bottom" }} />
@@ -38,7 +38,7 @@ export default function ProductPage() {
         </Card>
       </Grid>
 
-      <Grid size={7} mt={4}>
+      <Grid size={{ xs: 12, sm: 7 }} mt={4}>
         <Stack spacing={3} alignItems="flex-start">
           <Button variant="text" sx={{ alignSelf: "flex-end", textTransform: "none", px: 0, minWidth: 0 }} onClick={() => setShowOrdinary(!showOrdinary)} endIcon={<span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%", border: "1px solid" }}><KeyboardArrowRightIcon fontSize="small" /></span>}>{showOrdinary ? "custome" : "Ordinary"}</Button>     
           <Typography variant="h3" fontWeight="bold" gutterBottom sx={{ lineHeight: 1.2 }}>Cake</Typography>
