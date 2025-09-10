@@ -1,66 +1,75 @@
 import { Schema, model, models, Types, Document } from "mongoose";
 
-// ------------------- Interfaces -------------------
-
 export interface CartProps extends Document {
   user_id?: string | Types.ObjectId;
   billing_address_id?: string | Types.ObjectId;
   shipping_address_id?: string | Types.ObjectId;
-  shipping_charges?: number;
-  cod_charges?: number;
   paymode?: string;
   weight?: number;
-  shipping_chargeable_value?: number;
   total?: number;
   payable_amount?: number;
-  additional_discount?: number;
   user_remarks?: string;
   admin_remarks?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
+const cartSchema = new Schema<CartProps>({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User' },
+    billing_address_id: { type: Schema.Types.ObjectId, ref: 'Address',  },
+    shipping_address_id: { type: Schema.Types.ObjectId, ref: 'Address', },
+    paymode: { type: String },
+    weight: { type: Number },
+    total: { type: Schema.Types.Decimal128 },
+    payable_amount: { type: Schema.Types.Decimal128 },
+    user_remarks: { type: String },
+    admin_remarks: { type: String },
+  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
+export interface CartChargesProps extends Document {
+  cart_id: string | Types.ObjectId;
+  shipping_charges?: number;
+  shipping_chargeable_value?: number;
+  sales_discount?: number;
+  additional_discount?: number;
+  cod_charges?: number;
+}
+
+const cartChargesSchema = new Schema<CartChargesProps>({
+    cart_id: { type: Schema.Types.ObjectId, required: true, ref: 'Cart', },
+    shipping_charges: { type: Schema.Types.Decimal128 },
+    shipping_chargeable_value: { type: Number },
+    sales_discount: { type: Number },
+    additional_discount: { type: Number },
+    cod_charges: { type: Schema.Types.Decimal128 },
+  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
 export interface CartSkuProps extends Document {
-  cart_id: Types.ObjectId | number;
-  product_id: number;
-  sku_id: number;
+  cart_id: string | Types.ObjectId;
+  product_id: string | Types.ObjectId;
+  sku_id: string | Types.ObjectId;
+  vendor_id: string | Types.ObjectId;
   quantity: number;
-  color_id?: number;
-  size_id?: number;
+  flavor_id?: string | Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
-const cartSchema = new Schema<CartProps>({
-    user_id: { type: Number },
-    billing_address_id: { type: Number },
-    shipping_address_id: { type: Number },
-    shipping_charges: { type: Schema.Types.Decimal128 },
-    cod_charges: { type: Schema.Types.Decimal128 },
-    paymode: { type: String },
-    weight: { type: Number },
-    shipping_chargeable_value: { type: Number },
-    total: { type: Schema.Types.Decimal128 },
-    payable_amount: { type: Schema.Types.Decimal128 },
-    additional_discount: { type: Number },
-    user_remarks: { type: String },
-    admin_remarks: { type: String },
-  },
-  { timestamps: true }
-);
 
-const cartSkuSchema = new Schema<CartSkuProps>(
-  {
-    cart_id: { type: Number, required: true },
-    product_id: { type: Number, required: true },
-    sku_id: { type: Number, required: true },
+const cartSkuSchema = new Schema<CartSkuProps>({
+    cart_id: { type: Schema.Types.ObjectId, ref: 'Cart', required: true },
+    product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+    sku_id: { type: Schema.Types.ObjectId, ref: 'Sku', required: true },
+    vendor_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     quantity: { type: Number, required: true },
-    color_id: { type: Number },
-    size_id: { type: Number },
-  },
-  { timestamps: true }
+    flavor_id: { type: Schema.Types.ObjectId, ref: 'ProductFeature' },
+  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-// ------------------- Models Export -------------------
+cartSchema.virtual('cartSkus', { ref: 'CartSku', localField: '_id', foreignField: 'cart_id', justOne: false });
+cartSchema.virtual('cartCharges', { ref: 'CartCharges', localField: '_id', foreignField: 'cart_id', justOne: true });
 
 export const Cart = models.Cart || model<CartProps>("Cart", cartSchema);
 export const CartSku = models.CartSku || model<CartSkuProps>("CartSku", cartSkuSchema);
+export const CartCharges = models.CartCharges || model<CartChargesProps>("CartCharges", cartChargesSchema);

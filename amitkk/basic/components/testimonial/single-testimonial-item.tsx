@@ -14,7 +14,10 @@ export default function SingleTestimonialItem({ row }: { row: any }){
             </AccordionSummary>
             <AccordionDetails>
 
-                <Typography>{ row.content? new DOMParser().parseFromString(row.content, "text/html").body?.textContent || "" : "" }</Typography>
+                <Typography component="div">
+  <span dangerouslySetInnerHTML={{ __html: row.content || '' }} />
+</Typography>
+
             </AccordionDetails>
         </Accordion>
     );

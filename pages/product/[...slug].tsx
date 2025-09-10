@@ -7,8 +7,6 @@ import Image from "next/image";
 import {Stack,Typography,RadioGroup,FormControlLabel,Radio,Button,Grid,Card,CardMedia,IconButton,Collapse, Box, Chip,} from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import { FaqProps } from "@amitkk/basic/types/page";
 import { apiRequest } from "@amitkk/basic/utils/utils";
 import { ProductRawDocument, SkuProps } from "lib/models/types";
 import FaqPanel from "@amitkk/basic/components/faq/FaqPanel";
@@ -17,8 +15,10 @@ import SuggestProducts from "@amitkk/product/static/suggest-products";
 import SuggestBlogs from "@amitkk/blog/static/suggest-blog";
 import ShareMe from "@amitkk/basic/static/ShareMe";
 import CommentPanel from "@amitkk/basic/components/comment/CommentPanel";
-import Content from "@amitkk/basic/static/Content";
 import { MUICarousel } from "@amitkk/basic/static/MUICarousel";
+import QuantitySelector from "@amitkk/product/static/QuantitySelector";
+import { sanitizeHtml } from "@amitkk/basic/static/Content";
+import { useEcom } from "contexts/EcomContext";
 
 interface ProductPageProps {
   product: ProductRawDocument;
@@ -26,13 +26,10 @@ interface ProductPageProps {
 }
 
 export default function ProductPage({ product, relatedContent }: ProductPageProps) {
-  const weightOptions = [
-    { weight: "500g", price: 19.0 },
-    { weight: "1kg", price: 34.0 },
-  ];
+  const { sendAction } = useEcom();
 
   const [aboutOpen, setAboutOpen] = useState(true);  
-  const [mounted, setMounted] = useState(false);
+  // const [mounted, setMounted] = useState(false);
   const [activeImage, setActiveImage] = useState<any>(null);
   const images = Array.isArray(product?.medias) ? product.medias : [];
   const skus = Array.isArray(product?.skus) ? product.skus : [];
@@ -40,13 +37,13 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
   const [selectedFlavour, setSelectedFlavour] = useState("");
 
   useEffect(() => {
-    setMounted(true);
+    // setMounted(true);
     if (product?.medias?.length) { setActiveImage(product.medias[0]); }
     if (product?.skus?.length) { setSelectedSku(product.skus[0] ); }
     if (product?.skus?.length && product.skus[0].flavors?.length ) { setSelectedFlavour( product.skus[0].flavors[0]._id as string ); }
   }, [product?.medias]);
 
-  if (!mounted) return null;
+  // if (!mounted) return null;
 
   const sliderSettings = {
     dots: true,
@@ -64,6 +61,22 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
       { breakpoint: 1200, settings: { slidesToShow: 3, slidesToScroll: 1, } },
     ]
   };
+
+  const [quantity, setQuantity] = useState(1);
+  useEffect(() => { setQuantity(1); }, [selectedSku]);
+
+  const handleAddToCart = () => {
+    sendAction('ADD_TO_CART', {
+      action: 'add_to_cart',
+      sku_id: selectedSku?._id,
+      quantity,
+      flavor_id : selectedFlavour
+    });
+  };
+
+  if (!product) {
+    return <Typography variant="h4">Product not found</Typography>;
+  }
 
   return (
     <>
@@ -115,7 +128,7 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
             )}
 
             <ShareMe/>
-            <Content content={product.short_desc}/>
+            {product.short_desc && ( <span dangerouslySetInnerHTML={{ __html: product.short_desc }} /> )}
 
             {selectedSku && (
               <>
@@ -138,9 +151,11 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
                   </>
                 )}
 
+                <Typography variant="h5" fontWeight="bold"> INR {selectedSku.price.toFixed(2)}</Typography>
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="h5" fontWeight="bold"> INR {selectedSku.price.toFixed(2)}</Typography>
-                  <Button variant="contained" sx={{ background: "linear-gradient(45deg, #f48fb1, #ec407a)", borderRadius: 2, px: 2, py: 1, fontSize: "1rem", "&:hover": { background: "linear-gradient(45deg, #ec407a, #f06292)" } }}>Add to Cart</Button>
+                 <QuantitySelector value={quantity} minQuantity={1} onChange={setQuantity}/>
+                  <Button onClick={handleAddToCart} variant="contained" sx={{ background: "linear-gradient(45deg, #f48fb1, #ec407a)", borderRadius: 2, px: 2, py: 1, fontSize: "1rem", "&:hover": { background: "linear-gradient(45deg, #ec407a, #f06292)" } }}>Add to Cart</Button>
+                  <Button variant="contained" sx={{ background: "linear-gradient(45deg, #f48fb1, #ec407a)", borderRadius: 2, px: 2, py: 1, fontSize: "1rem", "&:hover": { background: "linear-gradient(45deg, #ec407a, #f06292)" } }}>Buy now</Button>
                 </Stack>
               </>
             )}
@@ -153,7 +168,7 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
             <IconButton size="small" onClick={() => setAboutOpen(!aboutOpen)} sx={{ borderRadius: "50%", border: "1px solid", borderColor: "#ec407a", width: 32, height: 32 }}>{aboutOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}</IconButton>
           </Stack>
           <Collapse in={aboutOpen}>
-             <Content content={product.long_desc}/>
+             {product.long_desc && ( <span dangerouslySetInnerHTML={{ __html: product.long_desc }} /> )}
           </Collapse>
         </Grid>
 
@@ -179,5 +194,11 @@ export async function getServerSideProps(context: any) {
   const meta = res?.data?.meta_id || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
   const product = res?.data || null;
   const relatedContent = res?.relatedContent || { faq: [], testimonials: [], blogs: [], products: [] };
+
+  relatedContent.testimonials = relatedContent.testimonials.map((t: any) => ({
+    ...t,
+    content: typeof t.content === 'string' ? sanitizeHtml(t.content) : ''
+  }));
+
   return { props: { product, meta, relatedContent } };
 }

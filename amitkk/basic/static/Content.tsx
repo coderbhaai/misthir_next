@@ -1,12 +1,8 @@
-import DOMPurify from 'dompurify';
-import { Typography } from '@mui/material';
+import createDOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
 
-export default function Content({ content }: { content?: string }) {
-    if( !content ){ return null; }
-    
-    return (
-        <Typography variant="body1" color="text.secondary">
-        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
-        </Typography>
-    );
+export function sanitizeHtml(html: string): string {
+  const window = new JSDOM('').window;
+  const DOMPurify = createDOMPurify(window as any);
+  return DOMPurify.sanitize(html);
 }

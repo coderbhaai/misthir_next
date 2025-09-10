@@ -1,4 +1,7 @@
-/// <reference types="next" />
+interface AdminModuleProps {
+  module?: string;
+  module_id?: string;
+}
 
 interface ImportMeta {
   glob<T = unknown>(

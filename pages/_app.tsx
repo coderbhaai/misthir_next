@@ -10,6 +10,7 @@ import { CacheProvider, EmotionCache } from "@emotion/react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import createEmotionCache from "./createEmotionCache";
 import theme from "pages/theme";
+import Providers from "contexts/Providers";
 
 const clientSideEmotionCache = createEmotionCache();
 
@@ -24,21 +25,16 @@ export default function App({ Component, pageProps, emotionCache = clientSideEmo
   );
 
   return (
-    <CacheProvider value={emotionCache}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <AuthProvider>
-          {adminLayout ? (
-            <AdminLayout>
-              <Component {...pageProps} />
-            </AdminLayout>
-          ) : (
-            <AppLayout meta={pageProps.meta}>
-              <Component {...pageProps} />
-            </AppLayout>
-          )}
-        </AuthProvider>
-      </ThemeProvider>
-    </CacheProvider>
+    <Providers>
+      {adminLayout ? (
+        <AdminLayout>
+          <Component {...pageProps} />
+        </AdminLayout>
+      ) : (
+        <AppLayout meta={pageProps.meta}>
+          <Component {...pageProps} />
+        </AppLayout>
+      )}
+    </Providers>
   );
 }

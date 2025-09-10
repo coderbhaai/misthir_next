@@ -16,6 +16,8 @@ jwt-decode
 react-countup
 @mui/lab
 dompurify
+jsdom
+cookie
 
 
 
@@ -45,3 +47,4 @@ typescript
 cross-env
 ts-node-dev
 concurrently
+@types/jsdom
