@@ -75,4 +75,5 @@ const functions = {
   get_comments,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

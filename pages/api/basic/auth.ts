@@ -208,4 +208,5 @@ const functions = {
   check_user_access,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

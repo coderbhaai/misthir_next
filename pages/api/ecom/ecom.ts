@@ -229,4 +229,5 @@ const functions = {
   update_user_remarks
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

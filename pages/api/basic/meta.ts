@@ -113,4 +113,5 @@ const functions = {
   get_sitemap_links,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

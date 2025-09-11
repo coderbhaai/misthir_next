@@ -128,12 +128,6 @@ type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
 };
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 interface ExtendedRequest extends NextApiRequest {
   file?: File;
   files?: { [key: string]: File | File[] };
@@ -266,4 +260,5 @@ const functions = {
   get_selected_media,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

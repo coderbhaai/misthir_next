@@ -527,4 +527,5 @@ const functions = {
   create_update_browsing_history,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

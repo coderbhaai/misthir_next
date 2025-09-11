@@ -178,4 +178,5 @@ const functions = {
   get_single_blog_sidebar,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

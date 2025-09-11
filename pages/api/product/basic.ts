@@ -686,4 +686,5 @@ const functions = {
   create_update_document,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

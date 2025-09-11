@@ -388,4 +388,5 @@ const functions = {
   get_product_module,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

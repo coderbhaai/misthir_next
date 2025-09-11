@@ -1,7 +1,5 @@
-import mongoose, {Types} from 'mongoose';
+import {Types} from 'mongoose';
 import {useState, useCallback} from 'react';
-import Box from '@mui/material/Box';
-import Avatar from '@mui/material/Avatar';
 import Popover from '@mui/material/Popover';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
@@ -9,7 +7,6 @@ import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
-import DataModal from './menu-modal';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
 import MediaImage from '@amitkk/basic/components/static/table-image';
 import { TableRowPropsBase, Iconify } from '@amitkk/basic/utils/utils';

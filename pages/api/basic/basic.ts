@@ -170,4 +170,5 @@ const functions = {
   create_update_contact,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

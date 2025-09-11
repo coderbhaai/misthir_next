@@ -96,4 +96,5 @@ const functions = {
   get_single_blog_meta,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

@@ -12,7 +12,11 @@ import SpatieSubmenu from 'lib/models/spatie/SpatieSubmenu';
 import { uploadMedia } from './media';
 import { MediaProps } from '@amitkk/basic/types/page';
 import User from 'lib/models/spatie/User';
-import { createApiHandler, ExtendedRequest } from '../apiHandler';
+import path from "path";
+import fs from "fs";
+import { createApiHandler, ExtendedRequest, HandlerMap, } from '../apiHandler';
+import connectDB from 'pages/lib/mongodb';
+import { Fields, Files, IncomingForm } from 'formidable';
 
 export interface SpatieMenuWithSubmenus {
   _id: string;
@@ -504,6 +508,7 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
   } catch (error) { log(error); return res.status(500).json({ allowed: false }); }
 }
 
+
 const functions = {
   create_update_role,
   get_all_roles,
@@ -529,4 +534,5 @@ const functions = {
   check_permission,
 };
 
+export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);
