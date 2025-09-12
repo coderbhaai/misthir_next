@@ -5,7 +5,6 @@ import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUt
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
 import router from "next/router";
-import { AdminModuleProps } from "@amitkk/basic/utils/types";
 import { Types } from "mongoose";
 import DataModal from "@amitkk/basic/components/faq/faq-modal";
 import { AdminDataTable, DataProps } from "@amitkk/basic/components/faq/admin-faq-table";

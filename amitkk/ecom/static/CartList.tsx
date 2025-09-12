@@ -30,7 +30,7 @@ export default function CartList() {
                                     <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                                         <ImageWithFallback img={item.product_id?.medias?.[0]} width={80} height={80}/>
                                         <Box sx={{ flexGrow: 1, ml: 2 }}>
-                                        <Typography fontWeight="bold">{item.product_id?.name}</Typography>
+                                            <Typography fontWeight="bold">{item.product_id?.name}</Typography>
                                         </Box>
                                         <Typography fontWeight="bold">₹{item.sku_id.price}</Typography>
                                     </Box>

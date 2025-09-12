@@ -199,6 +199,13 @@ import SiteSetting from 'lib/models/payment/SiteSetting';
       return res.status(200).json({ message: '✅ Entry updated successfully', data: entry });
     } catch (error) { return log(error); }
   }
+
+  export async function get_site_settings(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await SiteSetting.find({ status: 1 }).exec();
+      return res.status(200).json({ message: 'Fetched all Settings', data });
+    } catch (error) { return log(error); }
+  }
 // SiteSetting
 
 const functions = {
@@ -213,7 +220,8 @@ const functions = {
 
   get_all_settings,
   get_single_setting,
-  create_update_setting
+  create_update_setting,
+  get_site_settings
 };
 
 export const config = { api: { bodyParser: false } };

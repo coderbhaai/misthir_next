@@ -69,7 +69,6 @@ export function EcomProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { fetchCart(); }, []);
 
-
   return (
     <EcomContext.Provider value={{ cartId, cart, cartItemCount, sendAction, relatedProducts }}>
       {children}
@@ -77,6 +76,4 @@ export function EcomProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useEcom() {
-  return useContext(EcomContext);
-}
+export function useEcom() { return useContext(EcomContext); }

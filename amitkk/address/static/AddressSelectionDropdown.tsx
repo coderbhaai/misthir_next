@@ -60,24 +60,9 @@ export default function AddressSelectionDropdown({
       </FormControl>
 
       {selectedAddress && (
-        <Box
-          sx={{
-            mt: 2,
-            p: 2,
-            border: '1px solid #ccc',
-            borderRadius: 1,
-            position: 'relative',
-          }}
-        >
-          <Typography variant="body2">
-            {fullAddress(selectedAddress)}
-          </Typography>
-          <IconButton
-            sx={{ position: 'absolute', top: 8, right: 8 }}
-            onClick={() => onEdit?.(selectedAddress._id as string)}
-          >
-            <EditIcon />
-          </IconButton>
+        <Box sx={{ mt: 2, p: 2, border: '1px solid #ccc', borderRadius: 1, position: 'relative' }} >
+          <Typography variant="body2">{fullAddress(selectedAddress)}</Typography>
+          <IconButton sx={{ position: 'absolute', top: 8, right: 8 }} onClick={() => onEdit?.(selectedAddress._id as string)}><EditIcon /></IconButton>
         </Box>
       )}
     </Box>

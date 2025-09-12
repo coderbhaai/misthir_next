@@ -6,6 +6,7 @@ import { deleteCookie, getCartIdFromRequest, setCookie } from '../cartUtils';
 import { Cart, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
 import { Sku, SkuDocument } from 'lib/models/product/Sku';
 import Product from 'lib/models/product/Product';
+import { Order, OrderCharges, OrderSku } from 'lib/models/ecom/Order';
 
 export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -128,10 +129,10 @@ export async function recalculateCart ( cart_id: string){
     const charges = updatedCart.cartCharges || {};
     const shippingCharges = Number(charges.shipping_charges || 0);
     const salesDiscount = Number(charges.sales_discount || 0);
-    const additionalDiscount = Number(charges.additional_discount || 0);
+    const admin_discount = Number(charges.admin_discount || 0);
     const codCharges = Number(charges.cod_charges || 0);
 
-    const payable_amount = total + shippingCharges + codCharges - (salesDiscount + additionalDiscount);
+    const payable_amount = total + shippingCharges + codCharges - (salesDiscount + admin_discount);
     updatedCart.total = total;
     updatedCart.payable_amount = payable_amount;
 
@@ -241,13 +242,87 @@ export async function update_cart_array(req: NextApiRequest, res: NextApiRespons
   } catch (error) { return log(error); }
 };
 
+export async function place_order(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const cart_id = await getCartIdFromRequest(req, res);
+    if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
+
+    const cart = await Cart.findOne({ _id: cart_id }).populate("cartSkus").populate("cartCharges");
+    if (!cart) { return res.status(400).json({ status: false, message: 'Cart not found' }); }
+    
+    const newEntry = new Order({
+      user_id: cart.user_id,
+      billing_address_id: cart.billing_address_id,
+      shipping_address_id: cart.shipping_address_id,
+      paymode: cart.paymode,
+      weight: cart.weight,
+      total: cart.total,
+      payable_amount: cart.payable_amount,
+      user_remarks: cart.user_remarks,
+      admin_remarks: cart.admin_remarks,
+    });
+
+    const savedOrder = await newEntry.save();
+    const orderId = savedOrder._id.toString();    
+    setCookie(res, 'orderId', orderId);
+
+    if (cart.cartCharges) {
+      await new OrderCharges({
+        order_id: savedOrder._id,
+        shipping_charges: cart.cartCharges.shipping_charges,
+        shipping_chargeable_value: cart.cartCharges.shipping_chargeable_value,
+        sales_discount: cart.cartCharges.sales_discount,
+        admin_discount: cart.cartCharges.admin_discount,
+        cod_charges: cart.cartCharges.cod_charges,
+      }).save();
+    }
+    
+    if (Array.isArray(cart.cartSkus) && cart.cartSkus.length > 0) {
+      const orderSkuDocs = cart.cartSkus.map((item: any) => ({
+        order_id: savedOrder._id,
+        product_id: item.product_id,
+        sku_id: item.sku_id,
+        vendor_id: item.vendor_id,
+        quantity: item.quantity,
+        vendor_discount: item.vendor_discount,
+        flavor_id: item.flavor_id,
+      }));
+      await OrderSku.insertMany(orderSkuDocs);
+    }
+
+    return res.status(200).json({ status: true, message: "Order Placed" });
+  } catch (error) { return log(error); }
+};
+
+export async function get_abandoned_carts(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const data = await Cart.find().populate([ { path: 'cartCharges' }, { path: 'user_id' }, { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]);
+
+    return res.status(200).json({ message: 'Cart Fetched', data });
+  } catch (error) { return log(error); }
+}
+
+export async function get_single_abdandoned_cart(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const id = (req.method === 'GET' ? req.query.id : req.body.slug) as string;
+    if ( !id ) { return res.status(400).json({ message: 'Invalid or missing Id' }); }
+
+    const data = await Cart.findById(id).populate([ { path: 'cartCharges' }, { path: 'billing_address_id' }, { path: 'shipping_address_id' }, { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).exec();
+
+    return res.status(200).json({ message: 'Single ABandoned Cart Fetched', data });
+  } catch (error) { return log(error); }
+}
+
 const functions = {
   add_to_cart,
   get_cart_data,
   increment_cart,
   decrement_cart,
   update_user_remarks,
-  update_cart_array
+  update_cart_array,
+  get_abandoned_carts,
+  get_single_abdandoned_cart,
+  place_order
 };
 
 export const config = { api: { bodyParser: false } };

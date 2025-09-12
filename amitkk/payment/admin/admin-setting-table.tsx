@@ -9,12 +9,10 @@ import IconButton from '@mui/material/IconButton';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
 import StatusSwitch from '@amitkk/basic/components/static/status-switch';
 import { TableRowPropsBase, Iconify } from '@amitkk/basic/utils/utils';
+import { SiteSetting } from '@amitkk/basic/types/page';
 
-export type DataProps = {
+export interface DataProps extends SiteSetting {
   function: string;
-  module: string;
-  module_value: string;
-  status: boolean;
   createdAt: string | Date;
   updatedAt: Date;
   _id: string | Types.ObjectId;

@@ -13,7 +13,9 @@ export function isPopulatedCountryProps(
   return typeof country === 'object' && country !== null && typeof country.name === 'string';
 }
 
-export function fullAddress(row: AddressProps): string {
+export function fullAddress(row?: AddressProps | null): string {
+  if (!row) return "";
+  
   const suffix = ', ';
   const notEmpty = (value: any, suffix: string) => (value ? value + suffix : '');
 

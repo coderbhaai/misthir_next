@@ -48,6 +48,22 @@ export interface MediaProps {
   __v: number;
 }
 
+export interface MediaHubProps {
+  _id: string | Types.ObjectId;
+  media_id: string | Types.ObjectId | MediaProps;
+}
+
+export interface ImageObject {
+  path: string;
+  alt: string;
+};
+
+export interface ImageWithFallbackProps {
+  img?: ImageObject | null;
+  width?: number | string;
+  height?: number | string;
+};
+
 export interface MetaProps {
   meta_id?: string | Types.ObjectId;
   title: string;
@@ -106,4 +122,10 @@ export interface ProductMetaRef {
   module: string;
   name: string;
   url?: string;
+}
+
+export interface SiteSetting {
+  module: string;
+  module_value: string;
+  status: boolean;
 }

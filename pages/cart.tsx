@@ -1,10 +1,10 @@
 "use client";
-import { Grid, Box, Typography, RadioGroup, Paper, Radio, TextField, FormControl, Checkbox, FormControlLabel, MenuItem, Button, Divider } from "@mui/material";
+import { Grid, Box, Typography, RadioGroup, Paper, Radio, TextField, FormControl, Checkbox, FormControlLabel, MenuItem, Button, Divider, InputLabel, Select, SelectChangeEvent } from "@mui/material";
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import PaymentIcon from '@mui/icons-material/Payment';
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { apiRequest, clo } from "@amitkk/basic/utils/utils";
+import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/utils";
 import { AddressProps } from "@amitkk/address/types/address";
 import { useAuth } from "contexts/AuthContext";
 import { useEcom } from "contexts/EcomContext";
@@ -12,92 +12,144 @@ import CartList from "@amitkk/ecom/static/CartList";
 import AddressSelectionDropdown from "@amitkk/address/static/AddressSelectionDropdown";
 import DataModal from "@amitkk/user/admin/user-address-modal";
 import SuggestProducts from "@amitkk/product/static/suggest-products";
+import { SiteSetting } from "@amitkk/basic/types/page";
+import PaymentStatic from "@amitkk/ecom/static/PaymentStatic";
 
 export default function CheckoutPage() {
   const { sendAction, cart, relatedProducts } = useEcom();
   const { isLoggedIn, user } = useAuth();
-  const [same_as_shipping, setSameAsShipping] = useState(true);
-  const [addressType, setAddressType] = useState<"shipping" | "billing">("shipping");
-  const [shipping_address_id, setShippingAddressId] = useState("");
-  const [billing_address_id, setBillingAddressId] = useState("");
   const [userId, setUserId] = useState<string | undefined>("");
-  const [openAddressModal, setOpenAddressModal] = useState(false);
-  const [selectedAddressToEdit, setSelectedAddressToEdit] = useState<string | number | null>(null);
   const [orderNote, setOrderNote] = useState("");
+  
+  // Address
+      const [same_as_shipping, setSameAsShipping] = useState(true);
+      const [addressType, setAddressType] = useState<"shipping" | "billing">("shipping");
+      const [shipping_address_id, setShippingAddressId] = useState("");
+      const [billing_address_id, setBillingAddressId] = useState("");
+      const [openAddressModal, setOpenAddressModal] = useState(false);
+      const [selectedAddressToEdit, setSelectedAddressToEdit] = useState<string | number | null>(null);
+      const [addressOptions, setAddressOptions] = useState<AddressProps[]>([]);
+      const fetchAddresses = useCallback(async () => {
+          if( !isLoggedIn ){ return; }
 
-  useEffect(() => {
-    if (cart?.user_remarks) {
-      setOrderNote(cart.user_remarks);
-    }
-  }, [cart]);
+          try {
+              const res = await apiRequest("get", "address/address?function=get_my_addresses");
+              setAddressOptions(res?.data ?? []);
+          } catch (error) { clo( error ); }
+      }, [isLoggedIn]);
 
-  const [email, setEmail] = useState('');
-  useEffect(() => {
-    if (isLoggedIn && user) {
-      setEmail(user.email ?? '');
-      setUserId(user._id ?? '')
-    }
-  }, [isLoggedIn, user]);
+      useEffect(() => { fetchAddresses(); }, [fetchAddresses]);
 
-  const [addressOptions, setAddressOptions] = useState<AddressProps[]>([]);
-  const fetchAddresses = useCallback(async () => {
-      if( !isLoggedIn ){ return; }
+      function syncAddresses() {
+        fetchAddresses();
+        if (!cart) return;
+
+        const shippingId = cart.shipping_address_id ?? '';
+        let billingId = cart.billing_address_id ?? '';
+
+        if (same_as_shipping) {
+          billingId = shippingId;
+        }
+
+        setShippingAddressId(shippingId);
+        setBillingAddressId(billingId);
+
+        if (shippingId && billingId && shippingId === billingId) {
+          setSameAsShipping(true);
+        } else if (shippingId && billingId && shippingId !== billingId) {
+          setSameAsShipping(false);
+        }
+      }
+
+      useEffect(() => { syncAddresses(); }, [cart]);
+
+      function updateCartShippingAddress(addressId: string) {
+        sendAction('update_cart_array', {
+          action: 'update_cart_array',
+          update: { shipping_address_id: addressId },
+        });
+
+        syncAddresses();
+      }
+
+      function updateCartBillingAddress(addressId: string) {
+        sendAction('update_cart_array', {
+          action: 'update_cart_array',
+          update: { billing_address_id: addressId },
+        });
+
+        syncAddresses();
+      }
+
+      const handleCloseModal = () => {
+        setOpenAddressModal(false);
+        setSelectedAddressToEdit(null);
+      };
+  // Address
+
+  // Paymode
+      const [paymode, setPaymode] = useState("Online");
+      const [allowCod, setAllowCod] = useState(false);
+      const [siteSetting, setSiteSetting] = useState<SiteSetting[]>([]);
+      const fetchSiteSetting = useCallback(async () => {      
+          try {
+              const res = await apiRequest("get", "basic/basic?function=get_site_settings");
+              setSiteSetting(res?.data ?? []);
+          } catch (error) { clo( error ); }
+      }, []);
+
+      useEffect(() => { fetchSiteSetting(); }, [fetchSiteSetting]);
+
+      useEffect(() => {
+        const codSetting = siteSetting.find( (s: any) => s.module === "Allow Cod" && s.status === true );
+        setAllowCod(codSetting?.module_value === "1");
+      }, [siteSetting]);
+
+      const updatePaymode = (newPaymode: string) => {
+        setPaymode(newPaymode);
+
+        sendAction("update_cart_array", {
+          action: "update_cart_array",
+          update: { paymode: newPaymode },
+        });
+      };
+  // Paymode
+
+  // CART
+      useEffect(() => {
+        if (!cart) { return; }
+
+        setOrderNote(cart.user_remarks ?? '');
+        setPaymode(cart.paymode ?? 'Online');
+      }, [cart]);
+
+      const [email, setEmail] = useState('');
+      useEffect(() => {
+        if (isLoggedIn && user) {
+          setEmail(user.email ?? '');
+          setUserId(user._id ?? '')
+        }
+      }, [isLoggedIn, user]); 
+  // CART
+
+  async function placeOrder(){
+    if( !shipping_address_id ){ hitToastr('error', "Shipping address is required"); return; }
+    if( !billing_address_id ){ hitToastr('error', "Billing address is required"); return; }
+    if( !paymode ){ hitToastr('error', "Paymode is required"); return; }
+
+    if( paymode == "Cod" && allowCod ){
+      console.log("Call COD")
+
       try {
-          const res = await apiRequest("get", "address/address?function=get_my_addresses");
-          setAddressOptions(res?.data ?? []);
+        const res = await apiRequest("post", "ecom/ecom", { function: "place_order" });
+        console.log("RES", res )
+
+        if( res?.status ){
+          console.log("Redirect to ", res)
+        }
+
       } catch (error) { clo( error ); }
-  }, [isLoggedIn]);
-
-  useEffect(() => { fetchAddresses(); }, [fetchAddresses]);
-
-  function syncAddresses() {
-    fetchAddresses();
-    if (!cart) return;
-
-    const shippingId = cart.shipping_address_id ?? '';
-    let billingId = cart.billing_address_id ?? '';
-
-    if (same_as_shipping) {
-      billingId = shippingId;
     }
-
-    setShippingAddressId(shippingId);
-    setBillingAddressId(billingId);
-
-    if (shippingId && billingId && shippingId === billingId) {
-      setSameAsShipping(true);
-    } else if (shippingId && billingId && shippingId !== billingId) {
-      setSameAsShipping(false);
-    }
-  }
-
-  const handleCloseModal = () => {
-    setOpenAddressModal(false);
-    setSelectedAddressToEdit(null);
-  };
-
-  useEffect(() => { syncAddresses(); }, [cart]);
-
-  function updateCartShippingAddress(addressId: string) {
-    sendAction('update_cart_array', {
-      action: 'update_cart_array',
-      update: { shipping_address_id: addressId },
-    });
-
-    syncAddresses();
-  }
-
-  function updateCartBillingAddress(addressId: string) {
-    sendAction('update_cart_array', {
-      action: 'update_cart_array',
-      update: { billing_address_id: addressId },
-    });
-
-    syncAddresses();
-  }
-
-  function placeOrder(){
-    console.log('placeOrder Called')
   }
 
   return (
@@ -113,25 +165,7 @@ export default function CheckoutPage() {
           <Button variant="contained" color="primary" onClick={() => { setAddressType("shipping");  setOpenAddressModal(true); }}>Create Shipping Address</Button>
 
           <Grid container spacing={2} sx={{ mt: 2 }}>
-            <Grid size={12}>
-              <Paper sx={{ p: 2, bgcolor: "#d6d6d6", border: "1px solid black", borderRadius: "15px 15px 0 0" }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Typography variant="body2">PhonePe Secure (UPI, Cards, Wallets, NetBanking)</Typography>
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <CreditCardIcon/>
-                    <PaymentIcon/>
-                    <PaymentIcon/>
-                    <PaymentIcon/>
-                  </Box>
-                </Box>
-                <Box sx={{ mt: 6, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-                  {/* <Image src="/images/payment.svg" alt="Payment Methods" width={200} height={50} /> */}
-                  <Typography sx={{ mt: 2 }} variant="body2">
-                    After clicking “Pay now”, you will be redirected to PhonePe Secure (UPI, Cards, Wallets, NetBanking) to complete your purchase securely.
-                  </Typography>
-                </Box>
-              </Paper>
-            </Grid>
+            <PaymentStatic/>
 
             <Grid size={12}>
               <Box>
@@ -158,9 +192,23 @@ export default function CheckoutPage() {
 
             <Grid size={12}>
               <TextField label="Add a Note" fullWidth size="small" multiline minRows={3} value={orderNote} onChange={(e) => setOrderNote(e.target.value)}/>
+
+              <Box sx={{ mt: 2 }}>
+                {allowCod ? (
+                  <FormControl fullWidth>
+                    <InputLabel id="paymode-label">Payment Method</InputLabel>
+                    <Select labelId="paymode-label" value={paymode} label="Payment Method" onChange={(e: SelectChangeEvent) => updatePaymode(e.target.value)}>
+                      <MenuItem value="Online">Online</MenuItem>
+                      <MenuItem value="Cod">Cash on Delivery</MenuItem>
+                    </Select>
+                  </FormControl>
+                ) : (
+                  <Box><strong>Payment Method:</strong> Online</Box>
+                )}
+              </Box>
+
               <Button variant="contained" fullWidth sx={{ backgroundColor: "black", color: "white", py:3, my:3 }}
-                onClick={() => { placeOrder() }}
-              >Pay Now</Button>
+                onClick={() => { placeOrder() }}>Pay Now</Button>
             </Grid>
           </Grid>
         </Grid>

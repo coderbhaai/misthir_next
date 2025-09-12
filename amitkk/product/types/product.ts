@@ -1,4 +1,4 @@
-import { MediaProps, MetaTableProps } from "@amitkk/basic/types/page";
+import { MediaHubProps, MediaProps, MetaTableProps } from "@amitkk/basic/types/page";
 import { Types } from "mongoose";
 
 export interface ProductMetaProps {
@@ -79,6 +79,7 @@ export interface ProductProps {
     _id: string | Types.ObjectId;
     createdAt: string | Date;
     updatedAt: Date;
+    mediaHubs?: MediaHubProps[];
 }
 
 export interface SkuProps {
