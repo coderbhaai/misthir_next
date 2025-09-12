@@ -5,6 +5,7 @@ import { log } from '../utils';
 import Client from 'lib/models/basic/Client';
 import Contact from 'lib/models/basic/Contact';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
+import SiteSetting from 'lib/models/payment/SiteSetting';
 
 // Client
   export async function get_all_clients(req: NextApiRequest, res: NextApiResponse) {
@@ -159,6 +160,47 @@ import { createApiHandler, ExtendedRequest } from '../apiHandler';
   }
 // Contact
 
+// SiteSetting
+  export async function get_all_settings(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await SiteSetting.find().exec();
+      return res.status(200).json({ message: 'Fetched all Settings', data });
+    } catch (error) { return log(error); }
+  }
+
+  export async function get_single_setting(req: NextApiRequest, res: NextApiResponse){
+    try{
+      const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
+      if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }  
+    
+      const entry = await SiteSetting.findById(id).exec();  
+      if (!entry) { return res.status(404).json({ message: `SiteSetting with ID ${id} not found` }); }
+    
+      return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
+
+    }catch (error) { return log(error); }
+  };
+
+  export async function create_update_setting(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const data = req.body;
+      if (!data?.module || !data?.module_value ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+
+      const entry = await SiteSetting.findOneAndUpdate({ module: data.module }, {
+          module: data.module,
+          module_value: data.module_value,
+          status: data.status,
+          updatedAt: new Date(),
+        }, { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+
+      return res.status(200).json({ message: '✅ Entry updated successfully', data: entry });
+    } catch (error) { return log(error); }
+  }
+// SiteSetting
+
 const functions = {
   get_all_clients,
   get_single_client,
@@ -168,6 +210,10 @@ const functions = {
   get_all_contacts,
   get_single_contact,
   create_update_contact,
+
+  get_all_settings,
+  get_single_setting,
+  create_update_setting
 };
 
 export const config = { api: { bodyParser: false } };

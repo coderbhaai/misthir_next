@@ -34,7 +34,7 @@ export default function AddressSelectionDropdown({
   const isValid = addressOptions.some((a) => a._id === selectedAddressId);
   const safeValue = isValid ? selectedAddressId : '';
 
-  const selectedAddress = addressOptions.find((a) => a._id === safeValue);
+  const selectedAddress = addressOptions?.find((a) => a._id === safeValue);
 
   return (
     <Box sx={{ width: '100%', my: 2 }}>
@@ -51,7 +51,7 @@ export default function AddressSelectionDropdown({
           <MenuItem value="">
             <em>Select address</em>
           </MenuItem>
-          {addressOptions.map((i: any) => (
+          {addressOptions?.map((i: any) => (
             <MenuItem key={i._id} value={i._id}>
               {fullAddress(i)}
             </MenuItem>

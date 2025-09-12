@@ -100,7 +100,6 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
               <MenuItem value="category">Category</MenuItem> 
               <MenuItem value="tag">Tag</MenuItem> 
             </Select>
-            {(formData.status === undefined || formData.status === null) && ( <FormHelperText>Status is required</FormHelperText> )}
           </FormControl>
           <TextField label='Name' variant='outlined' value={formData.name} name='name' fullWidth onChange={handleChange} required/>
           <TextField label='URL' variant='outlined' value={formData.url} name='url' fullWidth onChange={handleChange} required/>
