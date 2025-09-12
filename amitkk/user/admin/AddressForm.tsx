@@ -106,15 +106,16 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
     };
 
     React.useEffect(() => {
-        if (selectedAddressId) {
         const fetchData = async () => {
+            if (!selectedAddressId) { return; }
+
             try {
                 const res = await apiRequest("post", `address/address`, { function : "get_single_address_id_selected", id: selectedAddressId });
 
                 setFormData({
                     function: 'create_update_address',
                     _id: res?.data?._id || '',
-                    user_id: res?.data?.user_id || '',
+                    user_id: res?.data?.user_id?._id || '',
                     first_name: res?.data?.first_name || '',
                     last_name: res?.data?.last_name || '',
                     email: res?.data?.email || '',
@@ -135,8 +136,7 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
                 });
             } catch (error) { clo( error ); }
         };
-            fetchData();
-        }
+        fetchData();
     }, [selectedAddressId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -155,6 +155,10 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
     };
 
     const title = !selectedAddressId ? "Create Address" : "Edit Address";
+
+    // console.log('formData', formData)
+
+
 
     return (
         <form onSubmit={handleSubmit}>

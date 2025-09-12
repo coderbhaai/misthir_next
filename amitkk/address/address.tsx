@@ -22,12 +22,12 @@ export  function AdminAddress(){
     const [filterData, setFilterData] = useState("");
 
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["first_name"] );
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, userId };
     const handleEdit = (row: DataProps) => {
         setSelectedDataId(row._id.toString()); 
-        const userId = typeof row.user_id === 'object' && '_id' in row.user_id ? row.user_id._id.toString() : row.user_id?.toString() || '';
-        setUserId(userId);
+        // const userId = typeof row.user_id === 'object' && '_id' in row.user_id ? row.user_id._id.toString() : row.user_id?.toString() || '';
+        setUserId( row.user_id ? typeof row.user_id === 'string' ? row.user_id : row.user_id._id.toString() : '' );
         setOpen(true);
     };
 

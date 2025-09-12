@@ -96,8 +96,6 @@ export default function CheckoutPage() {
     syncAddresses();
   }
 
-  console.log('Address ID', shipping_address_id, billing_address_id)
-
   function placeOrder(){
     console.log('placeOrder Called')
   }

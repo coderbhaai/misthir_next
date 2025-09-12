@@ -21,13 +21,16 @@ export  function UserAddress(){
     const [userId, setUserId] = useState<string | undefined>("");
     const [filterData, setFilterData] = useState("");
 
-    const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
+    const updateData = async (i: DataProps) => { 
+        setUpdatedDataId(i?.toString()); };
+
+
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["first_name"] );
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, userId };
     const handleEdit = (row: DataProps) => { 
         setSelectedDataId(row._id.toString()); 
         setOpen(true); 
-        setUserId(row.user_id?.toString());
+        setUserId( row.user_id ? typeof row.user_id === 'string' ? row.user_id : row.user_id._id.toString() : '' );
     };
 
     const fetchData = useCallback(async () => {

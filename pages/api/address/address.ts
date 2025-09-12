@@ -266,20 +266,14 @@ import Address from 'lib/models/address/Address';
       const user_id = getUserIdFromToken(req);
       
       const data = await Address.find({ user_id })
-        .populate({
-          path: 'city_id',
-          select: '_id name state_id',
-          populate: {
-            path: 'state_id',
-            select: '_id name country_id',
-            populate: { path: 'country_id', select: '_id name' }
-          }
-        }).exec();
+        .populate([ { path: 'user_id', select: '_id name email phone' },
+          { path: 'city_id', select: '_id name state_id', populate: { path: 'state_id', select: '_id name country_id', populate: { path: 'country_id', select: '_id name' } }}]
+          ).exec();
 
       return res.status(200).json({ message: 'Fetched all Addresses of a User', data });
     } catch (error) { return log(error); }
   }
-
+  
   export async function get_single_address(req: NextApiRequest, res: NextApiResponse) {
     try {
       if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
