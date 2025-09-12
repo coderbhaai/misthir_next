@@ -12,8 +12,8 @@ import { Types } from 'mongoose';
 import { fullAddress } from '@amitkk/address/utils/addressUtils';
 
 export interface DataProps extends AddressProps {
-  function: string;
   _id: string;
+  function: string;
   city_new: string;
   country_id: string | Types.ObjectId;
   state_id: string | Types.ObjectId;

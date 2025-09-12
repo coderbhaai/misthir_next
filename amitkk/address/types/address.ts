@@ -42,8 +42,10 @@ export function isPopulatedCityProps(row: CityProps | PopulatedCityProps): row i
 }
 
 export interface AddressProps {
+  _id?: string | Types.ObjectId;
   user_id?: string | Types.ObjectId;
-  name: string;
+  first_name: string;
+  last_name?: string;
   email?: string;
   phone: string;
   whatsapp?: string;
@@ -77,7 +79,8 @@ export interface City {
 
 export interface FullAddressProps {
   company?: string;
-  name: string;
+  first_name: string;
+  last_name?: string;
   email?: string;
   phone: string;
   whatsapp?: string;

@@ -47,15 +47,12 @@ export interface ExtendedRequest extends NextApiRequest { file?: File; files?: {
 
 export function createApiHandler(functions: HandlerMap) {
   return async function handler(req: NextApiRequest, res: NextApiResponse) {
-    console.log('➡️ Incoming request:', req.method, req.url);
-
     try {
       let fnName: string;
       let body: any = {};
       let files: any = null;
 
       if (req.method === 'POST') {
-        console.log('📁 Parsing form-data');
         const { fields, files: uploadedFiles } = await parseForm(req);
         body = normalizeFormFields(fields);
         files = uploadedFiles;

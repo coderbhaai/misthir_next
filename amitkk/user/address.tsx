@@ -22,7 +22,7 @@ export  function UserAddress(){
     const [filterData, setFilterData] = useState("");
 
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["first_name"] );
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, userId };
     const handleEdit = (row: DataProps) => { 
         setSelectedDataId(row._id.toString()); 

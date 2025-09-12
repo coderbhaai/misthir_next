@@ -221,12 +221,33 @@ export async function update_user_remarks(req: NextApiRequest, res: NextApiRespo
   } catch (error) { return log(error); }
 };
 
+export async function update_cart_array(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const cart_id = await getCartIdFromRequest(req, res);
+    if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
+
+    const { update } = req.body;
+    if (typeof update !== 'object' || !update) { return res.status(400).json({ status: false, message: 'Invalid update payload' }); }
+
+    const cart = await Cart.findOne({ _id: cart_id });
+    if (!cart) { return res.status(400).json({ status: false, message: 'Cart not found' }); }
+    
+    for (const [key, value] of Object.entries(update)) {
+      cart.set(key, value);
+    }
+
+    await cart.save();
+    return res.status(200).json({ status: true, message: "Cart Updated" });
+  } catch (error) { return log(error); }
+};
+
 const functions = {
   add_to_cart,
   get_cart_data,
   increment_cart,
   decrement_cart,
-  update_user_remarks
+  update_user_remarks,
+  update_cart_array
 };
 
 export const config = { api: { bodyParser: false } };

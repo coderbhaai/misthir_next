@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 import { jwtDecode } from 'jwt-decode';
 
 interface User {
-  id: string;
+  _id: string;
   name?: string;
   email?: string;
   phone?: string;
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const decoded = jwtDecode<any>(token);
         const user: User = {
-          id: decoded?.id,
+          _id: decoded?._id,
           name: decoded?.name,
           email: decoded?.email,
           phone: decoded?.phone,

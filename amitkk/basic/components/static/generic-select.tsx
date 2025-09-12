@@ -12,7 +12,15 @@ type GenericSelectProps = {
   onChange: (value: string | string[]) => void;
 };
 
-const GenericSelect: React.FC<GenericSelectProps> = ({ label, name, value, options, multiple = false, required = false, onChange, }) => {
+const GenericSelect: React.FC<GenericSelectProps> = ({
+  label,
+  name,
+  value,
+  options,
+  multiple = false,
+  required = false,
+  onChange,
+}) => {
   const handleChange = (e: SelectChangeEvent<typeof value>) => {
     const newValue = multiple
       ? (e.target.value as string[])
@@ -21,13 +29,39 @@ const GenericSelect: React.FC<GenericSelectProps> = ({ label, name, value, optio
     onChange(newValue);
   };
 
+  // ✅ Validate value
+  const optionIds = options.map((o) => o._id);
+  let safeValue: string | string[];
+
+  if (multiple) {
+    const arr = Array.isArray(value) ? value : [];
+    safeValue = arr.filter((v) => optionIds.includes(v));
+  } else {
+    safeValue = optionIds.includes(value as string) ? value : "";
+  }
+
   return (
     <FormControl sx={{ width: "100%" }}>
-      <InputLabel id={`${name}-label`}>{label} {required && <span style={{ color: "red" }}>*</span>}</InputLabel>
-      <Select labelId={`${name}-label`} id={name} name={name} value={value} multiple={multiple} onChange={handleChange}>
+      <InputLabel id={`${name}-label`}>
+        {label} {required && <span style={{ color: "red" }}>*</span>}
+      </InputLabel>
+      <Select
+        labelId={`${name}-label`}
+        id={name}
+        name={name}
+        value={safeValue}
+        multiple={multiple}
+        onChange={handleChange}
+      >
         {options.length > 0 ? (
-          options.map((i) => ( <MenuItem key={i._id} value={i._id}>{i.name}</MenuItem> ))
-        ) : ( <MenuItem disabled>No {label} available</MenuItem> )}
+          options.map((i) => (
+            <MenuItem key={i._id} value={i._id}>
+              {i.name}
+            </MenuItem>
+          ))
+        ) : (
+          <MenuItem disabled>No {label} available</MenuItem>
+        )}
       </Select>
     </FormControl>
   );

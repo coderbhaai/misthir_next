@@ -1,35 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Drawer, Box, Typography, List, ListItem, Button, Card, CardMedia, IconButton, Badge, TextField } from "@mui/material";
-import { Add, Remove } from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useEcom } from "contexts/EcomContext";
-import Image from 'next/image';
 import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import { hitToastr } from "@amitkk/basic/utils/utils";
 import Link from "next/link";
+import CartList from "./CartList";
 
 export default function CartSidebar() {
   const { sendAction, cart, cartItemCount, relatedProducts } = useEcom();
   const [open, setOpen] = useState(false);
-  const [counts, setCounts] = useState([1, 1]);
-
-  const handleIncrease = (id: any) => {    
-    sendAction('increment_cart', {
-      action: 'increment_cart',
-      cart_sku_id: id,
-    });
-  };
-
-  const handleDecrease = (id: any) => {
-    sendAction('decrement_cart', {
-      action: 'decrement_cart',
-      cart_sku_id: id,
-    });
-  }
-
   const [showNoteBox, setShowNoteBox] = useState(false);
   const [orderNote, setOrderNote] = useState("");
 
@@ -99,34 +82,8 @@ useEffect(() => {
               <Typography variant="h6">My Cart</Typography>
               <IconButton sx={{ p: 0 }} onClick={() => setOpen(false)}><CloseIcon/></IconButton>
             </Box>
-        
-            <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-              {cart && (
-                <List>
-                  {cart.cartSkus.map((item: any) => (
-                    <ListItem key={item._id} disablePadding sx={{ mb: 2 }}>
-                      <Card sx={{ display: 'flex', width: '100%', p: 1, alignItems: 'center' }}>
-                        <ImageWithFallback img={item.product_id?.medias?.[0]} width={80} height={80}/>
 
-                        <Box sx={{ flex: 1, ml: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <Typography variant="subtitle1">{item.sku_id.name}</Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'start' }}>
-                            <IconButton onClick={() => handleDecrease(item._id)} size="small" sx={{ border: '1px solid #ccc', width: 24, height: 24, p: 0.3, mr:3 }}>
-                              <Remove fontSize="small" />
-                            </IconButton>
-                            <Typography variant="body1">{item.quantity}</Typography>
-                            <IconButton onClick={() => handleIncrease(item._id)} size="small" sx={{ border: '1px solid #ccc', width: 24, height: 24, p: 0.3 , ml:3 }}>
-                              <Add fontSize="small" />
-                            </IconButton>
-                          </Box>
-                          <Typography variant="body2" sx={{ mt: 1 }}>₹{item.sku_id.price * item.quantity}</Typography>
-                        </Box>
-                      </Card>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </Box>
+            <CartList/>
               
             <Box sx={{ p: 2, borderTop: '1px solid #ccc', backgroundColor: '#fff' }}>
               {showNoteBox && (
@@ -146,7 +103,7 @@ useEffect(() => {
                 <Typography variant="caption" color="text.secondary">All orders received post 10 AM Friday to 10 AM Monday will be shipped on Monday.</Typography>
               </Box>
 
-              <Button variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>Checkout - MRP ₹1,350</Button>
+              {cart?.total?.$numberDecimal && ( <Button variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>Checkout - ₹{cart?.total?.$numberDecimal}</Button> )}              
             </Box>
           </Box>
         </Drawer>

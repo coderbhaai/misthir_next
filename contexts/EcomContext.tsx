@@ -41,6 +41,10 @@ export function EcomProvider({ children }: { children: ReactNode }) {
         payload.function = 'update_user_remarks';
       }
 
+      if (action === 'update_cart_array') {
+        payload.function = 'update_cart_array';
+      }
+
       const res = await apiRequest("post", `ecom/ecom`, payload);
       if (res?.status && res.message) {
         await fetchCart();

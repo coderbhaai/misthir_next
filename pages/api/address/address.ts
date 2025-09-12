@@ -311,10 +311,10 @@ import Address from 'lib/models/address/Address';
   export async function create_update_address(req: ExtendedRequest, res: NextApiResponse) {
     try {
       if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
+      
       const data = req.body;
-      if (!data?.name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
-
+      if (!data?.first_name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+      
       const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
 
       const user_id = data.user_id || getUserIdFromToken(req);
@@ -346,7 +346,8 @@ import Address from 'lib/models/address/Address';
             modelId,
             {
               user_id: user_id,
-              name: data.name,
+              first_name: data.first_name,
+              last_name: data.last_name,
               email: data.email,
               phone: data.phone,
               whatsapp: data.whatsapp,
@@ -372,7 +373,8 @@ import Address from 'lib/models/address/Address';
 
       const newEntry = new Address({
         user_id: user_id,
-        name: data.name,
+        first_name: data.first_name,
+        last_name: data.last_name,
         email: data.email,
         phone: data.phone,
         whatsapp: data.whatsapp,
@@ -408,6 +410,31 @@ import Address from 'lib/models/address/Address';
       return res.status(200).json({ message: 'Fetched all Addresses', data });
     } catch (error) { return log(error); }
   }
+
+  export async function get_single_address_id_selected(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const data = req.body;
+
+      const id = data.id;
+      if (!id) return res.status(400).json({ message: 'ID MIssing', data: false });
+      
+      const singleAddress = await Address.findOne({ _id: id }).populate([
+          { path: 'user_id', select: '_id name email phone' },
+          {
+            path: 'city_id',
+            select: '_id name state_id',
+            populate: {
+              path: 'state_id',
+              select: '_id name country_id',
+              populate: { path: 'country_id', select: '_id name' }
+            }
+          }]).exec();
+
+      return res.status(200).json({ message: 'Fetched all City', data: singleAddress });
+    } catch (error) { return log(error); }
+  }
 // Address
 
 const functions = {
@@ -430,7 +457,8 @@ const functions = {
   get_my_addresses,
   get_single_address,
   create_update_address,
-  get_all_addresses
+  get_all_addresses,
+  get_single_address_id_selected
 
 };
 
