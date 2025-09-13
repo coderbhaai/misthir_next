@@ -4,7 +4,7 @@ import CreditCardIcon from '@mui/icons-material/CreditCard';
 import PaymentIcon from '@mui/icons-material/Payment';
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/utils";
+import { apiRequest, clo, hitToastr, isValidEmail, isValidWhatsapp } from "@amitkk/basic/utils/utils";
 import { AddressProps } from "@amitkk/address/types/address";
 import { useAuth } from "contexts/AuthContext";
 import { useEcom } from "contexts/EcomContext";
@@ -116,20 +116,47 @@ export default function CheckoutPage() {
   // Paymode
 
   // CART
+      const [email, setEmail] = useState('');
+      const [emailCheckbox, setEmailCheckbox] = useState(false);
+      const [whatsapp, setWhatsapp] = useState('');
+      const [whatsappCheckbox, setWhatsappCheckbox] = useState(false);
+
       useEffect(() => {
         if (!cart) { return; }
 
         setOrderNote(cart.user_remarks ?? '');
         setPaymode(cart.paymode ?? 'Online');
+        setEmail(cart.email ?? '');
+        setEmailCheckbox(cart.email ? true: false );
+        setWhatsapp(cart.whatsapp ?? '');
+        setWhatsappCheckbox(cart.email ? true: false );
       }, [cart]);
 
-      const [email, setEmail] = useState('');
       useEffect(() => {
         if (isLoggedIn && user) {
           setEmail(user.email ?? '');
+          setWhatsapp(user.phone ?? '');
           setUserId(user._id ?? '')
         }
-      }, [isLoggedIn, user]); 
+      }, [isLoggedIn, user]);
+
+      const updateEmailCheckbox = () => {
+        if (!isValidEmail(email)) { return; }
+        
+        sendAction("update_cart_array", {
+          action: "update_cart_array",
+          update: { email, emailConsent: emailCheckbox },
+        });
+      };
+
+      const updateWhatsappCheckbox = () => {
+        if (!isValidWhatsapp(whatsapp)) { return; }
+
+        sendAction("update_cart_array", {
+          action: "update_cart_array",
+          update: { whatsapp, whatsappConsent: whatsappCheckbox },
+        });
+      };
   // CART
 
   async function placeOrder(){
@@ -156,9 +183,17 @@ export default function CheckoutPage() {
     <>
       <Grid container spacing={4} sx={{ px: 2, py: 4, width: "85vw", mx: "auto" }}>      
         <Grid size={7}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>Contact</Typography>
-          <TextField fullWidth label="Email" sx={{ mb: 2 }} name="email" value={email}/>
-          <FormControlLabel control={<Checkbox defaultChecked />} label="Email me with news and offers" />
+          <Typography variant="h6" fontWeight="bold" gutterBottom>Get Regular Offers</Typography>
+          <Box sx={{ display:'flex', alignItems: 'center'}}>
+            <Box sx={{ mr: 3}}>
+              <TextField fullWidth label="Email" sx={{ mb: 2 }} name="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={updateEmailCheckbox}/>
+              <FormControlLabel control={<Checkbox checked={emailCheckbox} onChange={(e) => { setEmailCheckbox(e.target.checked); updateEmailCheckbox(); }}/>} label="Email me with news and offers" />
+            </Box>
+            <Box>
+              <TextField fullWidth label="WhatsApp" sx={{ mb: 2 }} name="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} onBlur={updateWhatsappCheckbox}/>
+              <FormControlLabel control={<Checkbox checked={whatsappCheckbox} onChange={(e) => { setWhatsappCheckbox(e.target.checked); updateWhatsappCheckbox(); }} />} label="Whatsapp me with news and offers" />
+            </Box>
+          </Box>
 
           <AddressSelectionDropdown label="Select Shipping Address" addressOptions={addressOptions} selectedAddressId={shipping_address_id} onSelect={(id) => { setShippingAddressId(id); updateCartShippingAddress(id); }} onEdit={(id) => { setSelectedAddressToEdit(id); setOpenAddressModal(true); }}/>
 

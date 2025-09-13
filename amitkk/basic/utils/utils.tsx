@@ -290,5 +290,15 @@ export const arraysEqual = (a: string[], b: string[]) => {
   return a.every((val, i) => val === b[i]);
 };
 
+export const isValidEmail = (email: string) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+};
+
+export const isValidWhatsapp = (whatsapp: string) => {
+  const regex = /^\d{10}$/; // only 10 digits
+  return regex.test(whatsapp);
+};
+
 
 export default function test(){ <></>}

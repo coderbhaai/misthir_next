@@ -3,8 +3,6 @@ import Image from 'next/image';
 import { ImageWithFallbackProps } from '../types/page';
 
 export default function ImageWithFallback({ img, width = "100%", height = "auto" }: ImageWithFallbackProps) {
-  console.log('img', img)
-
   return (
     <CardMedia sx={{ width, height, position: 'relative', borderRadius: 1, overflow: 'hidden' }}>
       <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>

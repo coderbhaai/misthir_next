@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 import Blog from "./blog/Blog";
 import Author from "./blog/Author";
 import Blogmeta from "./blog/Blogmeta";
@@ -38,10 +40,19 @@ import ProductProductSpecification from "./product/ProductProductSpecification";
 import { Sku, SkuDetail } from "./product/Sku";
 import SkuProductFeature from "./product/SkuProductFeature";
 import Vendor from "./product/Vendor";
-import mongoose from "mongoose";
+
+import Address from "./address/Address";
+import City from "./address/City";
+import Country from "./address/Country";
+import State from "./address/State";
+
+import { Cart, CartSku, CartCharges } from "./ecom/Cart";
+import { Order, OrderSku, OrderCharges } from "./ecom/Order";
 
 const models = {
   ...Blog, ...Author, ...Blogmeta, ...BlogBlogmeta,
+  ...Address, ...City, ...Country, ...State,
+  ...Cart, ...CartSku, ...CartCharges, ...Order, ...OrderSku, ...OrderCharges,
   ...CommentModel, ...Faq, ...Testimonial, ...Media, ...Page, ...PageDetail,
   ...User, ...Otp, ...SpatieRole, ...SpatiePermission, ...RolePermission, ...UserRole, ...UserPermission, ...SpatieMenu, ...SpatieSubmenu, ...MenuSubmenu,
   ...BankDetail, ...Commission, ...Documentation, ...Ingridient, ...Product, ...ProductBrand, ...ProductFeature, ...ProductIngridient, ...Productmeta, ...ProductSpecification, ...ProductProductBrand, ...ProductProductFeature, ...ProductProductmeta, ...ProductProductSpecification, ...Sku, ...SkuDetail, ...SkuProductFeature, ...Vendor, 

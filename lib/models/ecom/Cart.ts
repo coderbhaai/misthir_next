@@ -2,6 +2,8 @@ import { Schema, model, models, Types, Document } from "mongoose";
 
 export interface CartProps extends Document {
   user_id?: string | Types.ObjectId;
+  email?: string;
+  whatsapp?: string;
   billing_address_id?: string | Types.ObjectId;
   shipping_address_id?: string | Types.ObjectId;
   paymode?: string;
@@ -18,6 +20,8 @@ const cartSchema = new Schema<CartProps>({
     user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     billing_address_id: { type: Schema.Types.ObjectId, ref: 'Address',  },
     shipping_address_id: { type: Schema.Types.ObjectId, ref: 'Address', },
+    email: { type: String },
+    whatsapp: { type: String },
     paymode: { type: String },
     weight: { type: Number },
     total: { type: Schema.Types.Decimal128 },
@@ -33,6 +37,10 @@ export interface CartChargesProps extends Document {
   shipping_chargeable_value?: number;
   sales_discount?: number;
   admin_discount?: number;
+  admin_discount_validity?: Date;
+  admin_discount_unit?: string;
+  admin_discount_validity_value?: number;
+  total_vendor_discount?: number;
   cod_charges?: number;
 }
 
@@ -42,6 +50,10 @@ const cartChargesSchema = new Schema<CartChargesProps>({
     shipping_chargeable_value: { type: Number },
     sales_discount: { type: Number },
     admin_discount: { type: Number },
+    admin_discount_validity: { type: Date, default: null },
+    admin_discount_unit: { type: String, default: null },
+    admin_discount_validity_value: { type: Number, default: null },
+    total_vendor_discount: { type: Number },
     cod_charges: { type: Schema.Types.Decimal128 },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -54,6 +66,9 @@ export interface CartSkuProps extends Document {
   quantity: number;
   vendor_discount?: number;
   flavor_id?: string | Types.ObjectId;
+  vendor_discount_validity?: Date;
+  vendor_discount_unit?: string;
+  vendor_discount_validity_value?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +80,9 @@ const cartSkuSchema = new Schema<CartSkuProps>({
     vendor_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     quantity: { type: Number, required: true },
     vendor_discount: { type: Number, required: false },
+    vendor_discount_validity: { type: Date, default: null },
+    vendor_discount_unit: { type: String, default: null },
+    vendor_discount_validity_value: { type: Number, default: null },
     flavor_id: { type: Schema.Types.ObjectId, ref: 'ProductFeature' },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

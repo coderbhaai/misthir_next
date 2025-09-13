@@ -10,6 +10,8 @@ export interface CartProps extends Document {
   user_id?: string | Types.ObjectId;
   billing_address_id?: Types.ObjectId | AddressProps;
   shipping_address_id?: Types.ObjectId | AddressProps;
+  email?: string;
+  whatsapp?: string;
   paymode?: string;
   weight?: number;
   total?: DecimalValue;

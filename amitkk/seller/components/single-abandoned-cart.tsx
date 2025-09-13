@@ -9,8 +9,6 @@ import PaymentStatic from "../static/PaymentStatic";
 import { ProductProps, SkuProps } from "@amitkk/product/types/product";
 import { ImageObject, MediaProps } from "@amitkk/basic/types/page";
 import { fullAddress } from "@amitkk/address/utils/addressUtils";
-import CartCharges from "../static/CartCharges";
-import AdminAdditionalDiscountModal from "./admin-additional-discount-modal";
 
 interface DataFormProps {
     dataId?: string;
@@ -18,46 +16,30 @@ interface DataFormProps {
 
 export const SingleAbandoneCart: React.FC<DataFormProps> = ({ dataId = "" }) => {
   const [cart, setCart] = useState<CartProps | null>(null);
-  const [cartItemCount, setCartItemCount] = useState(0);
-  const [openDiscountModal, setOpenDiscountModal] = useState(false);
   
-  const fetchSingleEntry = async () => {
-    if (!dataId) return;
-
-    try {
-      const res = await apiRequest("get", `ecom/ecom?function=get_single_abdandoned_cart&id=${dataId}`);
-      if (res?.data) {
-        const cartData = res.data as CartProps;
-        setCart(cartData);
-
-        const itemCount = (cartData.cartSkus || []).reduce(
-          (sum, sku: any) => sum + (sku?.quantity || 0),
-          0
-        );
-        setCartItemCount(itemCount);
+  useEffect(() => {
+    if (dataId) {
+      const fetchSingleEntry = async () => {
+        try {
+          const res = await apiRequest("get", `ecom/ecom?function=get_single_abdandoned_cart&id=${dataId}`);
+          
+          if (res?.data) {
+            setCart(res.data as CartProps);
+          }
+        } catch (error) { clo( error ); }
       }
-    } catch (error) { clo(error); }
-  };
-
-  useEffect(() => { fetchSingleEntry(); }, [dataId]);
+      fetchSingleEntry();
+    }
+  }, [dataId]);
 
   if( !cart ){ return null; }
 
   return (
     <Grid container spacing={4}>
       <Grid size={7}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>Contact</Typography>
-
-          <Box sx={{ display:'flex', alignItems: 'center'}}>
-            <Box sx={{ mr: 3}}>
-              <TextField fullWidth label="Email" sx={{ mb: 2 }} name="email" value={cart.email} disabled/>
-              <FormControlLabel control={<Checkbox checked={Boolean(cart?.email)} disabled/>} label="Email me with news and offers" />
-            </Box>
-            <Box>
-              <TextField fullWidth label="WhatsApp" sx={{ mb: 2 }} name="whatsapp" value={cart.whatsapp} disabled/>
-              <FormControlLabel control={<Checkbox checked={Boolean(cart?.whatsapp)} disabled />} label="Whatsapp me with news and offers" />
-            </Box>
-          </Box>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>Contact</Typography>
+          <TextField fullWidth label="Email" sx={{ mb: 2 }} name="email"/>
+          <FormControlLabel control={<Checkbox defaultChecked />} label="Email me with news and offers" /><br/>
 
           <Button variant="contained" color="primary" sx={{ my: 3}}>Create Shipping Address</Button>
           {cart?.shipping_address_id && "first_name" in cart.shipping_address_id && (
@@ -73,7 +55,7 @@ export const SingleAbandoneCart: React.FC<DataFormProps> = ({ dataId = "" }) => 
             )}
 
             <Grid size={12}>
-              <TextField label="Add a Note" fullWidth size="small" multiline minRows={3} value={cart?.user_remarks} disabled/>
+              <TextField label="Add a Note" fullWidth size="small" multiline minRows={3} value={cart?.user_remarks}/>
               <Box sx={{ my: 3}}><strong>Payment Method:</strong> {cart.paymode}</Box>
               <Button variant="contained" fullWidth sx={{ backgroundColor: "black", color: "white", py:3, my:3 }}>Pay Now</Button>
             </Grid>
@@ -113,14 +95,27 @@ export const SingleAbandoneCart: React.FC<DataFormProps> = ({ dataId = "" }) => 
                       </List>
                   )}
               </Box>
+              
+              <Divider sx={{ my: 2 }} />
 
-              <CartCharges itemCount={cartItemCount} total={cart?.total?.$numberDecimal || 0} payableAmount={cart?.payable_amount?.$numberDecimal || 0} cartCharges={cart?.cartCharges}/>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                  <Typography>Subtotal ·  Items</Typography>
+                  <Typography>₹{cart?.total?.$numberDecimal}</Typography>
+              </Box>
 
-              <Button variant="contained" fullWidth sx={{ backgroundColor: "black", color: "white", py:3, my:3 }} onClick={() => setOpenDiscountModal(true)}>Give Additional Discount</Button>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                  <Typography>Shipping Charges (Inc)</Typography>
+                  <Typography>₹150.00</Typography>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="h6">Payable</Typography>
+                  <Typography variant="h6">₹{cart?.payable_amount?.$numberDecimal}</Typography>
+              </Box>
           </Box>
         </Grid>
-
-        <AdminAdditionalDiscountModal open={openDiscountModal} handleClose={() => { setOpenDiscountModal(false); fetchSingleEntry(); }} cart_id={cart._id as string} limit={ Number( cart?.total?.$numberDecimal || 0 )} cartCharges={cart?.cartCharges}/>
     </Grid>
   );
 }

@@ -3,7 +3,7 @@ import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getUserIdFromToken, log } from '../utils';
 import { deleteCookie, getCartIdFromRequest, setCookie } from '../cartUtils';
-import { Cart, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
+import { Cart, CartCharges, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
 import { Sku, SkuDocument } from 'lib/models/product/Sku';
 import Product from 'lib/models/product/Product';
 import { Order, OrderCharges, OrderSku } from 'lib/models/ecom/Order';
@@ -126,10 +126,26 @@ export async function recalculateCart ( cart_id: string){
       return sum + skuPrice * quantity;
     }, 0);
 
-    const charges = updatedCart.cartCharges || {};
+    const charges = updatedCart.cartCharges || {}; 
+
+    let admin_discount = Number(charges.admin_discount || 0);
+
+    if (charges.admin_discount_validity) {
+      const now = new Date();
+      const expiry = new Date(charges.admin_discount_validity);
+
+      if (expiry.getTime() < now.getTime()) {
+        admin_discount = 0;
+        charges.admin_discount = 0;
+        charges.admin_discount_validity = null;
+        charges.admin_discount_unit = null;
+        charges.admin_discount_validity_value = null;
+        await charges.save();
+      }
+    }
+
     const shippingCharges = Number(charges.shipping_charges || 0);
     const salesDiscount = Number(charges.sales_discount || 0);
-    const admin_discount = Number(charges.admin_discount || 0);
     const codCharges = Number(charges.cod_charges || 0);
 
     const payable_amount = total + shippingCharges + codCharges - (salesDiscount + admin_discount);
@@ -313,6 +329,48 @@ export async function get_single_abdandoned_cart(req: NextApiRequest, res: NextA
   } catch (error) { return log(error); }
 }
 
+export async function apply_admin_discount(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    console.log('req.body', req.body)
+    const { data } = req.body;
+    
+    if (!data.cart_id || !data.additional_discount || !data.admin_discount_unit || !data.admin_discount_validity_value) { return res.status(200).json({ status: false, message: 'Fields are Missing' }); }    
+
+    let expiry: Date | null = null;
+    if (data.admin_discount_validity_value && data.admin_discount_unit) {
+      const now = new Date();
+      if (data.admin_discount_unit === "hours") {
+        expiry = new Date(now.getTime() + data.admin_discount_validity_value * 60 * 60 * 1000);
+      } else if (data.admin_discount_unit === "days") {
+        expiry = new Date(now.getTime() + data.admin_discount_validity_value * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    let cartCharges = await CartCharges.findOne({ cart_id: data.cart_id });
+
+    if (!cartCharges) {
+      cartCharges = new CartCharges({
+        cart_id: data.cart_id,
+        admin_discount: data.additional_discount,
+        admin_discount_validity: expiry,
+        admin_discount_validity_value: data.admin_discount_validity_value,
+        admin_discount_unit: data.admin_discount_unit,
+      });
+    } else {
+      cartCharges.admin_discount = data.additional_discount;
+      cartCharges.admin_discount_validity = expiry;
+      cartCharges.admin_discount_validity_value =  data.admin_discount_validity_value;
+      cartCharges.admin_discount_unit = data.admin_discount_unit;
+    }
+
+    await cartCharges.save();
+
+    await recalculateCart(data.cart_id);
+
+    return res.status(200).json({ status: true, message: "Cart Updated" });
+  } catch (error) { return log(error); }
+};
+
 const functions = {
   add_to_cart,
   get_cart_data,
@@ -322,7 +380,8 @@ const functions = {
   update_cart_array,
   get_abandoned_carts,
   get_single_abdandoned_cart,
-  place_order
+  place_order,
+  apply_admin_discount
 };
 
 export const config = { api: { bodyParser: false } };
