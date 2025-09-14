@@ -28,7 +28,7 @@ type FormData = {
 export default function AdminAdditionalDiscountModal({ open, handleClose, cart_id, limit, cartCharges }: AdminAdditionalDiscountModalProps) {
   const [formData, setFormData] = useState<FormData>({
     additional_discount: "",
-    admin_discount_validity_value: "",
+    admin_discount_validity_value: 1,
     admin_discount_unit: "hours",
   });
 
@@ -55,7 +55,9 @@ export default function AdminAdditionalDiscountModal({ open, handleClose, cart_i
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (Number(formData.additional_discount) > limit) { hitToastr('error', `Discount cannot exceed ₹${limit}`); return; }    
+    if (Number(formData.additional_discount) > limit) { hitToastr('error', `Discount cannot exceed ₹${limit}`); return; }   
+    if (Number(formData.additional_discount) < 1) { hitToastr("error", `Discount cannot be below ₹1`); return; }
+    if (Number(formData.admin_discount_validity_value) < 1) { hitToastr("error", `Discount Time cannot be below ₹1`); return; } 
     
     try {
       const payload = {
@@ -79,9 +81,9 @@ export default function AdminAdditionalDiscountModal({ open, handleClose, cart_i
     <CustomModal open={open} handleClose={handleClose} title="Give Additional Discount">
       <form onSubmit={handleSubmit}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <TextField label={`Discount (Limit - ${limit})`} type="number" variant="outlined" value={formData.additional_discount} name="additional_discount" fullWidth onChange={handleChange} required/>
+          <TextField label={`Discount (Limit - ${limit})`} type="number" variant="outlined" value={formData.additional_discount} name="additional_discount" fullWidth onChange={handleChange} required slotProps={{ input: { inputProps: { min: 1 } } }}/>
           <Box sx={{ display: "flex", gap: 2 }}>
-            <TextField label="Validity" type="number" variant="outlined" value={formData.admin_discount_validity_value} name="admin_discount_validity_value" onChange={handleChange} fullWidth required/>
+            <TextField label="Validity" type="number" variant="outlined" value={formData.admin_discount_validity_value} name="admin_discount_validity_value" onChange={handleChange} fullWidth required slotProps={{ input: { inputProps: { min: 1 } } }}/>
             <TextField select label="Unit" variant="outlined" value={formData.admin_discount_unit} name="admin_discount_unit" onChange={handleChange}
               fullWidth required>
               <MenuItem value="hours">Hours</MenuItem>

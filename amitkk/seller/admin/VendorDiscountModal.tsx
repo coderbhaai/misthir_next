@@ -47,6 +47,8 @@ export default function VendorDiscountModal({ open, handleClose, cartSku, limit,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (Number(formData.vendor_discount) > limit) { hitToastr("error", `Discount cannot exceed ₹${limit}`); return; }
+    if (Number(formData.vendor_discount) < 1) { hitToastr("error", `Discount cannot be below ₹1`); return; }
+    if (Number(formData.vendor_discount_validity_value) < 1) { hitToastr("error", `Discount Time cannot be below ₹1`); return; }
 
     try {
       const payload = {
@@ -71,9 +73,9 @@ export default function VendorDiscountModal({ open, handleClose, cartSku, limit,
     <CustomModal open={open} handleClose={handleClose} title="Give Discount">
       <form onSubmit={handleSubmit}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <TextField label={`Discount (Limit - ${limit})`} type="number" variant="outlined" value={formData.vendor_discount} name="vendor_discount" fullWidth onChange={handleChange} required/>
+          <TextField label={`Discount (Limit - ${limit})`} type="number" variant="outlined" value={formData.vendor_discount} name="vendor_discount" fullWidth onChange={handleChange} required slotProps={{ input: { inputProps: { min: 1 } } }}/>
           <Box sx={{ display: "flex", gap: 2 }}>
-            <TextField label="Validity" type="number" variant="outlined" value={formData.vendor_discount_validity_value} name="vendor_discount_validity_value" onChange={handleChange} fullWidth required/>
+            <TextField label="Validity" type="number" variant="outlined" value={formData.vendor_discount_validity_value} name="vendor_discount_validity_value" onChange={handleChange} fullWidth required slotProps={{ input: { inputProps: { min: 1 } } }}/>
             <TextField select label="Unit" variant="outlined" value={formData.vendor_discount_unit} name="vendor_discount_unit" onChange={handleChange} fullWidth required>
               <MenuItem value="hours">Hours</MenuItem>
               <MenuItem value="days">Days</MenuItem>

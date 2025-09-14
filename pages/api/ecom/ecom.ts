@@ -383,6 +383,7 @@ export async function apply_admin_discount(req: NextApiRequest, res: NextApiResp
   try {
     const { data } = req.body;
     
+    console.log("data", data)
     if (!data.cart_id || !data.additional_discount || !data.admin_discount_unit || !data.admin_discount_validity_value) { return res.status(400).json({ status: false, message: 'Fields are Missing' }); }    
 
     let expiry: Date | null = null;

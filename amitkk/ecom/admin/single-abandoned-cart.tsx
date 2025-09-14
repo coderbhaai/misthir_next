@@ -11,6 +11,7 @@ import { ImageObject } from "@amitkk/basic/types/page";
 import { fullAddress } from "@amitkk/address/utils/addressUtils";
 import CartCharges from "@amitkk/ecom/static/CartCharges";
 import AdminAdditionalDiscountModal from "@amitkk/ecom/admin/admin-additional-discount-modal";
+import dayjs from "dayjs";
 
 interface DataFormProps {
     dataId?: string;
@@ -87,29 +88,51 @@ export const SingleAbandoneCart: React.FC<DataFormProps> = ({ dataId = "" }) => 
               <Box sx={{ flex: 1, overflowY: 'auto', width: '100%' }}>
                   {cart && (
                       <List>
-                          {cart?.cartSkus?.map((item) => (
-                            <ListItem key={item._id?.toString()} disablePadding sx={{ mb: 2 }}>
-                              <Card sx={{ width: "100%", p: 1, alignItems: "center" }} elevation={0}>
-                                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                                  <ImageWithFallback img={(item.product_id as ProductProps & { medias?: ImageObject[] })?.medias?.[0]} width={80} height={80}/>
-                                  <Box sx={{ flexGrow: 1, ml: 2 }}>
-                                    <Typography fontWeight="bold">{(item.sku_id as SkuProps)?.name}</Typography>
-                                  </Box>
-                                  <Typography fontWeight="bold">₹{(item.sku_id as SkuProps)?.price}</Typography>
-                                </Box>
+                          {cart?.cartSkus?.map((item) => {
+                            const vendorDiscount = item.vendor_discount != null ? Number(item.vendor_discount) : null;
+                            const hasVendorDiscount = vendorDiscount !== null && !Number.isNaN(vendorDiscount);
+                            const validityDate = item.vendor_discount_validity ? new Date(item.vendor_discount_validity) : null;
+                            const validityValue = item.vendor_discount_validity_value;
+                            const validityUnit = item.vendor_discount_unit;
+                            const now = new Date();
+                            const isExpired = validityDate ? validityDate.getTime() < now.getTime() : false;
 
-                                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                                  <Button variant="outlined" size="small">-</Button>
-                                  <Typography sx={{ mx: 2 }}>{item.quantity}</Typography>
-                                  <Button variant="outlined" size="small">+</Button>
-                                  <Box sx={{ flexGrow: 1 }} />
-                                  <Typography fontWeight="bold">
-                                    ₹{item.quantity * Number((item.sku_id as SkuProps)?.price ?? 0)}
-                                  </Typography>
-                                </Box>
-                              </Card>
-                            </ListItem>
-                          ))}
+                            return (
+                              <ListItem key={item._id?.toString()} disablePadding sx={{ mb: 2 }}>
+                                <Card sx={{ width: "100%", p: 1, alignItems: "center" }} elevation={0}>
+                                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                                    <ImageWithFallback img={(item.product_id as ProductProps & { medias?: ImageObject[] })?.medias?.[0]} width={80} height={80}/>
+                                    <Box sx={{ flexGrow: 1, ml: 2 }}>
+                                      <Typography fontWeight="bold">{(item.sku_id as SkuProps)?.name}</Typography>
+                                    </Box>
+                                    <Typography fontWeight="bold">₹{(item.sku_id as SkuProps)?.price}</Typography>
+                                  </Box>
+
+                                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                                    <Button variant="outlined" size="small">-</Button>
+                                    <Typography sx={{ mx: 2 }}>{item.quantity}</Typography>
+                                    <Button variant="outlined" size="small">+</Button>
+                                    <Box sx={{ flexGrow: 1 }} />
+                                    <Typography fontWeight="bold">
+                                      ₹{item.quantity * Number((item.sku_id as SkuProps)?.price ?? 0)}
+                                    </Typography>
+                                  </Box>
+
+                                  {hasVendorDiscount && (
+                                    <Typography variant="caption" sx={{ color: isExpired ? "error.main" : "success.main", mt: 0.5, lineHeight: 1.2, textAlign: "center" }}>
+                                      ₹{vendorDiscount}{" "}
+                                      {validityDate ? (
+                                        <span>Per Unit (till {dayjs(validityDate).format("DD MMM YYYY HH:mm")})</span>
+                                      ) : validityValue ? (
+                                        <span>(for {validityValue} {validityUnit})</span>
+                                      ) : null}
+                                      {isExpired && <span> — expired</span>}
+                                    </Typography>
+                                  )}
+                                </Card>
+                              </ListItem>
+                            );
+                          })}
                       </List>
                   )}
               </Box>
