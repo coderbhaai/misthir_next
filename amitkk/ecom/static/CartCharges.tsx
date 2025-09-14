@@ -11,7 +11,7 @@ interface CartChargesProps {
     cod_charges?: number | string;
     sales_discount?: number | string;
     admin_discount?: number | string;
-    vendor_discount?: number | string;
+    total_vendor_discount?: number | string;
   };
 }
 
@@ -45,10 +45,10 @@ export default function CartCharges({ itemCount, total, payableAmount, cartCharg
                             <Typography>₹{cartCharges?.sales_discount}</Typography>
                         </Box>
                     )}
-                    { (cartCharges?.admin_discount || cartCharges?.vendor_discount) && (
+                    { (cartCharges?.admin_discount || cartCharges?.total_vendor_discount) && (
                         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                             <Typography>Additional Discount</Typography>
-                            <Typography>₹{ (Number(cartCharges?.admin_discount) || 0) + (Number(cartCharges?.vendor_discount) || 0) }</Typography>
+                            <Typography>₹{ (Number(cartCharges?.admin_discount) || 0) + (Number(cartCharges?.total_vendor_discount) || 0) }</Typography>
                         </Box>
                     )}
                 </>

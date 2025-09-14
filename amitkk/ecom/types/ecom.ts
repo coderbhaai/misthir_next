@@ -33,8 +33,11 @@ export interface CartSkuProps extends Document {
   sku_id: string | Types.ObjectId | SkuProps;
   vendor_id: string | Types.ObjectId | UserRowProps;
   quantity: number;
-  vendor_discount?: number;
   flavor_id?: string | Types.ObjectId;
+  vendor_discount?: number;
+  vendor_discount_validity?: Date;
+  vendor_discount_unit?: string;
+  vendor_discount_validity_value?: number;
   createdAt: Date;
   updatedAt: Date;
 
@@ -50,5 +53,6 @@ export interface CartChargesProps extends Document {
   shipping_chargeable_value?: number;
   sales_discount?: number;
   admin_discount?: number;
+  total_vendor_discount?: number;
   cod_charges?: number;
 }

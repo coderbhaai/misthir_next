@@ -144,11 +144,38 @@ export async function recalculateCart ( cart_id: string){
       }
     }
 
+    let totalVendorDiscount = updatedCart.cartSkus.reduce( (sum: number, cartSku: CartSkuProps) => {
+        let discount = 0;
+
+        if (cartSku.vendor_discount) {
+          let isValid = true;
+
+          if (cartSku.vendor_discount_validity) {
+            const now = new Date();
+            const expiry = new Date(cartSku.vendor_discount_validity);
+            if (expiry.getTime() < now.getTime()) {
+              isValid = false;
+            }
+          }
+
+          if (isValid) {
+            discount = Number(cartSku.vendor_discount) * (cartSku.quantity ?? 0);
+          }
+        }
+
+        return sum + discount;
+      },
+      0
+    );
+
+    charges.total_vendor_discount = totalVendorDiscount;
+    await charges.save();
+
     const shippingCharges = Number(charges.shipping_charges || 0);
     const salesDiscount = Number(charges.sales_discount || 0);
     const codCharges = Number(charges.cod_charges || 0);
 
-    const payable_amount = total + shippingCharges + codCharges - (salesDiscount + admin_discount);
+    const payable_amount = total + shippingCharges + codCharges - (salesDiscount + admin_discount + totalVendorDiscount);
     updatedCart.total = total;
     updatedCart.payable_amount = payable_amount;
 
@@ -329,12 +356,35 @@ export async function get_single_abdandoned_cart(req: NextApiRequest, res: NextA
   } catch (error) { return log(error); }
 }
 
+export async function get_vendor_abandoned_carts(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { vendor_id } = req.query;
+
+    if ( !vendor_id || !mongoose.Types.ObjectId.isValid(vendor_id as string)) {
+      return res.status(400).json({ message: "Issue with Vendor ID", data:[] });
+    }
+    
+    const cartIdsAgg = await CartSku.aggregate([
+      { $match: { vendor_id: new mongoose.Types.ObjectId(vendor_id as string) } },
+      { $group: { _id: "$cart_id" } },
+      { $limit: 10 }
+    ]);
+
+    const cartIds = cartIdsAgg.map(c => c._id);
+
+    const data = await Cart.find({ _id: { $in: cartIds } })
+      .populate([ { path: 'cartCharges' }, { path: 'user_id' }, { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).exec();
+
+    return res.status(200).json({ message: "Carts fetched", data });
+  } catch (error) { return log(error); }
+}
+
 export async function apply_admin_discount(req: NextApiRequest, res: NextApiResponse) {
   try {
     console.log('req.body', req.body)
     const { data } = req.body;
     
-    if (!data.cart_id || !data.additional_discount || !data.admin_discount_unit || !data.admin_discount_validity_value) { return res.status(200).json({ status: false, message: 'Fields are Missing' }); }    
+    if (!data.cart_id || !data.additional_discount || !data.admin_discount_unit || !data.admin_discount_validity_value) { return res.status(400).json({ status: false, message: 'Fields are Missing' }); }    
 
     let expiry: Date | null = null;
     if (data.admin_discount_validity_value && data.admin_discount_unit) {
@@ -371,6 +421,41 @@ export async function apply_admin_discount(req: NextApiRequest, res: NextApiResp
   } catch (error) { return log(error); }
 };
 
+export async function apply_vendor_discount(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    console.log('req.body', req.body)
+    const { data } = req.body;
+    
+    if (!data.cartSku_id || !data.vendor_discount || !data.vendor_discount_validity_value || !data.vendor_discount_unit) { 
+      return res.status(400).json({ status: false, message: 'Fields are Missing' }); 
+    }
+
+    let cartSku = await CartSku.findOne({ _id: data.cartSku_id });
+    if (!cartSku) { return res.status(400).json({ status: false, message: 'Sku Not Found' }); }
+
+    let expiry: Date | null = null;
+    if (data.vendor_discount_validity_value && data.vendor_discount_unit) {
+      const now = new Date();
+      if (data.vendor_discount_unit === "hours") {
+        expiry = new Date(now.getTime() + data.vendor_discount_validity_value * 60 * 60 * 1000);
+      } else if (data.vendor_discount_unit === "days") {
+        expiry = new Date(now.getTime() + data.vendor_discount_validity_value * 24 * 60 * 60 * 1000);
+      }
+    }    
+
+    cartSku.vendor_discount = data.vendor_discount;
+    cartSku.vendor_discount_validity = expiry;
+    cartSku.vendor_discount_validity_value =  data.vendor_discount_validity_value;
+    cartSku.vendor_discount_unit = data.vendor_discount_unit;
+
+    await cartSku.save();
+
+    await recalculateCart(cartSku.cart_id);
+
+    return res.status(200).json({ status: true, message: "Cart Updated" });
+  } catch (error) { return log(error); }
+};
+
 const functions = {
   add_to_cart,
   get_cart_data,
@@ -381,7 +466,9 @@ const functions = {
   get_abandoned_carts,
   get_single_abdandoned_cart,
   place_order,
-  apply_admin_discount
+  apply_admin_discount,
+  apply_vendor_discount,
+  get_vendor_abandoned_carts
 };
 
 export const config = { api: { bodyParser: false } };

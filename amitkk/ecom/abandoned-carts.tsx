@@ -5,7 +5,7 @@ import { AdminDataTable, DataProps } from "@amitkk/ecom/admin/admin-abandoned-ca
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useRouter } from "next/router";
 
-export function AbandonedCart(){
+export function AdminAbandonedCart(){
     const router = useRouter();
     const showCheckBox = false;
     const table = useTable();
@@ -47,4 +47,4 @@ export function AbandonedCart(){
     )
 }
 
-export default withAuth(AbandonedCart);
+export default withAuth(AdminAbandonedCart);

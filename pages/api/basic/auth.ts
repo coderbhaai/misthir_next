@@ -24,11 +24,11 @@ export async function login(req: NextApiRequest, res: NextApiResponse) {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) { return res.status(401).json({ message: "Invalid credentials", data: null }); }
-
+    
     const token = generateJWTToken(user);
 
     const data = {
-      id: user._id,
+      _id: user._id.toString(),
       name: user.name,
       email: user.email,
       phone: user.phone,
@@ -139,18 +139,22 @@ export async function register_or_login(req: NextApiRequest, res: NextApiRespons
     if (phone) existingUserQuery.$or.push({ phone });
     const existingUser = await User.findOne(existingUserQuery);
 
-    if (existingUser) {
-      const token = generateJWTToken(existingUser);
+    console.log("existingUser", existingUser)
 
+    if (existingUser) {
       const user_data = {
-        id: existingUser._id,
+        _id: existingUser._id.toString(),
         name: existingUser.name,
         email: existingUser.email,
         phone: existingUser.phone,
-        token: token,
       }
 
-      return res.status(200).json({ message: 'Welcome Aboard', data:user_data });
+      const token = generateJWTToken(user_data);
+      const userWithToken = { ...user_data, token };
+
+      console.log("userWithToken", userWithToken)
+
+      return res.status(200).json({ message: 'Welcome Aboard', data:userWithToken });
     }
 
     const roleData = await SpatieRole.findOne({ name: role }).populate([{ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } }]).lean<IRoleWithPermissions>();
@@ -163,7 +167,7 @@ export async function register_or_login(req: NextApiRequest, res: NextApiRespons
     
     const token = generateJWTToken(newUser);
     const user_registered_data = {
-      id: newUser._id,
+      _id: newUser._id.toString(),
       name: newUser.name,
       email: newUser.email,
       phone: newUser.phone,

@@ -1,4 +1,4 @@
-import AdminVendorCommission from "@amitkk/product/vendor-commission";
+import AdminVendorCommission from "@amitkk/product/seller-commission";
 import { useRouter } from "next/router";
 
 export default function AddUpdateVendorCommission() {

@@ -489,16 +489,19 @@ export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) 
 export async function check_permission(req: NextApiRequest, res: NextApiResponse) {
   try {
     const user_id = getUserIdFromToken(req);
+    // console.log("check_permission 0000", user_id )
     if (!user_id) return res.status(401).json({ message: 'Checked Permissions - Auth Missing', data: false });
-
+    
     const url = req.query.url as string;
+    // console.log("check_permission 111", user_id, url )
     if (!url) return res.status(400).json({ message: 'Checked Permissions - URL MIssing', data: false });
     
     if (url.includes('/user/')) {
       return res.status(200).json({ message: 'Auto-allowed because of /user/', data: true });
-    }
-
+    }    
+    
     const submenu = await SpatieSubmenu.findOne({ url });
+    // console.log("check_permission 2222", user_id, url, submenu )
     if (!submenu) return res.status(404).json({ message: 'Checked Permissions - Menu MIssing', data: false });
 
     const hasPermission = await UserPermission.findOne({ user_id: user_id, permission_id: submenu.permission_id });

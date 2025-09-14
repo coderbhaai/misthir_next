@@ -4,13 +4,13 @@ import { Grid, Box, Typography, RadioGroup, Paper, Radio, TextField, FormControl
 import { useEffect, useState } from "react";
 import { apiRequest, clo } from "@amitkk/basic/utils/utils";
 import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
-import { CartProps } from "../types/ecom";
-import PaymentStatic from "../static/PaymentStatic";
+import { CartProps } from '@amitkk/ecom/types/ecom';
+import PaymentStatic from "@amitkk/ecom/static/PaymentStatic";
 import { ProductProps, SkuProps } from "@amitkk/product/types/product";
-import { ImageObject, MediaProps } from "@amitkk/basic/types/page";
+import { ImageObject } from "@amitkk/basic/types/page";
 import { fullAddress } from "@amitkk/address/utils/addressUtils";
-import CartCharges from "../static/CartCharges";
-import AdminAdditionalDiscountModal from "./admin-additional-discount-modal";
+import CartCharges from "@amitkk/ecom/static/CartCharges";
+import AdminAdditionalDiscountModal from "@amitkk/ecom/admin/admin-additional-discount-modal";
 
 interface DataFormProps {
     dataId?: string;

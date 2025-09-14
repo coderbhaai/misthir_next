@@ -83,7 +83,7 @@ export function getUserIdFromToken(req: NextApiRequest): string | null {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
-    return decoded?.id || null;
+    return decoded?._id || null;
   } catch (error) { log(error); return null; }
 }
 
@@ -99,10 +99,10 @@ export function generateJWTToken(user: User): string {
 
   return jwt.sign(
     {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
+      _id: user._id.toString(),
+      name: user.name ?? "",
+      email: user.email ?? "",
+      phone: user.phone ?? "",
     }, process.env.JWT_SECRET, { expiresIn: '7d' }
   );
 }

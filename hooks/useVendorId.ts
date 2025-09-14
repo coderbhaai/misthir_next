@@ -3,5 +3,5 @@ import { useAuth } from "contexts/AuthContext";
 
 export const useVendorId = () => {
   const { user } = useAuth();
-  return user?.id ?? null;
+  return user?._id ?? null;
 };

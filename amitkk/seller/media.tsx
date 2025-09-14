@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
-import DataModal from "amitkk/seller/components/seller-media-modal";
-import { AdminDataTable } from "amitkk/seller/components/seller-media-table";
+import DataModal from "@amitkk/seller/admin/seller-media-modal";
+import { AdminDataTable } from "@amitkk/seller/admin/seller-media-table";
 import { useVendorId } from "hooks/useVendorId";
 import { DataProps } from '@amitkk/basic/components/media/admin-media-table';
 

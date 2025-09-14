@@ -53,7 +53,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
         <MenuList disablePadding sx={{ p: 0.5, gap: 0.5, width: 140, display: 'flex', flexDirection: 'column', [`& .${menuItemClasses.root}`]: { px: 1, gap: 2, borderRadius: 0.75, [`&.${menuItemClasses.selected}`]: {bgcolor: 'action.selected'} } }}>
           <MenuItem onClick={() => onEdit(row)}><Iconify icon='Edit' />Edit</MenuItem>
           <MenuItem><Link href={`/admin/commission/${row._id}`} target="_blank"><Iconify icon='Edit' />Commission</Link></MenuItem>
-          <MenuItem><Link href={`/admin/vendor-commission/${row._id}`} target="_blank"><Iconify icon='Edit' />All Commissions</Link></MenuItem>
+          <MenuItem><Link href={`/admin/seller-commission/${row._id}`} target="_blank"><Iconify icon='Edit' />All Commissions</Link></MenuItem>
         </MenuList>
       </Popover>
     </>

@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-import DataModal from "amitkk/seller/components/seller-brand-modal";
-import { AdminDataTable } from "amitkk/seller/components/seller-product-brand-table";
+import DataModal from "@amitkk/seller/admin/seller-brand-modal";
+import { AdminDataTable } from "@amitkk/seller/admin/seller-product-brand-table";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
 import { useVendorId } from "hooks/useVendorId";
-import { DataProps } from "../product/admin/admin-product-brand-table";
+import { DataProps } from "@amitkk/product/admin/admin-product-brand-table";
 
 export function AdminProductBrand(){
     const vendor_id = useVendorId();

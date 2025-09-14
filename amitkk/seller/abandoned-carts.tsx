@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTable, AdminTableHead, emptyRows } from "@amitkk/basic/utils/AdminUtils";
 import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
-import { AdminDataTable, DataProps } from "@amitkk/ecom/admin/admin-abandoned-cart-table";
+import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-abandoned-cart-table";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useRouter } from "next/router";
+import { useVendorId } from "hooks/useVendorId";
 
-export function AbandonedCart(){
+export function SellerAbandonedCart(){
+    const vendor_id = useVendorId();
     const router = useRouter();
     const showCheckBox = false;
     const table = useTable();
@@ -16,14 +18,13 @@ export function AbandonedCart(){
     const [filterData, setFilterData] = useState("");
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["total"] );
 
-    const fetchData = useCallback(async () => {
+    const initData = useCallback(async () => {
         try {
-            const res = await apiRequest("get", "ecom/ecom?function=get_abandoned_carts");
+            const res = await apiRequest("get", `ecom/ecom?function=get_vendor_abandoned_carts&vendor_id=${vendor_id}`);
             setData(res?.data ?? []);
         } catch (error) { clo( error ); }
     }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { if (!vendor_id) return; initData(); }, [vendor_id]);
     
     return(
         <AdminTableLayout<DataProps>
@@ -47,4 +48,4 @@ export function AbandonedCart(){
     )
 }
 
-export default withAuth(AbandonedCart);
+export default withAuth(SellerAbandonedCart);

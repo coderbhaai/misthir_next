@@ -1,4 +1,4 @@
-import SellerProductForm from 'amitkk/seller/components/add-update-seller-product-form';
+import SellerProductForm from '@amitkk/seller/admin/add-update-seller-product-form';
 
 const AddSellerProduct = () => {
   return <SellerProductForm dataId={''} />;

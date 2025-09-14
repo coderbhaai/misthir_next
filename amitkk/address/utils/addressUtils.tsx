@@ -46,3 +46,30 @@ export function fullAddress(row?: AddressProps | null): string {
 
   return fullAddress;
 };
+
+export function semiAddress(row?: AddressProps | null): string {
+  if (!row) return "";
+  
+  const suffix = ', ';
+  const notEmpty = (value: any, suffix: string) => (value ? value + suffix : '');
+
+  const city = typeof row.city_id === 'object' && 'name' in row.city_id ? (row.city_id as any) : undefined;
+  const state = city?.state_id as any | undefined;
+  const country = state?.country_id as any | undefined;
+
+  let fullAddress = '';
+  const fullName = row.last_name ? `${row.first_name} ${row.last_name}` : row.first_name;
+  fullAddress += notEmpty(fullName, suffix);
+
+  fullAddress += notEmpty(row.address1, suffix);
+  fullAddress += notEmpty(row.address2, suffix);
+  fullAddress += notEmpty(row.landmark, suffix);
+
+  fullAddress += notEmpty((city as any)?.name, suffix);
+  fullAddress += notEmpty((state as any)?.name, suffix);
+  fullAddress += notEmpty((country as any)?.name, suffix);
+
+  fullAddress += `PIN - ${row.pin}`;
+
+  return fullAddress;
+};

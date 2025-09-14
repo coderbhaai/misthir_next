@@ -20,7 +20,7 @@ const DynamicAdminPage = () => {
         const slugParts = Array.isArray(slug) ? slug : [slug];
         const baseSlug = slugParts[0];
 
-        const fullPath = `/admin/seller/${slugParts.join("/")}`;
+        const fullPath = `/seller/${slugParts.join("/")}`;
         const allowed = await checkPermission(fullPath);
         if (!allowed) {
           setHasAccess(false);

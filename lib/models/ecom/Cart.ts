@@ -64,8 +64,8 @@ export interface CartSkuProps extends Document {
   sku_id: string | Types.ObjectId;
   vendor_id: string | Types.ObjectId;
   quantity: number;
-  vendor_discount?: number;
   flavor_id?: string | Types.ObjectId;
+  vendor_discount?: number;
   vendor_discount_validity?: Date;
   vendor_discount_unit?: string;
   vendor_discount_validity_value?: number;

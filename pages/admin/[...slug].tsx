@@ -22,6 +22,8 @@ const DynamicAdminPage = () => {
         
         const fullPath = `/admin/${slugParts.join("/")}`;
         const allowed = await checkPermission(fullPath);
+
+        console.log("allowed", allowed)
         if (!allowed) {
           setHasAccess(false);
           return;
