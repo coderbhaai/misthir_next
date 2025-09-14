@@ -139,8 +139,6 @@ export async function register_or_login(req: NextApiRequest, res: NextApiRespons
     if (phone) existingUserQuery.$or.push({ phone });
     const existingUser = await User.findOne(existingUserQuery);
 
-    console.log("existingUser", existingUser)
-
     if (existingUser) {
       const user_data = {
         _id: existingUser._id.toString(),
@@ -151,8 +149,6 @@ export async function register_or_login(req: NextApiRequest, res: NextApiRespons
 
       const token = generateJWTToken(user_data);
       const userWithToken = { ...user_data, token };
-
-      console.log("userWithToken", userWithToken)
 
       return res.status(200).json({ message: 'Welcome Aboard', data:userWithToken });
     }

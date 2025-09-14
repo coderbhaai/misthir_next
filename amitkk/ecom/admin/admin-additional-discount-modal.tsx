@@ -75,8 +75,6 @@ export default function AdminAdditionalDiscountModal({ open, handleClose, cart_i
     } catch (error) { clo(error); }
   };
 
-  console.log("limit", limit)
-
   return (
     <CustomModal open={open} handleClose={handleClose} title="Give Additional Discount">
       <form onSubmit={handleSubmit}>

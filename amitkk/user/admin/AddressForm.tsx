@@ -156,10 +156,6 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
 
     const title = !selectedAddressId ? "Create Address" : "Edit Address";
 
-    // console.log('formData', formData)
-
-
-
     return (
         <form onSubmit={handleSubmit}>
             <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>

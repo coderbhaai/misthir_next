@@ -16,7 +16,6 @@ interface CartChargesProps {
 }
 
 export default function CartCharges({ itemCount, total, payableAmount, cartCharges }: CartChargesProps) {
-    console.log("cartCharges", cartCharges)
   return (
         <>
             

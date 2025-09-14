@@ -165,12 +165,8 @@ export default function CheckoutPage() {
     if( !paymode ){ hitToastr('error', "Paymode is required"); return; }
 
     if( paymode == "Cod" && allowCod ){
-      console.log("Call COD")
-
       try {
         const res = await apiRequest("post", "ecom/ecom", { function: "place_order" });
-        console.log("RES", res )
-
         if( res?.status ){
           console.log("Redirect to ", res)
         }
