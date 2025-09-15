@@ -49,6 +49,11 @@ import State from "./address/State";
 import { Cart, CartSku, CartCharges } from "./ecom/Cart";
 import { Order, OrderSku, OrderCharges } from "./ecom/Order";
 
+import SiteSetting from "./payment/SiteSetting";
+import Tax from "./payment/Tax";
+import Razorpay from "./payment/Razorpay";
+import TaxCollected from "./payment/TaxCollected";
+
 const models = {
   ...Blog, ...Author, ...Blogmeta, ...BlogBlogmeta,
   ...Address, ...City, ...Country, ...State,
@@ -56,6 +61,7 @@ const models = {
   ...CommentModel, ...Faq, ...Testimonial, ...Media, ...Page, ...PageDetail,
   ...User, ...Otp, ...SpatieRole, ...SpatiePermission, ...RolePermission, ...UserRole, ...UserPermission, ...SpatieMenu, ...SpatieSubmenu, ...MenuSubmenu,
   ...BankDetail, ...Commission, ...Documentation, ...Ingridient, ...Product, ...ProductBrand, ...ProductFeature, ...ProductIngridient, ...Productmeta, ...ProductSpecification, ...ProductProductBrand, ...ProductProductFeature, ...ProductProductmeta, ...ProductProductSpecification, ...Sku, ...SkuDetail, ...SkuProductFeature, ...Vendor, 
+  ...SiteSetting, ...Tax, ...Razorpay, ...TaxCollected,
 };
 
 

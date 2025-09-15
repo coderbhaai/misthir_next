@@ -50,7 +50,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
           
         <MenuList disablePadding sx={{ p: 0.5, gap: 0.5, width: 140, display: 'flex', flexDirection: 'column', [`& .${menuItemClasses.root}`]: { px: 1, gap: 2, borderRadius: 0.75, [`&.${menuItemClasses.selected}`]: {bgcolor: 'action.selected'} } }}>
           {hasAnyRole(["Vendor", "Staff"]) && hasPermission("Product Vendor") &&(
-            <MenuItem><Link href={`/admin/seller/add-update-product/${row._id}`}><Iconify icon="Edit"/>Edit</Link></MenuItem>
+            <MenuItem><Link href={`/seller/add-update-product/${row._id}`}><Iconify icon="Edit"/>Edit</Link></MenuItem>
           )}
 
           {hasAnyRole(["Owner", "Admin", "SEO"]) && hasPermission("Product Admin") && (

@@ -7,6 +7,7 @@ import { Cart, CartCharges, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
 import { Sku, SkuDocument } from 'lib/models/product/Sku';
 import Product from 'lib/models/product/Product';
 import { Order, OrderCharges, OrderSku } from 'lib/models/ecom/Order';
+import TaxCollected from 'lib/models/payment/TaxCollected';
 
 export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -268,7 +269,7 @@ export async function update_user_remarks(req: NextApiRequest, res: NextApiRespo
 export async function update_cart_array(req: NextApiRequest, res: NextApiResponse) {
   try {
     const cart_id = await getCartIdFromRequest(req, res);
-    if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
+    if (!cart_id) { return res.status(400).json({ status: false, message: 'Cart not found' }); }
 
     const { update } = req.body;
     if (typeof update !== 'object' || !update) { return res.status(400).json({ status: false, message: 'Invalid update payload' }); }
@@ -290,52 +291,115 @@ export async function place_order(req: NextApiRequest, res: NextApiResponse) {
     const cart_id = await getCartIdFromRequest(req, res);
     if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
 
-    const cart = await Cart.findOne({ _id: cart_id }).populate("cartSkus").populate("cartCharges");
-    if (!cart) { return res.status(400).json({ status: false, message: 'Cart not found' }); }
-    
-    const newEntry = new Order({
-      user_id: cart.user_id,
-      billing_address_id: cart.billing_address_id,
-      shipping_address_id: cart.shipping_address_id,
-      paymode: cart.paymode,
-      weight: cart.weight,
-      total: cart.total,
-      payable_amount: cart.payable_amount,
-      user_remarks: cart.user_remarks,
-      admin_remarks: cart.admin_remarks,
-    });
+    const result = await createOrderFromCart(cart_id, res);
 
-    const savedOrder = await newEntry.save();
-    const orderId = savedOrder._id.toString();    
-    setCookie(res, 'orderId', orderId);
+    return res.status(200).json({ status: true, message: "Order Placed", result });
+  } catch (error) { return log(error); }
+};
 
-    if (cart.cartCharges) {
-      await new OrderCharges({
-        order_id: savedOrder._id,
-        shipping_charges: cart.cartCharges.shipping_charges,
-        shipping_chargeable_value: cart.cartCharges.shipping_chargeable_value,
-        sales_discount: cart.cartCharges.sales_discount,
-        admin_discount: cart.cartCharges.admin_discount,
-        cod_charges: cart.cartCharges.cod_charges,
-      }).save();
-    }
-    
-    if (Array.isArray(cart.cartSkus) && cart.cartSkus.length > 0) {
-      const orderSkuDocs = cart.cartSkus.map((item: any) => ({
+export async function createOrderFromCart(cart_id: string, res: NextApiResponse) {
+  const cart = await Cart.findOne({ _id: cart_id }).populate("cartSkus").populate("cartCharges");
+  if (!cart) { return { status: false, message: "Cart not found" }; }
+
+  const newEntry = new Order({
+    user_id: cart.user_id,
+    billing_address_id: cart.billing_address_id,
+    shipping_address_id: cart.shipping_address_id,
+    paymode: cart.paymode,
+    weight: cart.weight,
+    total: cart.total,
+    payable_amount: cart.payable_amount,
+    user_remarks: cart.user_remarks,
+    admin_remarks: cart.admin_remarks,
+  });
+
+  const savedOrder = await newEntry.save();
+  const orderId = savedOrder._id.toString();
+  setCookie(res, "orderId", orderId);
+
+  if (cart.cartCharges) {
+    await new OrderCharges({
+      order_id: savedOrder._id,
+      shipping_charges: cart.cartCharges.shipping_charges,
+      shipping_chargeable_value: cart.cartCharges.shipping_chargeable_value,
+      sales_discount: cart.cartCharges.sales_discount,
+      admin_discount: cart.cartCharges.admin_discount,
+      total_vendor_discount: cart.cartCharges.total_vendor_discount,
+      cod_charges: cart.cartCharges.cod_charges,
+    }).save();
+  }
+
+  let totalQuantity = 0;
+  if (Array.isArray(cart.cartSkus)) {
+    totalQuantity = cart.cartSkus.reduce((sum: number, item: any) => sum + item.quantity, 0);
+  }
+
+  let perUnitAdminDiscount = 0;
+  if (cart.cartCharges?.admin_discount && totalQuantity > 0) {
+    perUnitAdminDiscount = cart.cartCharges.admin_discount / totalQuantity;
+  }
+
+  console.log("totalQuantity", totalQuantity)
+  console.log("perUnitAdminDiscount", perUnitAdminDiscount)
+
+  let totalTax = 0;
+
+  if (Array.isArray(cart.cartSkus) && cart.cartSkus.length > 0) {
+    const orderSkuDocs = cart.cartSkus.map((item: any) => {
+      let effectivePrice = item.sku?.price || 0;
+      effectivePrice -= perUnitAdminDiscount;
+      if (item.vendor_discount) {
+        effectivePrice -= item.vendor_discount;
+      }
+      
+      const quantity = item.quantity || 0;
+      const taxRate = item.sku?.tax_id?.rate || 0;
+      const taxableAmount = effectivePrice * quantity;
+      const taxAmount = (taxableAmount * taxRate) / 100;
+
+      totalTax += taxAmount;
+
+      return {
         order_id: savedOrder._id,
         product_id: item.product_id,
         sku_id: item.sku_id,
         vendor_id: item.vendor_id,
-        quantity: item.quantity,
+        tax_id: item.sku?.tax_id,
+        price: item.sku?.price,
+        quantity,
         vendor_discount: item.vendor_discount,
         flavor_id: item.flavor_id,
-      }));
-      await OrderSku.insertMany(orderSkuDocs);
-    }
+      };
+    });
 
-    return res.status(200).json({ status: true, message: "Order Placed" });
-  } catch (error) { return log(error); }
-};
+    await OrderSku.insertMany(orderSkuDocs);
+  }
+
+  let cgst = 0, sgst = 0, igst = 0;
+  const stateName = cart.billing_address_id?.state?.toLowerCase() || "";
+
+  console.log("stateName", stateName, totalTax)
+
+  if (stateName === "haryana") {
+    cgst = totalTax;
+  } else {
+    sgst = totalTax / 2;
+    igst = totalTax / 2;
+  }
+  
+  const taxDoc = new TaxCollected({
+    module: "Order",
+    module_id: savedOrder._id,
+    cgst: mongoose.Types.Decimal128.fromString(cgst.toFixed(2)),
+    sgst: mongoose.Types.Decimal128.fromString(sgst.toFixed(2)),
+    igst: mongoose.Types.Decimal128.fromString(igst.toFixed(2)),
+    total: mongoose.Types.Decimal128.fromString(totalTax.toFixed(2)),
+  });
+
+  await taxDoc.save();
+
+  return { status: true, message: "Order Placed", orderId };
+}
 
 export async function get_abandoned_carts(req: NextApiRequest, res: NextApiResponse) {
   try {

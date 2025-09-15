@@ -1,8 +1,5 @@
 "use client";
-import { Grid, Box, Typography, RadioGroup, Paper, Radio, TextField, FormControl, Checkbox, FormControlLabel, MenuItem, Button, Divider, InputLabel, Select, SelectChangeEvent } from "@mui/material";
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import PaymentIcon from '@mui/icons-material/Payment';
-import Image from "next/image";
+import { Grid, Box, Typography, RadioGroup, Radio, TextField, FormControl, Checkbox, FormControlLabel, MenuItem, Button, Divider, InputLabel, Select, SelectChangeEvent } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest, clo, hitToastr, isValidEmail, isValidWhatsapp } from "@amitkk/basic/utils/utils";
 import { AddressProps } from "@amitkk/address/types/address";
@@ -14,6 +11,8 @@ import DataModal from "@amitkk/user/admin/user-address-modal";
 import SuggestProducts from "@amitkk/product/static/suggest-products";
 import { SiteSetting } from "@amitkk/basic/types/page";
 import PaymentStatic from "@amitkk/ecom/static/PaymentStatic";
+import { makePayment } from "@amitkk/payment/utils/utils";
+import Script from "next/script";
 
 export default function CheckoutPage() {
   const { sendAction, cart, relatedProducts } = useEcom();
@@ -173,6 +172,9 @@ export default function CheckoutPage() {
 
       } catch (error) { clo( error ); }
     }
+
+    makePayment("Cart", cart._id );
+
   }
 
   return (
@@ -261,6 +263,8 @@ export default function CheckoutPage() {
           }
           handleCloseModal();
         }}/>
+
+      {/* <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive"/> */}
     </>
   );
 }

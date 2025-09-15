@@ -12,7 +12,7 @@ export function SellerProducts(){
     const router = useRouter();
     const showCheckBox = false;
     const table = useTable();
-    const setOpen = () =>{ router.push('/admin/seller/add-update-product'); }
+    const setOpen = () =>{ router.push('/seller/add-update-product'); }
     const [data, setData] = useState<DataProps[]>([]);
     const [filterData, setFilterData] = useState("");
     const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );

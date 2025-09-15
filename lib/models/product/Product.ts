@@ -6,6 +6,7 @@
     url: string;
     vendor_id?: Types.ObjectId;
     meta_id?: Types.ObjectId;
+    tax_id?: Types.ObjectId;
     gtin: string;
     dietary_type : string;
     short_desc?: string;

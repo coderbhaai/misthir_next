@@ -65,6 +65,7 @@ export interface DocumentProps {
 }
 
 export interface ProductProps {
+    _id: string | Types.ObjectId;
     vendor_id: string | Types.ObjectId;
     name: string;
     url: string;
@@ -74,9 +75,9 @@ export interface ProductProps {
     displayOrder?: number;
     short_desc?: string;
     long_desc?: string;
-    meta_id: string | Types.ObjectId | MetaTableProps | null; 
+    meta_id: string | Types.ObjectId | MetaTableProps | null;
     dietary_type: string;
-    _id: string | Types.ObjectId;
+    tax_id: string | Types.ObjectId;
     createdAt: string | Date;
     updatedAt: Date;
     mediaHubs?: MediaHubProps[];

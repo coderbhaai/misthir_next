@@ -34,6 +34,7 @@ export interface OrderChargesProps extends Document {
   sales_discount?: number;
   admin_discount?: number;
   cod_charges?: number;
+  total_vendor_discount?: number;
 }
 
 const orderChargesSchema = new Schema<OrderChargesProps>({
@@ -43,6 +44,7 @@ const orderChargesSchema = new Schema<OrderChargesProps>({
     sales_discount: { type: Number },
     admin_discount: { type: Number },
     cod_charges: { type: Schema.Types.Decimal128 },
+    total_vendor_discount: { type: Number },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
@@ -52,8 +54,10 @@ export interface OrderSkuProps extends Document {
   sku_id: string | Types.ObjectId;
   vendor_id: string | Types.ObjectId;
   quantity: number;
+  price: number;
   vendor_discount?: number;
   flavor_id?: string | Types.ObjectId;
+  tax_id?: string | Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,8 +68,10 @@ const orderSkuSchema = new Schema<OrderSkuProps>({
     sku_id: { type: Schema.Types.ObjectId, ref: 'Sku', required: true },
     vendor_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     quantity: { type: Number, required: true },
+    price: { type: Number, required: true },
     vendor_discount: { type: Number, required: false },
     flavor_id: { type: Schema.Types.ObjectId, ref: 'ProductFeature' },
+    tax_id: { type: Schema.Types.ObjectId, ref: 'Tax' },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 

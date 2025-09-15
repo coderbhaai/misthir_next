@@ -18,6 +18,7 @@ import SkuModal from "@amitkk/product/admin/SkuModal";
 import MediaPanel, { MediaPanelHandle } from "@amitkk/basic/components/media/media-panel";
 import { SubmitButton } from "@amitkk/basic/static/LoadingSubmit";
 import { useUserAccess } from "hooks/useUserSpatie";
+import GenericSelect from "@amitkk/basic/components/static/generic-select";
 
 const CkEditor = dynamic(() => import("@amitkk/basic/components/static/ckeditor-input"), { 
   ssr: false, loading: () => <p>Loading editor...</p>,
@@ -48,6 +49,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
         short_desc: '',
         long_desc: '',
         vendor_id: '',
+        tax_id: '',
         adminApproval : true,
         status: true,
         dietary_type: '',
@@ -58,24 +60,25 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
     });
 
     const router = useRouter();
-    const [selectedCategory, setSelectedCategory] = React.useState<string[]>([]);
-    const [category, setCategory] = React.useState<{_id: string; name: string}[]>([]);
-    const [selectedTag, setSelectedTag] = React.useState<string[]>([]);
-    const [tag, setTag] = React.useState<{_id: string; name: string}[]>([]);
-    const [selectedProductTypes, setSelectedProductTypes] = React.useState<string[]>([]);
-    const [productTypes, setProductTypes] = React.useState<{_id: string; name: string}[]>([]);
-    const [selectedBrand, setSelectedBrand] = React.useState<string[]>([]);
-    const [brand, setBrand] = React.useState<{_id: string; name: string}[]>([]);
-    const [selectedIngridient, setSelectedIngridient] = React.useState<string[]>([]);
-    const [ingridient, setIngridient] = React.useState<{_id: string; name: string}[]>([]);
-    const [selectedStorage, setSelectedStorage] = React.useState<string[]>([]);
-    const [storage, setStorage] = React.useState<{_id: string; name: string}[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
+    const [taxOptions, setTaxOptions] = useState<{_id: string; name: string}[]>([]);
+    const [category, setCategory] = useState<{_id: string; name: string}[]>([]);
+    const [selectedTag, setSelectedTag] = useState<string[]>([]);
+    const [tag, setTag] = useState<{_id: string; name: string}[]>([]);
+    const [selectedProductTypes, setSelectedProductTypes] = useState<string[]>([]);
+    const [productTypes, setProductTypes] = useState<{_id: string; name: string}[]>([]);
+    const [selectedBrand, setSelectedBrand] = useState<string[]>([]);
+    const [brand, setBrand] = useState<{_id: string; name: string}[]>([]);
+    const [selectedIngridient, setSelectedIngridient] = useState<string[]>([]);
+    const [ingridient, setIngridient] = useState<{_id: string; name: string}[]>([]);
+    const [selectedStorage, setSelectedStorage] = useState<string[]>([]);
+    const [storage, setStorage] = useState<{_id: string; name: string}[]>([]);
 
-    const [flavors, setFlavors] = React.useState<{_id: string; name: string}[]>([]);
-    const [colors, setColors] = React.useState<{_id: string; name: string}[]>([]);
-    const [eggless, setEggless] = React.useState<{_id: string; name: string}[]>([]);
-    const [glutten, setGlutten] = React.useState<{_id: string; name: string}[]>([]);
-    const [sugar, setSugar] = React.useState<{_id: string; name: string}[]>([]);
+    const [flavors, setFlavors] = useState<{_id: string; name: string}[]>([]);
+    const [colors, setColors] = useState<{_id: string; name: string}[]>([]);
+    const [eggless, setEggless] = useState<{_id: string; name: string}[]>([]);
+    const [glutten, setGlutten] = useState<{_id: string; name: string}[]>([]);
+    const [sugar, setSugar] = useState<{_id: string; name: string}[]>([]);
 
     const [skus, setSkus] = useState<any[]>([]);
     const [openSkuModal, setOpenSkuModal] = useState(false);
@@ -101,6 +104,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
                     status: res?.data.status || true,
                     dietary_type: res?.data.dietary_type || "",
                     vendor_id: res?.data.vendor_id?._id || '',
+                    tax_id: res?.data.tax_id?._id || '',
                     short_desc: res?.data.short_desc || "",
                     long_desc: res?.data.long_desc || "",
                     createdAt: res?.data.createdAt,
@@ -172,6 +176,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
             setGlutten(res_1?.data?.glutten ?? []);
             setSugar(res_1?.data?.sugar ?? []);
             setStorage(res_1?.data?.storage ?? []);
+            setTaxOptions(res_1?.data?.tax ?? []);
 
         } catch (error) { clo( error ); }
     }, [vendor_id]);
@@ -202,6 +207,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
             formDataToSend.append("module", "Product");
             formDataToSend.append("_id", formData._id);
             formDataToSend.append("name", formData.name);
+            formDataToSend.append("tax_id", formData.tax_id as string);
             formDataToSend.append("url", formData.url);
             formDataToSend.append("short_desc", short_desc as string);
             formDataToSend.append("long_desc", long_desc as string);
@@ -271,6 +277,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "", vendor
                                     </Select>
                                 </FormControl>
                                 <StatusSelect value={formData.status} onChange={handleChange}/>
+                                <GenericSelect label="Tax" name="tax_id" value={formData.tax_id?.toString() ?? ""} options={taxOptions} onChange={(val) => setFormData({ ...formData, tax_id: val as string })}/>
                                 <MultiSelectDropdown label="Types" options={productTypes} selected={selectedProductTypes} onChange={(e) => handleMultiSelectChange(e, setSelectedProductTypes)}/>
                                 <MultiSelectDropdown label="Category" options={category} selected={selectedCategory} onChange={(e) => handleMultiSelectChange(e, setSelectedCategory)}/>
                                 <MultiSelectDropdown label="Tags" options={tag} selected={selectedTag} onChange={(e) => handleMultiSelectChange(e, setSelectedTag)}/>

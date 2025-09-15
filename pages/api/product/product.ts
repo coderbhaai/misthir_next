@@ -17,6 +17,7 @@ import { Sku, SkuDetail } from 'lib/models/product/Sku';
 import SkuProductFeature from 'lib/models/product/SkuProductFeature';
 import { ProductRawDocument } from 'lib/models/types';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
+import Tax from 'lib/models/payment/Tax';
 
 export async function get_all_products(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -127,6 +128,7 @@ export async function create_update_product(req: ExtendedRequest, res: NextApiRe
             name: data.name,
             url: slug,
             gtin: data.gtin,
+            tax_id: data.tax_id,
             meta_id: meta_id,
             status: data.status,
             displayOrder: data.displayOrder,
@@ -165,6 +167,7 @@ export async function create_update_product(req: ExtendedRequest, res: NextApiRe
         name: data.name,
         url: slug,
         gtin: data.gtin,
+        tax_id: data.tax_id,
         meta_id: meta_id,
         status: data.status,
         displayOrder: data.displayOrder,
@@ -213,8 +216,9 @@ export async function get_product_modules(req: NextApiRequest, res: NextApiRespo
     const glutten = await fetchData(ProductFeature, { filter: { module: "Glutten Free" }, select: "_id name", sort: { name: 1 } });
     const sugar = await fetchData(ProductFeature, { filter: { module: "Sugar Free" }, select: "_id name", sort: { name: 1 } });
     const storage = await fetchData(ProductFeature, { filter: { module: "Storage" }, select: "_id name", sort: { name: 1 } });
+    const tax = await fetchData(Tax, { select: "_id name", sort: { name: 1 } });
 
-  return res.status(200).json({ message: 'Fetched all Products', data:{ category, tag, productTypes, productBrand, ingridient, flavors, colors, eggless, glutten, sugar, storage } });
+  return res.status(200).json({ message: 'Fetched all Products', data:{ category, tag, productTypes, productBrand, ingridient, flavors, colors, eggless, glutten, sugar, storage, tax } });
   } catch (error) { return log(error); }
 }
 
