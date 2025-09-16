@@ -173,7 +173,7 @@ export default function CheckoutPage() {
       } catch (error) { clo( error ); }
     }
 
-    makePayment("Cart", cart._id );
+    makePayment({ module: "Cart", module_id: cart._id });
 
   }
 

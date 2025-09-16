@@ -103,7 +103,7 @@ useEffect(() => {
                 <Typography variant="caption" color="text.secondary">All orders received post 10 AM Friday to 10 AM Monday will be shipped on Monday.</Typography>
               </Box>
 
-              {cart?.total?.$numberDecimal && ( <Button variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>Checkout - ₹{cart?.total?.$numberDecimal}</Button> )}              
+              {cart?.total?.$numberDecimal && ( <Button href="/cart" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>Checkout - ₹{cart?.total?.$numberDecimal}</Button> )}
             </Box>
           </Box>
         </Drawer>

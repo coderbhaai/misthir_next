@@ -31,30 +31,17 @@ export function getCookie(key: string): string | null {
   return null;
 }
 
-export function setCookie( key: string, value: string, options: CookieOptions = {} ): void {
+export function setCookie(key: string, value: string, days = 7) {
   if (typeof document === 'undefined') return;
 
-  const mergedOptions: CookieOptions = { ...DEFAULT_OPTIONS, ...options };
-  const { expires, path, domain, secure, sameSite } = mergedOptions;
-
-  let cookieString = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
-
-  if (expires) {
-    if (typeof expires === 'number') {
-      const date = new Date();
-      date.setTime(date.getTime() + expires * 24 * 60 * 60 * 1000);
-      cookieString += `; expires=${date.toUTCString()}`;
-    } else {
-      cookieString += `; expires=${expires.toUTCString()}`;
-    }
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    expires = `; Expires=${date.toUTCString()}`;
   }
 
-  if (path) cookieString += `; path=${path}`;
-  if (domain) cookieString += `; domain=${domain}`;
-  if (secure) cookieString += '; secure';
-  if (sameSite) cookieString += `; samesite=${sameSite}`;
-
-  document.cookie = cookieString;
+  document.cookie = `${encodeURIComponent(key)}=${encodeURIComponent(value || "")}${expires}; Path=/`;
 }
 
 export const forceDeleteCookie = (key: string): void => {

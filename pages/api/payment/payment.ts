@@ -14,9 +14,7 @@ import Tax from 'lib/models/payment/Tax';
 
 export async function get_payment_data(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { module, module_id, payment_gateway } = req.body;
-    console.log('module, module_id', module, module_id, payment_gateway )
-    
+    const { module, module_id, payment_gateway } = req.body;    
     if( !module || !module_id ){ return res.status(400).json({ message: 'Fields are missing', data: null }); }
     
     let data = null;
@@ -32,8 +30,6 @@ export async function get_payment_data(req: NextApiRequest, res: NextApiResponse
     if (payment_gateway === "Razorpay") {
       response = await hit_razorpay(amount_payable);
     }
-
-    console.log("response", response)
 
     return res.status(200).json({ message: 'Payment Data Fetched', data, response });
   } catch (error) { return log(error); }
@@ -52,8 +48,6 @@ export async function hit_razorpay(amount: number) {
     });
 
     const data = await response.json();
-
-    console.log("hit_razorpay", data)
     if (!response.ok) { return null; }
 
     return {
@@ -73,8 +67,7 @@ export function getPaymentConfig() {
 
 export async function payment_response(req: NextApiRequest, res: NextApiResponse) {
   try {
-    console.log(req.body)
-    const { module, module_id, payment_gateway, response, source, razorpay_payment_id } = req.body;    
+    const { module, module_id, payment_gateway, response, source } = req.body;
     if( !module || !module_id ){ return res.status(400).json({ message: 'Fields are missing', data: null }); }
     
     let data = null;
@@ -84,20 +77,20 @@ export async function payment_response(req: NextApiRequest, res: NextApiResponse
 
     if( !data ){ return res.status(400).json({ message: 'Entry is missing', data: null }); }
 
-    let amount_payable = Number(data.payable_amount);
-
     let res_summary = null;
     if (payment_gateway === "Razorpay") {
+      const razorpay_payment_id = response?.razorpay_payment_id; 
+      if( !razorpay_payment_id ){ return res.status(400).json({ message: 'razorpay_payment_id is missing', data: null }); }
+
       res_summary = await razorpay_summary( module, module_id, source, razorpay_payment_id)
     }
 
+    let order_response = null;
     if( module === "Cart" ){
-      await createOrderFromCart(module_id, res);
+      order_response       = await createOrderFromCart(module_id, res);
     }
 
-    console.log("response", response)
-
-    return res.status(200).json({ message: 'Payment Response', data:response });
+    return res.status(200).json({ message: 'Payment Response', data:order_response });
   } catch (error) { return log(error); }
 }
 
@@ -188,6 +181,13 @@ export async function razorpay_summary( module: string, module_id: number, sourc
       return res.status(200).json({ message: 'Fetched all Tax Module', data });
     } catch (error) { return log(error); }
   }
+
+  export async function get_all_tax_collected(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await TaxCollected.find().exec();
+      return res.status(200).json({ message: 'Fetched all TaxCollected', data });
+    } catch (error) { return log(error); }
+  }
 // Taxes
 
 
@@ -199,9 +199,8 @@ const functions = {
   get_single_tax,
   create_update_tax,
   get_tax_module,
+  get_all_tax_collected,
 };
-
-
 
 export const config = { api: { bodyParser: false } };
 export default createApiHandler(functions);

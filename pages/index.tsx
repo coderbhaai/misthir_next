@@ -3,7 +3,6 @@
 import HomeSlider from "@amitkk/basic/components/HomeSlider";
 import { Box } from "@mui/material";
 import Achievement from "@amitkk/basic/components/Achievement";
-import AutoSlider from "@amitkk/basic/components/AutoSlider";
 import ServicesSlider from "@amitkk/basic/components/ServicesSlider";
 import Portfolio from "@amitkk/basic/components/Portfolio";
 import MobileSecond from "@amitkk/basic/components/MobileSecond";
@@ -24,7 +23,6 @@ export default function HomePage({ page, relatedContent }: HomePageProps) {
   return (
     <Box>
       <HomeSlider />
-      <AutoSlider />
       <Achievement />
       <ServicesSlider />
       <MobileSecond />

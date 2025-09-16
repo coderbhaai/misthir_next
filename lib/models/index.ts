@@ -5,12 +5,18 @@ import Author from "./blog/Author";
 import Blogmeta from "./blog/Blogmeta";
 import BlogBlogmeta from "./blog/BlogBlogmeta";
 
+import Client from "./basic/Client";
 import CommentModel from "./basic/CommentModel";
+import Contact from "./basic/Contact";
 import Faq from "./basic/Faq";
-import Testimonial from "./basic/Testimonial";
 import Media from "./basic/Media";
+import MediaHub from "./basic/MediaHub";
+import Meta from "./basic/Meta";
 import Page from "./basic/Page";
 import PageDetail from "./basic/PageDetail";
+import { Search, SearchResult } from "./basic/Search";
+import Testimonial from "./basic/Testimonial";
+import UserBrowsingHistory from "./basic/UserBrowsingHistory";
 
 import User from "./spatie/User";
 import Otp from "./spatie/Otp";
@@ -58,7 +64,7 @@ const models = {
   ...Blog, ...Author, ...Blogmeta, ...BlogBlogmeta,
   ...Address, ...City, ...Country, ...State,
   ...Cart, ...CartSku, ...CartCharges, ...Order, ...OrderSku, ...OrderCharges,
-  ...CommentModel, ...Faq, ...Testimonial, ...Media, ...Page, ...PageDetail,
+  ...Client, ...CommentModel, ...Contact, ...Faq, ...Media, ...MediaHub, ...Meta, ...Page, ...PageDetail, ...Search, ...SearchResult, ...Testimonial, ...UserBrowsingHistory,
   ...User, ...Otp, ...SpatieRole, ...SpatiePermission, ...RolePermission, ...UserRole, ...UserPermission, ...SpatieMenu, ...SpatieSubmenu, ...MenuSubmenu,
   ...BankDetail, ...Commission, ...Documentation, ...Ingridient, ...Product, ...ProductBrand, ...ProductFeature, ...ProductIngridient, ...Productmeta, ...ProductSpecification, ...ProductProductBrand, ...ProductProductFeature, ...ProductProductmeta, ...ProductProductSpecification, ...Sku, ...SkuDetail, ...SkuProductFeature, ...Vendor, 
   ...SiteSetting, ...Tax, ...Razorpay, ...TaxCollected,

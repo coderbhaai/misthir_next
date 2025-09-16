@@ -298,7 +298,7 @@ export async function place_order(req: NextApiRequest, res: NextApiResponse) {
 };
 
 export async function createOrderFromCart(cart_id: string, res: NextApiResponse) {
-  const cart = await Cart.findOne({ _id: cart_id }).populate("cartSkus").populate("cartCharges");
+  const cart = await Cart.findOne({ _id: cart_id }).populate([ { path: "cartCharges"}, { path: "billing_address_id", populate: { path: "city_id", populate: { path: "state_id", }, }, }, { path: "cartSkus", populate: { path: "sku_id" } } ]);
   if (!cart) { return { status: false, message: "Cart not found" }; }
 
   const newEntry = new Order({
@@ -314,8 +314,8 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
   });
 
   const savedOrder = await newEntry.save();
-  const orderId = savedOrder._id.toString();
-  setCookie(res, "orderId", orderId);
+  const order_id = savedOrder._id.toString();
+  setCookie(res, "order_id", order_id);
 
   if (cart.cartCharges) {
     await new OrderCharges({
@@ -339,9 +339,6 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
     perUnitAdminDiscount = cart.cartCharges.admin_discount / totalQuantity;
   }
 
-  console.log("totalQuantity", totalQuantity)
-  console.log("perUnitAdminDiscount", perUnitAdminDiscount)
-
   let totalTax = 0;
 
   if (Array.isArray(cart.cartSkus) && cart.cartSkus.length > 0) {
@@ -364,8 +361,8 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
         product_id: item.product_id,
         sku_id: item.sku_id,
         vendor_id: item.vendor_id,
-        tax_id: item.sku?.tax_id,
-        price: item.sku?.price,
+        price: item.sku_id?.price,
+        tax_id: item.sku_id?.tax_id,
         quantity,
         vendor_discount: item.vendor_discount,
         flavor_id: item.flavor_id,
@@ -376,9 +373,7 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
   }
 
   let cgst = 0, sgst = 0, igst = 0;
-  const stateName = cart.billing_address_id?.state?.toLowerCase() || "";
-
-  console.log("stateName", stateName, totalTax)
+  const stateName = cart.billing_address_id?.city_id?.state_id?.name?.toLowerCase() || "";
 
   if (stateName === "haryana") {
     cgst = totalTax;
@@ -398,7 +393,7 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
 
   await taxDoc.save();
 
-  return { status: true, message: "Order Placed", orderId };
+  return { status: true, message: "Order Placed", order_id };
 }
 
 export async function get_abandoned_carts(req: NextApiRequest, res: NextApiResponse) {
@@ -446,8 +441,6 @@ export async function get_vendor_abandoned_carts(req: NextApiRequest, res: NextA
 export async function apply_admin_discount(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { data } = req.body;
-    
-    console.log("data", data)
     if (!data.cart_id || !data.additional_discount || !data.admin_discount_unit || !data.admin_discount_validity_value) { return res.status(400).json({ status: false, message: 'Fields are Missing' }); }    
 
     let expiry: Date | null = null;
