@@ -44,8 +44,8 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
           Payable : {row.payable_amount?.$numberDecimal}<br/>
         </TableCell>
 
-        <TableCell><CartSkuDetails cartSkus={row.cartSkus}/></TableCell>
-        <TableCell><CartChargesDetails cartCharges={row.cartCharges}/></TableCell>
+        <TableCell><CartSkuDetails skus={row.cartSkus}/></TableCell>
+        <TableCell><CartChargesDetails charges={row.cartCharges}/></TableCell>
         <TableCell><DateFormat date={row.createdAt} /></TableCell>
         <TableCell align='right'><IconButton id={row._id.toString()} onClick={handleOpenPopover}><Iconify icon='Edit'/></IconButton></TableCell>
       </TableRow>

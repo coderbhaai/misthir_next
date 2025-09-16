@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
-import DataModal from "@amitkk/payment/admin/tax-modal";
-import { AdminDataTable, DataProps } from "@amitkk/payment/admin/admin-tax-table";
+import { AdminDataTable, DataProps } from "@amitkk/payment/admin/admin-tax-collected-table";
+import router from "next/router";
 
 export  function AdminTaxCollected(){
     const showCheckBox = false;
@@ -34,34 +34,12 @@ export  function AdminTaxCollected(){
 
     const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
 
-    useEffect(() => {
-        if (updatedDataId) {
-            const fetchData = async () => {
-                try {
-                    const res = await apiRequest("get", `payment/payment?function=get_single_tax&id=${updatedDataId}`);
-                    const data = res?.data;
-                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
-    
-                    setData((prevData = []) => {
-                        const exists = prevData.some(i => String(i._id) === String(data._id));
-    
-                        return exists 
-                            ? prevData?.map((i) => 
-                                String(i._id) === String(data._id) ? { ...i, ...data } : i
-                            )
-                            : [...prevData, data];
-                    });
+    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["module"] );
+    const handleEdit = (row: DataProps) => { 
+        localStorage.setItem("order_id", row?._id as string);
+        window.open("/order", "_blank");
+    };
 
-                    handleClose();
-    
-                } catch (error) { clo( error ); } 
-            };
-            fetchData();
-        }
-    }, [updatedDataId]);
-
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-    const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
     const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData };
 
     return(
@@ -70,9 +48,11 @@ export  function AdminTaxCollected(){
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
-                    { id: "name", label: "Name" },
-                    { id: "rate", label: "Rate" },
-                    { id: "status", label: "Status" },
+                    { id: "module", label: "Module" },
+                    { id: "cgst", label: "CGST" },
+                    { id: "sgst", label: "SGST" },
+                    { id: "sgst", label: "IGST" },
+                    { id: "total", label: "Total" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
                 ]}/>
@@ -81,7 +61,6 @@ export  function AdminTaxCollected(){
                 .map((i) => (
                     <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
                 ))}>
-            <DataModal {...modalProps} />
         </AdminTableLayout>
     )
 }

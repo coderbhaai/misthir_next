@@ -3,7 +3,8 @@ import { UserRowProps } from "@amitkk/blog/types/blog";
 import { ProductProps, SkuProps } from "@amitkk/product/types/product";
 import { Types } from "mongoose";
 
-type DecimalValue = { $numberDecimal: string };
+export type SkuItem = CartSkuProps | OrderSkuProps;
+export type ChargesItem = CartChargesProps | OrderChargesProps;
 
 export interface CartProps extends Document {
   _id: string | Types.ObjectId;
@@ -49,6 +50,56 @@ export interface CartSkuProps extends Document {
 
 export interface CartChargesProps extends Document {
   cart_id: string | Types.ObjectId;
+  shipping_charges?: number;
+  shipping_chargeable_value?: number;
+  sales_discount?: number;
+  admin_discount?: number;
+  total_vendor_discount?: number;
+  cod_charges?: number;
+}
+
+export interface OrderProps extends Document {
+  _id: string | Types.ObjectId;
+  user_id?: string | Types.ObjectId;
+  billing_address_id?: Types.ObjectId | AddressProps;
+  shipping_address_id?: Types.ObjectId | AddressProps;
+  email?: string;
+  whatsapp?: string;
+  paymode?: string;
+  weight?: number;
+  total?: DecimalValue;
+  paid?: DecimalValue;
+  user_remarks?: string;
+  admin_remarks?: string;
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Virtuals
+  orderSkus?: OrderSkuProps[];
+  orderCharges?: OrderChargesProps;
+}
+
+export interface OrderSkuProps extends Document {
+  _id: string | Types.ObjectId;
+  order_id: string | Types.ObjectId;
+  product_id: string | Types.ObjectId | ProductProps;
+  sku_id: string | Types.ObjectId | SkuProps;
+  vendor_id: string | Types.ObjectId | UserRowProps;
+  quantity: number;
+  flavor_id?: string | Types.ObjectId;
+  vendor_discount?: number;
+  vendor_discount_validity?: Date;
+  vendor_discount_unit?: string;
+  vendor_discount_validity_value?: number;
+  createdAt: Date;
+  updatedAt: Date;
+  product: { name: string; price?: number };
+  vendor: { name: string };
+  sku: { price: number };
+}
+
+export interface OrderChargesProps extends Document {
+  order_id: string | Types.ObjectId;
   shipping_charges?: number;
   shipping_chargeable_value?: number;
   sales_discount?: number;

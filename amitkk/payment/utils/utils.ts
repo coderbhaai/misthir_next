@@ -1,6 +1,9 @@
 import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/utils";
-import { setCookie } from "hooks/CookieHook";
+import { OrderProps } from "@amitkk/ecom/types/ecom";
 import router from "next/router";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { fullAddress } from "@amitkk/address/utils/addressUtils";
 
 export type PaymentData = {
   amount: number; // in paise for Razorpay
@@ -100,4 +103,78 @@ export function getPaymentConfig() {
   const isProd = process.env.MODE === "Prod";
   const key_id = isProd ? process.env.NEXT_PUBLIC_RAZORPAY_KEY_PROD_ID : process.env.NEXT_PUBLIC_RAZORPAY_KEY_TEST_ID;
   return { isProd, key_id };
+}
+
+
+export function generateInvoice(order: OrderProps) {
+  const doc = new jsPDF();
+
+  // --- Header ---
+  doc.setFontSize(20).text("Invoice", 105, 20, { align: "center" });
+
+  // --- Order info table ---
+  autoTable(doc, {
+    startY: 30,
+    theme: "plain",
+    body: [
+      ["Order ID", `${order._id}`],
+      ["Date", new Date(order.createdAt).toLocaleDateString()],
+    ],
+  });
+
+  // --- Address table (2 columns side by side) ---
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [["Billing Address", "Shipping Address"]],
+    body: [[
+      order.billing_address_id ? fullAddress(order.billing_address_id as any) : "",
+      order.shipping_address_id ? fullAddress(order.shipping_address_id as any) : "",
+    ]],
+    styles: { valign: "top" },
+  });
+
+  // --- Items table ---
+  const itemRows = (order.orderSkus || []).map((sku: any) => [
+    (sku.sku_id as any)?.name || "Product",
+    sku.quantity,
+    sku.price,
+    sku.quantity * sku.price,
+  ]);
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [["Item", "Qty", "Price", "Total"]],
+    body: itemRows,
+  });
+
+  // --- Charges / Totals table ---
+  const total = order.total && typeof order.total === "object"
+    ? Number((order.total as any).$numberDecimal)
+    : Number(order.total);
+
+  const paid = order.paid && typeof order.paid === "object"
+    ? Number((order.paid as any).$numberDecimal)
+    : Number(order.paid);
+
+  const charges: any[] = [];
+  if (order.orderCharges?.shipping_charges)
+    charges.push(["Shipping", `₹${order.orderCharges.shipping_charges}`]);
+  if (order.orderCharges?.cod_charges)
+    charges.push(["COD", `₹${order.orderCharges.cod_charges}`]);
+  if (order.orderCharges?.sales_discount)
+    charges.push(["Discount", `₹${order.orderCharges.sales_discount}`]);
+
+  charges.push(["Total", `₹${total}`]);
+  charges.push(["Paid", `₹${paid}`]);
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    theme: "grid",
+    body: charges,
+    styles: { halign: "right" },
+    columnStyles: { 0: { halign: "left" }, 1: { halign: "right" } },
+  });
+
+  // --- Save file ---
+  doc.save(`invoice-${order._id}.pdf`);
 }

@@ -9,3 +9,15 @@ export type TaxProps = {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type TaxCollectedProps = {
+  _id: string | Types.ObjectId;
+  module: string;
+  module_id: string | Types.ObjectId;
+  cgst?: DecimalValue;
+  sgst?: DecimalValue;
+  igst?: DecimalValue;
+  total?: DecimalValue;
+  createdAt: Date;
+  updatedAt: Date;
+}

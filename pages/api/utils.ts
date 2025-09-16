@@ -229,3 +229,23 @@ export async function getRelatedContent({ module, moduleId, blogId = null, produ
     return { faq, testimonials, blogs, products:serializedProducts };
   }catch (err) { log(err); }
 }
+
+
+export async function getGenericContent() {
+  try{
+    const [blogs, products] = await Promise.all([
+      Blog.find({ status: true }).populate([ { path: 'media_id' }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).limit(10).lean().exec(),
+      Product.find({ status: true })
+        .populate([
+          { path: 'meta_id', select: '_id title description' },
+          { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
+          { path: 'mediaHubs', populate: { path: 'media_id', model: 'Media', select: '_id path alt' }
+          }
+        ]).limit(10).exec(),
+    ]);
+
+    const serializedProducts = products.map(p => p.toJSON()); 
+  
+    return { blogs, products:serializedProducts };
+  }catch (err) { log(err); }
+}

@@ -7,7 +7,7 @@ export interface OrderProps extends Document {
   paymode?: string;
   weight?: number;
   total?: number;
-  payable_amount?: number;
+  paid?: number;
   user_remarks?: string;
   admin_remarks?: string;
   createdAt: Date;
@@ -21,7 +21,7 @@ const orderSchema = new Schema<OrderProps>({
     paymode: { type: String },
     weight: { type: Number },
     total: { type: Schema.Types.Decimal128 },
-    payable_amount: { type: Schema.Types.Decimal128 },
+    paid: { type: Schema.Types.Decimal128 },
     user_remarks: { type: String },
     admin_remarks: { type: String },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

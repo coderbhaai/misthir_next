@@ -18,7 +18,9 @@ react-countup
 dompurify
 jsdom
 cookie
-
+pdfkit
+jspdf 
+jspdf-autotable
 
 
 [dev]

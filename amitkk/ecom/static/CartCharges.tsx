@@ -6,6 +6,7 @@ interface CartChargesProps {
   itemCount: number;
   total: number | string;
   payableAmount: number | string;
+  cart_status:boolean;
   cartCharges?: {
     shipping_charges?: number | string;
     cod_charges?: number | string;
@@ -15,7 +16,7 @@ interface CartChargesProps {
   };
 }
 
-export default function CartCharges({ itemCount, total, payableAmount, cartCharges }: CartChargesProps) {
+export default function CartCharges({ itemCount, total, payableAmount, cartCharges, cart_status=true }: CartChargesProps) {
   return (
         <>
             
@@ -54,7 +55,7 @@ export default function CartCharges({ itemCount, total, payableAmount, cartCharg
             )}
             <Divider sx={{ my: 2 }} />
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                <Typography variant="h6">Payable</Typography>
+                <Typography variant="h6">{cart_status? "Payable" : "Paid"}</Typography>
                 <Typography variant="h6">₹{payableAmount}</Typography>
             </Box>
         </>

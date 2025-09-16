@@ -1,7 +1,7 @@
 import mongoose, { isValidObjectId, Types } from 'mongoose';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getUserIdFromToken, log } from '../utils';
+import { getGenericContent, getRelatedContent, getUserIdFromToken, log } from '../utils';
 import { deleteCookie, getCartIdFromRequest, setCookie } from '../cartUtils';
 import { Cart, CartCharges, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
 import { Sku, SkuDocument } from 'lib/models/product/Sku';
@@ -11,6 +11,8 @@ import TaxCollected from 'lib/models/payment/TaxCollected';
 
 export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
     let cart_id = await getCartIdFromRequest(req, res);
 
     if( !cart_id ){
@@ -31,10 +33,10 @@ export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
 
 export async function create_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
     const data = req.body;
-
     const user_id = getUserIdFromToken(req);
-
     let payable_amount = 0;
     
     const newEntry = new Cart({
@@ -61,7 +63,6 @@ export async function create_cart(req: NextApiRequest, res: NextApiResponse) {
 export async function update_cart(req: NextApiRequest, cart_id: string): Promise<{ status: boolean; message: string }> {
   try {
     const data = req.body;
-
     const sku = await Sku.findOne({ _id: data.sku_id }).populate('product_id').exec();
     if (!sku) { return { status: false, message: 'SKU not found' }; }
     if (!sku.product_id){ return { status: false, message: 'SKU does not have a linked product' }; }
@@ -202,6 +203,8 @@ export async function get_cart_data(req: NextApiRequest, res: NextApiResponse) {
 
 export async function increment_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
     const { cart_sku_id } = req.body;
     if (!cart_sku_id) { return res.status(400).json({ status: false, message: 'cart_sku_id is required' }); }
     
@@ -222,6 +225,8 @@ export async function increment_cart(req: NextApiRequest, res: NextApiResponse) 
 
 export async function decrement_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
     const { cart_sku_id } = req.body;
     if (!cart_sku_id) { return res.status(400).json({ status: false, message: 'cart_sku_id is required' }); }
 
@@ -250,6 +255,8 @@ export async function decrement_cart(req: NextApiRequest, res: NextApiResponse) 
 
 export async function update_user_remarks(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
     const { user_remarks } = req.body;
     if (!user_remarks) { return res.status(400).json({ status: false, message: 'user_remarks is required' }); }
 
@@ -268,6 +275,8 @@ export async function update_user_remarks(req: NextApiRequest, res: NextApiRespo
 
 export async function update_cart_array(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
     const cart_id = await getCartIdFromRequest(req, res);
     if (!cart_id) { return res.status(400).json({ status: false, message: 'Cart not found' }); }
 
@@ -308,7 +317,7 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
     paymode: cart.paymode,
     weight: cart.weight,
     total: cart.total,
-    payable_amount: cart.payable_amount,
+    paid: cart.payable_amount,
     user_remarks: cart.user_remarks,
     admin_remarks: cart.admin_remarks,
   });
@@ -417,6 +426,8 @@ export async function get_single_abdandoned_cart(req: NextApiRequest, res: NextA
 
 export async function get_vendor_abandoned_carts(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
     const { vendor_id } = req.query;
 
     if ( !vendor_id || !mongoose.Types.ObjectId.isValid(vendor_id as string)) {
@@ -512,6 +523,99 @@ export async function apply_vendor_discount(req: NextApiRequest, res: NextApiRes
   } catch (error) { return log(error); }
 };
 
+export async function get_all_orders(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const data = await Order.find().populate([ { path: 'orderCharges' }, { path: 'user_id' }, { path: 'orderSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]);
+
+    return res.status(200).json({ message: 'All ORders Fetched', data });
+  } catch (error) { return log(error); }
+}
+
+export async function get_seller_orders(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+    const { vendor_id } = req.body;
+
+    if (!vendor_id || !mongoose.Types.ObjectId.isValid(vendor_id as string)) {
+      return res.status(400).json({ message: "Invalid vendor_id", data: [] });
+    }
+
+    const vendorObjectId = new mongoose.Types.ObjectId(vendor_id as string);
+    
+    const orderSkus = await OrderSku.find({ vendor_id: vendorObjectId }).select("order_id").exec();
+    const orderIds = orderSkus.map((s) => s.order_id);
+
+    if (orderIds.length === 0) { return res.status(200).json({ message: "No orders found for this vendor", data: [] }); }
+    
+    const orders = await Order.find({ _id: { $in: orderIds } })
+      .populate([
+        { path: "orderCharges" }, { path: "user_id" },
+        {
+          path: "orderSkus",
+          match: { vendor_id: vendorObjectId },
+          populate: [
+            { path: "sku_id" },
+            {
+              path: "product_id",
+              populate: [
+                { path: "mediaHubs", populate: { path: "media_id" } }
+              ]
+            }
+          ]
+        }
+      ])
+      .exec();
+
+    return res.status(200).json({ message: "Vendor orders fetched", data: orders });
+  } catch (error) { return log(error); }
+}
+
+export async function get_single_order(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+    const { order_id } = req.body;
+    if ( !order_id ) { return res.status(400).json({ message: 'Invalid or missing Id' }); }
+
+    const data = await Order.findById(order_id).populate([ { path: 'orderCharges' }, { path: 'billing_address_id' }, { path: 'shipping_address_id' }, { path: 'orderSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).exec();
+
+    const relatedContent = await getGenericContent();
+
+    return res.status(200).json({ message: 'Single Order Fetched', data, relatedContent });
+  } catch (error) { return log(error); }
+}
+
+export async function get_user_orders(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const user_id = getUserIdFromToken(req);
+
+    if (!user_id || !mongoose.Types.ObjectId.isValid(user_id as string)) {
+      return res.status(400).json({ message: "Invalid user_id", data: [] });
+    }
+    
+    const orders = await Order.find({ user_id })
+      .populate([
+        { path: "orderCharges" }, { path: "user_id" },
+        {
+          path: "orderSkus",
+          populate: [
+            { path: "sku_id" },
+            {
+              path: "product_id",
+              populate: [
+                { path: "mediaHubs", populate: { path: "media_id" } }
+              ]
+            }
+          ]
+        }
+      ])
+      .exec();
+
+    return res.status(200).json({ message: "User orders fetched", data: orders });
+  } catch (error) { return log(error); }
+}
+
 const functions = {
   add_to_cart,
   get_cart_data,
@@ -524,7 +628,14 @@ const functions = {
   place_order,
   apply_admin_discount,
   apply_vendor_discount,
-  get_vendor_abandoned_carts
+  get_vendor_abandoned_carts,
+
+  get_all_orders,
+  get_seller_orders,
+  get_single_order,
+
+  get_user_orders
+
 };
 
 export const config = { api: { bodyParser: false } };

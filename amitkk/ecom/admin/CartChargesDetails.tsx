@@ -1,20 +1,20 @@
 import React from "react";
-import { CartChargesProps } from "@amitkk/ecom/types/ecom"; // adjust the import if needed
+import { ChargesItem } from "../types/ecom";
 
-interface CartChargesDetailsProps {
-  cartCharges?: CartChargesProps; // make it optional
+interface ChargesDetailsProps {
+  charges?: ChargesItem;
 }
 
-const CartChargesDetails: React.FC<CartChargesDetailsProps> = ({ cartCharges }) => {
-  if (!cartCharges) return null; // return nothing if undefined
+const ChargesDetails: React.FC<ChargesDetailsProps> = ({ charges }) => {
+  if (!charges) return null;
 
   const chargesList = [
-    { label: "Shipping Charges", value: cartCharges.shipping_charges },
-    { label: "Shipping Chargeable Value", value: cartCharges.shipping_chargeable_value },
-    { label: "Sales Discount", value: cartCharges.sales_discount },
-    { label: "Admin Discount", value: cartCharges.admin_discount },
-    { label: "Vendor Discount", value: cartCharges.total_vendor_discount },
-    { label: "COD Charges", value: cartCharges.cod_charges },
+    { label: "Shipping Charges", value: charges.shipping_charges },
+    { label: "Shipping Chargeable Value", value: charges.shipping_chargeable_value },
+    { label: "Sales Discount", value: charges.sales_discount },
+    { label: "Admin Discount", value: charges.admin_discount },
+    { label: "Vendor Discount", value: charges.total_vendor_discount },
+    { label: "COD Charges", value: charges.cod_charges },
   ];
 
   return (
@@ -31,4 +31,4 @@ const CartChargesDetails: React.FC<CartChargesDetailsProps> = ({ cartCharges }) 
   );
 };
 
-export default CartChargesDetails;
+export default ChargesDetails;

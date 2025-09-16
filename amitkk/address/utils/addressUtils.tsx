@@ -7,9 +7,7 @@ export function getCountryNameFromCity(row: PopulatedCityProps): string {
   return '-';
 }
 
-export function isPopulatedCountryProps(
-  country: any
-): country is CountryProps {
+export function isPopulatedCountryProps( country: any ): country is CountryProps {
   return typeof country === 'object' && country !== null && typeof country.name === 'string';
 }
 
