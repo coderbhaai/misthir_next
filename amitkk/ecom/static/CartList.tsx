@@ -49,7 +49,7 @@ export default function CartList() {
                 )}
             </Box>
 
-            <CartCharges itemCount={cartItemCount} total={cart?.total?.$numberDecimal || 0} payableAmount={cart?.payable_amount?.$numberDecimal || 0} cartCharges={cart?.cartCharges}/>
+            <CartCharges itemCount={cartItemCount} total={cart?.total?.$numberDecimal || 0} payableAmount={cart?.payable_amount?.$numberDecimal || 0} cartCharges={cart?.cartCharges} cart_status={true}/>
         </Box>
     )
 }

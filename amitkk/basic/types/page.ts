@@ -129,3 +129,13 @@ export interface SiteSetting {
   module_value: string;
   status: boolean;
 }
+export interface ReviewProps {
+  module_id: any;
+  module: string;
+  rating: number;
+  review: string;
+  status: boolean;
+  displayOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}

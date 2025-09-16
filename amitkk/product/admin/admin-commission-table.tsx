@@ -18,7 +18,7 @@ export type DataProps = {
   productmeta_id: string | Types.ObjectId;
   vendor_id: string | Types.ObjectId;
   percentage: number;
-  createdAt: string | Date;
+  createdAt: Date;
   updatedAt: Date;
   _id: string | Types.ObjectId;
   selectedDataId: string | number | object | null;

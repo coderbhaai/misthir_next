@@ -233,23 +233,22 @@ export async function get_selected_media(req: ExtendedRequest, res: NextApiRespo
 }
 
 interface SyncMediaHubOptions {
-  module: "Product" | "Blog" | "Destination" | "Page";
+  module: "Product" | "Blog" | "Review" | "Page";
   module_id: string | Types.ObjectId;
-  vendor_id: string | Types.ObjectId;
   mediaArray: string[];
 }
 
-export async function syncMediaHub({ module, module_id, vendor_id, mediaArray }: SyncMediaHubOptions) {
+export async function syncMediaHub({ module, module_id, mediaArray }: SyncMediaHubOptions) {
   if (!Array.isArray(mediaArray)) { throw new Error("mediaArray must be an array"); }
 
   for (const [index, i] of mediaArray.entries()) {
-    await MediaHub.findOneAndUpdate({ module, module_id, vendor_id, media_id: i },
+    await MediaHub.findOneAndUpdate({ module, module_id, media_id: i },
       { $setOnInsert: { primary: index === 0, status: true, displayOrder: index, }, },
       { upsert: true, new: true }
     );
   }
 
-  await MediaHub.deleteMany({ module, module_id, vendor_id, media_id: { $nin: mediaArray } });
+  await MediaHub.deleteMany({ module, module_id, media_id: { $nin: mediaArray } });
 }
 
 const functions = {

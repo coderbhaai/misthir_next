@@ -19,6 +19,7 @@ import { MUICarousel } from "@amitkk/basic/static/MUICarousel";
 import QuantitySelector from "@amitkk/product/static/QuantitySelector";
 import { sanitizeHtml } from "@amitkk/basic/static/Content";
 import { useEcom } from "contexts/EcomContext";
+import ReviewForm from "@amitkk/basic/components/review/ReviewForm";
 
 interface ProductPageProps {
   product: ProductRawDocument;
@@ -174,14 +175,20 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
 
         <Grid size={12}>
             <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>With this look</Typography>
-          {/* <ImageSlider /> */}
         </Grid>
 
         <FaqPanel faq={relatedContent.faq} />
         <SuggestTestimonial testimonials={relatedContent.testimonials} />
+
+        {product && ( 
+          <ReviewForm module="Product" module_id={product?._id} 
+            onSubmitted={() => {
+              console.log("Review submitted successfully!");
+              // later: refresh product reviews, show toast, etc.
+            }}/> 
+        )}
         <SuggestProducts products={relatedContent.products} />
         <SuggestBlogs blogs={relatedContent.blogs} />
-        {product && ( <CommentPanel module="Product" module_id={product?._id} module_name={product?.name}/> )}
       </Grid>
     </>
   );

@@ -17,6 +17,7 @@ import PageDetail from "./basic/PageDetail";
 import { Search, SearchResult } from "./basic/Search";
 import Testimonial from "./basic/Testimonial";
 import UserBrowsingHistory from "./basic/UserBrowsingHistory";
+import Review from "./basic/Review";
 
 import User from "./spatie/User";
 import Otp from "./spatie/Otp";
@@ -64,7 +65,7 @@ const models = {
   ...Blog, ...Author, ...Blogmeta, ...BlogBlogmeta,
   ...Address, ...City, ...Country, ...State,
   ...Cart, ...CartSku, ...CartCharges, ...Order, ...OrderSku, ...OrderCharges,
-  ...Client, ...CommentModel, ...Contact, ...Faq, ...Media, ...MediaHub, ...Meta, ...Page, ...PageDetail, ...Search, ...SearchResult, ...Testimonial, ...UserBrowsingHistory,
+  ...Client, ...CommentModel, ...Contact, ...Faq, ...Media, ...MediaHub, ...Meta, ...Page, ...PageDetail, ...Search, ...SearchResult, ...Testimonial, ...UserBrowsingHistory, ...Review,
   ...User, ...Otp, ...SpatieRole, ...SpatiePermission, ...RolePermission, ...UserRole, ...UserPermission, ...SpatieMenu, ...SpatieSubmenu, ...MenuSubmenu,
   ...BankDetail, ...Commission, ...Documentation, ...Ingridient, ...Product, ...ProductBrand, ...ProductFeature, ...ProductIngridient, ...Productmeta, ...ProductSpecification, ...ProductProductBrand, ...ProductProductFeature, ...ProductProductmeta, ...ProductProductSpecification, ...Sku, ...SkuDetail, ...SkuProductFeature, ...Vendor, 
   ...SiteSetting, ...Tax, ...Razorpay, ...TaxCollected,

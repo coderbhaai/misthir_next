@@ -16,7 +16,7 @@ export type DataProps = {
   name: string;
   status: boolean;
   displayOrder?:number;
-  createdAt: string | Date;
+  createdAt: Date;
   updatedAt: Date;
   media_id: string | Types.ObjectId | MediaProps;
   _id: string | Types.ObjectId;

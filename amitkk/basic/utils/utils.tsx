@@ -47,7 +47,7 @@ export function useTableFilter<T>( data: T[] = [],  order: "asc" | "desc", order
 }
 
 export const axiosInstance = axios.create({
-  baseURL: process.env.MODE === 'development' ? process.env.DEV_URL : process.env.PROD_URL,
+  baseURL: process.env.MODE === 'dev' ? process.env.DEV_URL : process.env.PROD_URL,
   timeout: 10000,
 });
 
@@ -238,11 +238,8 @@ export function Iconify({ icon = "Search", ...props }: IconifyProps) {
 }
 
 export function getBaseUrl() {
-  const mode = process.env.MODE || "development";
-  let url =
-    mode === "development"
-      ? process.env.DEV_URL || "http://localhost:3000"
-      : process.env.PROD_URL || "https://www.example.com";
+  const mode = process.env.MODE || "dev";
+  let url = mode === "dev" ? process.env.DEV_URL || "http://localhost:3000" : process.env.PROD_URL || "https://www.example.com";
 
   return url;
 }

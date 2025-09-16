@@ -60,7 +60,7 @@ export interface DocumentProps {
     name: string;
     media_id: string | Types.ObjectId | MediaProps;
     _id: string | Types.ObjectId;
-    createdAt: string | Date;
+    createdAt: Date;
     updatedAt: Date;
 }
 
@@ -78,7 +78,7 @@ export interface ProductProps {
     meta_id: string | Types.ObjectId | MetaTableProps | null;
     dietary_type: string;
     tax_id: string | Types.ObjectId;
-    createdAt: string | Date;
+    createdAt: Date;
     updatedAt: Date;
     mediaHubs?: MediaHubProps[];
 }

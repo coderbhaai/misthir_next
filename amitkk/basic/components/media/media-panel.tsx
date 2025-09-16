@@ -112,8 +112,7 @@ const MediaPanel = forwardRef<MediaPanelHandle, MediaPanelProps>(
   };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
-
-  // Toggle media selection
+  
   const toggleSelect = (id: string) => {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]

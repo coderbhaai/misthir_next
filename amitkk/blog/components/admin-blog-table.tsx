@@ -28,7 +28,7 @@ export type DataProps = {
   };
   metas?: BlogmetaItem[];
   media_id: string | Types.ObjectId | MediaProps;
-  createdAt: string | Date;
+  createdAt: Date;
   updatedAt: Date;
   selectedDataId: string | number | object | null;
 };

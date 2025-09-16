@@ -111,7 +111,7 @@ export const generateSitemap =async () => {
   try {
     await connectDB();
 
-    const site = process.env.MODE === 'development' ? process.env.DEV_URL as string : process.env.PROD_URL as string;
+    const site = process.env.MODE === 'dev' ? process.env.DEV_URL as string : process.env.PROD_URL as string;
     const pages = await Page.find({ status: 1, sitemap: 1, url: { $ne: "/" } }).select("url");
     const blogs = await Blog.find().select("url name updatedAt");
   

@@ -25,7 +25,7 @@ export type DataProps = {
   sitemap: boolean;
   media_id: string | Types.ObjectId | MediaProps;
   meta_id: MetaTableProps;
-  createdAt: string | Date;
+  createdAt: Date;
   updatedAt: Date;
 };
 

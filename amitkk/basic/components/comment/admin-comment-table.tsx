@@ -18,7 +18,7 @@ export type DataProps = {
   email: string;
   content: string;
   status: boolean;
-  createdAt: string | Date;
+  createdAt: Date;
   updatedAt: Date;
   _id: string | Types.ObjectId;
   selectedDataId: string | number | object | null;

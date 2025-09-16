@@ -30,6 +30,11 @@ const AuthContext = createContext<AuthContextType>({
   onLogout: () => () => {},
 });
 
+export const getUserId = (): string | null => {
+  const { user } = useAuth();
+  return user?._id || null;
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);

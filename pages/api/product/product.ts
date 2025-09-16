@@ -141,7 +141,7 @@ export async function create_update_product(req: ExtendedRequest, res: NextApiRe
           { new: true }
         );
         
-        await syncMediaHub({ module: data.module, module_id: updated._id, vendor_id: data.vendor_id, mediaArray });
+        await syncMediaHub({ module: data.module, module_id: updated._id, mediaArray });
         await pivotEntry( ProductProductmeta, updated._id, productMeta, 'product_id', 'productmeta_id' );
         await pivotEntry( ProductProductFeature, updated._id, storage, 'product_id', 'productFeature_id' );
         await pivotEntry( ProductIngridient, updated._id, ingridients, 'product_id', 'ingridient_id' );
@@ -180,7 +180,7 @@ export async function create_update_product(req: ExtendedRequest, res: NextApiRe
 
     await newEntry.save();
 
-    await syncMediaHub({ module: data.module, module_id: newEntry._id, vendor_id: data.vendor_id, mediaArray });
+    await syncMediaHub({ module: data.module, module_id: newEntry._id, mediaArray });
     await pivotEntry( ProductProductmeta, newEntry._id, productMeta, 'product_id', 'productmeta_id' );
     await pivotEntry( ProductProductFeature, newEntry._id, storage, 'product_id', 'productFeature_id' );
     await pivotEntry( ProductIngridient, newEntry._id, ingridients, 'product_id', 'ingridient_id' );
@@ -376,6 +376,7 @@ export async function get_single_product_by_url(req: NextApiRequest, res: NextAp
       productId: data._id.toString(),
       blogId : null
     });
+    
     return res.status(200).json({ message: 'Fetched Single Product', data, relatedContent });
   }catch (error) { return log(error); }
 };
