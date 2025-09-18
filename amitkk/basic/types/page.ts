@@ -39,6 +39,7 @@ export interface PageItemProps {
 }
 
 export interface MediaProps {
+  media_id: MediaProps;
   _id: string | Types.ObjectId;
   media: string;
   alt: string;
@@ -129,13 +130,17 @@ export interface SiteSetting {
   module_value: string;
   status: boolean;
 }
+
 export interface ReviewProps {
-  module_id: any;
+  _id: string | Types.ObjectId;
   module: string;
+  module_id: string | Types.ObjectId | GenericModule;
+  user_id: UserProps;
   rating: number;
   review: string;
   status: boolean;
   displayOrder: number;
   createdAt: Date;
   updatedAt: Date;
+  mediaHub?: MediaProps[];
 }

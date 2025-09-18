@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Model } from "mongoose";
 
 import Blog from "./blog/Blog";
 import Author from "./blog/Author";
@@ -61,24 +61,56 @@ import Tax from "./payment/Tax";
 import Razorpay from "./payment/Razorpay";
 import TaxCollected from "./payment/TaxCollected";
 
-const models = {
-  ...Blog, ...Author, ...Blogmeta, ...BlogBlogmeta,
-  ...Address, ...City, ...Country, ...State,
-  ...Cart, ...CartSku, ...CartCharges, ...Order, ...OrderSku, ...OrderCharges,
-  ...Client, ...CommentModel, ...Contact, ...Faq, ...Media, ...MediaHub, ...Meta, ...Page, ...PageDetail, ...Search, ...SearchResult, ...Testimonial, ...UserBrowsingHistory, ...Review,
-  ...User, ...Otp, ...SpatieRole, ...SpatiePermission, ...RolePermission, ...UserRole, ...UserPermission, ...SpatieMenu, ...SpatieSubmenu, ...MenuSubmenu,
-  ...BankDetail, ...Commission, ...Documentation, ...Ingridient, ...Product, ...ProductBrand, ...ProductFeature, ...ProductIngridient, ...Productmeta, ...ProductSpecification, ...ProductProductBrand, ...ProductProductFeature, ...ProductProductmeta, ...ProductProductSpecification, ...Sku, ...SkuDetail, ...SkuProductFeature, ...Vendor, 
-  ...SiteSetting, ...Tax, ...Razorpay, ...TaxCollected,
+const models: Record<string, any> = {
+  // Refrences
+  User, Media, MediaHub, Product,
+
+  Review,
+  // Blog
+  Blog, Author, Blogmeta, BlogBlogmeta,
+
+  // Address
+  Address, City, Country, State,
+
+  // Ecom
+  ...Cart, ...Order, // spread because multiple exports
+
+  // Basic
+  Client, CommentModel, Contact, Faq, Meta, Page, PageDetail,
+  ...Search, ...SearchResult, // spread because named exports
+  Testimonial, UserBrowsingHistory, 
+
+  // Spatie
+   Otp, SpatieRole, SpatiePermission, RolePermission, UserRole, UserPermission,
+  SpatieMenu, SpatieSubmenu, MenuSubmenu,
+
+  // Product
+  BankDetail, Commission, Documentation, Ingridient,  ProductBrand,
+  ProductFeature, ProductIngridient, Productmeta, ProductSpecification,
+  ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification,
+  ...Sku, // spread because multiple exports
+  SkuProductFeature, Vendor,
+
+  // Payment
+  SiteSetting, Tax, Razorpay, TaxCollected,
 };
 
 
 if (process.env.MODE !== "production") {
   (global as any).mongooseModels = (global as any).mongooseModels || {};
-  
+
   Object.entries(models).forEach(([name, model]) => {
-    if (mongoose.models[name]) delete mongoose.models[name];
-    (global as any).mongooseModels[name] = model;
+    if (isModel(model)) {
+      mongoose.models[name] = model;
+      (global as any).mongooseModels[name] = model;
+    } else {
+      console.warn(`[WARNING] Skipping ${name} because it is not a Mongoose model`);
+    }
   });
+}
+
+export function isModel(obj: any): obj is Model<any> {
+  return obj && typeof obj.init === "function";
 }
 
 export default models;

@@ -18,6 +18,7 @@ import SkuProductFeature from 'lib/models/product/SkuProductFeature';
 import { ProductRawDocument } from 'lib/models/types';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import Tax from 'lib/models/payment/Tax';
+import { getReviews } from '../basic/review';
 
 export async function get_all_products(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -376,8 +377,10 @@ export async function get_single_product_by_url(req: NextApiRequest, res: NextAp
       productId: data._id.toString(),
       blogId : null
     });
+
+    const reviews = await getReviews({ module: "Product", moduleId: data._id.toString() });
     
-    return res.status(200).json({ message: 'Fetched Single Product', data, relatedContent });
+    return res.status(200).json({ message: 'Fetched Single Product', data, relatedContent, reviews });
   }catch (error) { return log(error); }
 };
 

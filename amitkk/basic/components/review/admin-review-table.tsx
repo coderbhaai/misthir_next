@@ -15,6 +15,7 @@ import { ReviewProps } from '@amitkk/basic/types/page';
 export interface DataProps extends ReviewProps {  
   _id: string | Types.ObjectId;
   selectedDataId: string | number | object | null;
+  function: string;
 };
 
 type UserTableRowProps = TableRowPropsBase & {
@@ -32,7 +33,8 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
         <TableCell>
           {row.module}<br/>
-          {row.module === "Blog" && ( <Link href={`/blog/${row.module_id.url}`} target="_blank">{row.module_id.name}</Link> )}
+          {row.module === "Blog" && ( <Link href={`/blog/${(row.module_id as GenericModule).url}`} target="_blank">{(row.module_id as GenericModule).name}</Link> )}
+          {row.module === "Product" && ( <Link href={`/product/${(row.module_id as GenericModule).url}`} target="_blank">{(row.module_id as GenericModule).name}</Link> )}
         </TableCell>
         <TableCell>{row.module}</TableCell>
         <TableCell>{row.rating} Star<br/>{row.review}</TableCell>

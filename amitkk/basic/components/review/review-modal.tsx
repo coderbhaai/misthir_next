@@ -9,6 +9,8 @@ import CustomModal from '@amitkk/basic/static/CustomModal';
 import { TableDataFormProps, apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
 import { FormControl, InputLabel, MenuItem } from '@mui/material';
 import StatusDisplay from '../static/status-display-input';
+import { useState } from 'react';
+import { MediaHubProps, MediaProps } from '@amitkk/basic/types/page';
 
 type DataFormProps = TableDataFormProps & {
   onUpdate: (updatedData: DataProps) => void;
@@ -16,8 +18,10 @@ type DataFormProps = TableDataFormProps & {
 
 export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
+    function: '',
     module: '',
     module_id: '',
+    user_id: '',
     rating: 0,
     review: '',
     status: true,
@@ -28,6 +32,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     selectedDataId,
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
+  const [mediaHub, setMediaHub] = useState<MediaHubProps[]>([]);
   
   const handleCloseModal = () => {
     setFormData(initialFormData);
@@ -43,19 +48,24 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const data = await apiRequest("get", `/page/get_single_comment?id=${selectedDataId}`);
+          const res = await apiRequest("get", `basic/review?function=get_single_review&id=${selectedDataId}`);
+
           setFormData({
-            module: data.module || '',
-            module_id: data.module_id || '',
-            rating: data.rating || '',
-            review: data.review || '',
-            status: data.status ?? true,
-            displayOrder: data.displayOrder || '',
-            createdAt: data.createdAt || new Date(),
+            function: "update_review",
+            module: res?.data.module || '',
+            module_id: res?.data.module_id || '',
+            user_id: res?.data.user_id || '',
+            rating: res?.data.rating || '',
+            review: res?.data.review || '',
+            status: res?.data.status ?? true,
+            displayOrder: res?.data.displayOrder || 0,
+            createdAt: res?.data.createdAt || new Date(),
             updatedAt: new Date(),
-            _id: data._id || '',
-            selectedDataId: data._id || '',
+            _id: res?.data._id || '',
+            selectedDataId: res?.data._id || '',
           });
+
+          setMediaHub(res?.data?.mediaHub);
 
         } catch (error) { clo( error ); }
       };
@@ -68,17 +78,18 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     const updatedData: DataProps = {...formData, updatedAt: new Date(), _id: selectedDataId as string};
 
     try {
-      const res = await apiRequest("post", `/page/create_update_comment`, updatedData);
+      const res = await apiRequest("post", `basic/review`, updatedData);
 
       if( res?.data ){
         setFormData(initialFormData);
         onUpdate(res?.data)
         hitToastr('success', res?.message);
+        setMediaHub([]);
       }
     } catch (error) { clo( error ); }
   };
 
-  const title = !selectedDataId ? 'Add Comment' : 'Update Comment';
+  const title = !selectedDataId ? 'Add Review' : 'Update Review';
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
@@ -86,7 +97,8 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
           <FormControl sx={{width: '100%'}}>
               <InputLabel id="rating-select-label">Rating<span style={{ color: 'red' }}>*</span></InputLabel>
-              <Select labelId="rating-select-label" id="rating-select" name="module" value={String(formData.rating)} onChange={handleChange} >
+              <Select labelId="rating-select-label" id="rating-select" name="module" value={formData.rating ? String(formData.rating) : ''} onChange={handleChange} >
+                <MenuItem value="">Select rating</MenuItem>
                 <MenuItem value="1">1</MenuItem>
                 <MenuItem value="2">2</MenuItem>
                 <MenuItem value="3">3</MenuItem>
@@ -94,8 +106,26 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
                 <MenuItem value="5">5</MenuItem>
               </Select>
             </FormControl>
-          <TextField label='Email' variant='outlined' value={formData.review} name='email' fullWidth onChange={handleChange} required/>
+          <TextField label='Review' variant='outlined' value={formData.review} name='review' fullWidth onChange={handleChange} required/>
           <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
+
+          <Box sx={{ display: 'flex', flexWrap: "wrap"}}>
+            {mediaHub?.map((item, i) => {
+              const media = item.media_id as MediaProps;
+              return (
+                <Box key={item._id.toString()} sx={{ display: 'flex', width: 100, height: 100, border: "1px solid #ccc", borderRadius: 2, m: 1 }}>
+                  {"path" in media && (
+                    <img
+                      src={media.path}
+                      alt={media.alt || `image-${i}`}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
+
           <Button type='submit' variant='contained' color='primary'>{title}</Button>
         </Box>
       </form>

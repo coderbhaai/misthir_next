@@ -230,7 +230,6 @@ export async function getRelatedContent({ module, moduleId, blogId = null, produ
   }catch (err) { log(err); }
 }
 
-
 export async function getGenericContent() {
   try{
     const [blogs, products] = await Promise.all([

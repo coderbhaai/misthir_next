@@ -5,8 +5,8 @@ export interface ISubmenuProps extends Document {
   url: string;
   status: boolean;
   displayOrder?: number;
-  permission_id?: mongoose.Types.ObjectId;
-  media_id?: mongoose.Types.ObjectId;
+  permission_id?: Types.ObjectId;
+  media_id?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

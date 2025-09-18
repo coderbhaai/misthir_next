@@ -12,11 +12,8 @@ import SpatieSubmenu from 'lib/models/spatie/SpatieSubmenu';
 import { uploadMedia } from './media';
 import { MediaProps } from '@amitkk/basic/types/page';
 import User from 'lib/models/spatie/User';
-import path from "path";
-import fs from "fs";
 import { createApiHandler, ExtendedRequest, HandlerMap, } from '../apiHandler';
-import connectDB from 'pages/lib/mongodb';
-import { Fields, Files, IncomingForm } from 'formidable';
+import "lib/models";
 
 export interface SpatieMenuWithSubmenus {
   _id: string;
@@ -498,6 +495,8 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
       return res.status(200).json({ message: 'Auto-allowed because of /user/', data: true });
     }    
     
+
+    console.log("check_permission", user_id, url)
     const submenu = await SpatieSubmenu.findOne({ url });
     if (!submenu) return res.status(404).json({ message: 'Checked Permissions - Menu MIssing', data: false });
 
@@ -507,7 +506,6 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
     return res.status(200).json({ message: 'Permission To Enter', data: true });
   } catch (error) { log(error); return res.status(500).json({ allowed: false }); }
 }
-
 
 const functions = {
   create_update_role,

@@ -8,7 +8,7 @@ export interface IOtp extends Document {
   phone?: string;
   otp: string;
   expiresAt: Date;
-  user_id?: mongoose.Types.ObjectId;
+  user_id?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

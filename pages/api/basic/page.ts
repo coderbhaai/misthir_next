@@ -33,12 +33,15 @@ export async function status_switch(req: NextApiRequest, res: NextApiResponse) {
     if (!model) return res.status(400).json({ message: "Model name is required" });
     if (!_id) return res.status(400).json({ message: "Row ID (_id) is required" });
     if (status === undefined) return res.status(400).json({ message: "Status is required" });
+
     
     const Model = (models as any)[model];
+    console.log("req.body", req.body, Model )
+
     if (!Model) return res.status(400).json({ message: `Invalid model: ${model}` });
-
+    
     const modelId = typeof req.body._id === 'string' || req.body._id instanceof Types.ObjectId ? req.body._id : null;
-
+    
     const row = await Model.findById(modelId);
     if (!row) return res.status(404).json({ message: `No record found with ID: ${_id}` });
 

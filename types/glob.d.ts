@@ -1,5 +1,11 @@
 type DecimalValue = { $numberDecimal: string };
 
+interface GenericModule {
+  _id: string | Types.ObjectId;
+  url: string;
+  name: string;
+}
+
 interface AdminModuleProps {
   module?: string;
   module_id?: string;

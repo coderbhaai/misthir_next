@@ -1,8 +1,8 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
 export interface UserPermissionProps extends Document {
-  user_id: mongoose.Types.ObjectId;
-  permission_id: mongoose.Types.ObjectId;
+  user_id: Types.ObjectId;
+  permission_id: Types.ObjectId;
 }
 
 const UserPermissionSchema = new Schema<UserPermissionProps>({

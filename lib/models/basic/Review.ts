@@ -1,20 +1,21 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, model, models, Document, Types } from "mongoose";
 
 export interface ReviewProps extends Document {
   module: string;
-  module_id: mongoose.Types.ObjectId;
-  user_id: mongoose.Types.ObjectId;
+  module_id: Types.ObjectId;
+  user_id: Types.ObjectId;
   review: string;
   rating: number;
   status: boolean;
   displayOrder?: number;
   createdAt: Date;
   updatedAt: Date;
+  mediaHub?: Types.ObjectId[];
 }
 
 const reviewSchema = new Schema<ReviewProps>({
-    module: { type: String, required: true },
-    module_id: { type: Schema.Types.ObjectId, required: true },
+    module: { type: String, required: true, enum: ["Blog", "Destination", "Product", "Page"] },
+    module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     review: { type: String, required: true },
     rating: { type: Number, required: true },
@@ -23,4 +24,5 @@ const reviewSchema = new Schema<ReviewProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export default mongoose.models.Review || mongoose.model<ReviewProps>('Review', reviewSchema);
+reviewSchema.virtual("mediaHub", { ref: "MediaHub", localField: "_id", foreignField: "module_id", justOne: false, match: { module: "Review" }, });
+export default models.Review || model<ReviewProps>("Review", reviewSchema);

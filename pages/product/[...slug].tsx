@@ -20,13 +20,16 @@ import QuantitySelector from "@amitkk/product/static/QuantitySelector";
 import { sanitizeHtml } from "@amitkk/basic/static/Content";
 import { useEcom } from "contexts/EcomContext";
 import ReviewForm from "@amitkk/basic/components/review/ReviewForm";
+import { ReviewProps } from "@amitkk/basic/types/page";
+import ReviewPanel from "@amitkk/basic/components/review/ReviewPanel";
 
 interface ProductPageProps {
   product: ProductRawDocument;
   relatedContent: RelatedContent;
+  reviews: ReviewProps[]
 }
 
-export default function ProductPage({ product, relatedContent }: ProductPageProps) {
+export default function ProductPage({ product, relatedContent, reviews }: ProductPageProps) {
   const { sendAction } = useEcom();
 
   const [aboutOpen, setAboutOpen] = useState(true);  
@@ -180,13 +183,7 @@ export default function ProductPage({ product, relatedContent }: ProductPageProp
         <FaqPanel faq={relatedContent.faq} />
         <SuggestTestimonial testimonials={relatedContent.testimonials} />
 
-        {product && ( 
-          <ReviewForm module="Product" module_id={product?._id} 
-            onSubmitted={() => {
-              console.log("Review submitted successfully!");
-              // later: refresh product reviews, show toast, etc.
-            }}/> 
-        )}
+        <ReviewPanel reviews={reviews} module="Product" module_id={product?._id}/>
         <SuggestProducts products={relatedContent.products} />
         <SuggestBlogs blogs={relatedContent.blogs} />
       </Grid>
@@ -200,6 +197,7 @@ export async function getServerSideProps(context: any) {
 
   const meta = res?.data?.meta_id || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
   const product = res?.data || null;
+  const reviews = Array.isArray(res?.reviews) ? res.reviews : [];
   const relatedContent = res?.relatedContent || { faq: [], testimonials: [], blogs: [], products: [] };
 
   relatedContent.testimonials = relatedContent.testimonials.map((t: any) => ({
@@ -207,5 +205,5 @@ export async function getServerSideProps(context: any) {
     content: typeof t.content === 'string' ? sanitizeHtml(t.content) : ''
   }));
 
-  return { props: { product, meta, relatedContent } };
+  return { props: { product, meta, relatedContent, reviews } };
 }

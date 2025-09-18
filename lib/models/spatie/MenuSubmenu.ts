@@ -1,8 +1,8 @@
 import mongoose, { Schema } from "mongoose";
 
 export interface IProps extends Document {
-  menu_id: mongoose.Types.ObjectId;
-  submenu_id: mongoose.Types.ObjectId;
+  menu_id: Types.ObjectId;
+  submenu_id: Types.ObjectId;
 }
 
 const MenuSubmenuSchema = new Schema<IProps>({

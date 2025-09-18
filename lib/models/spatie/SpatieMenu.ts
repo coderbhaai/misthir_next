@@ -1,10 +1,10 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IMenuProps extends Document {
   name: string;
   status: boolean;
   displayOrder?: number;
-  media_id?: mongoose.Types.ObjectId;
+  media_id?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

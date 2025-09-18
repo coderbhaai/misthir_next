@@ -8,7 +8,7 @@ export interface IClient extends Document {
   content?: string;
   status: boolean;
   displayOrder?: number;
-  media_id?: mongoose.Types.ObjectId;
+  media_id?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

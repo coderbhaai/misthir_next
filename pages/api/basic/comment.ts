@@ -37,7 +37,7 @@ export async function create_update_comment(req: NextApiRequest, res: NextApiRes
 
 export async function get_all_comments(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const data = await CommentModel.find().populate([ { path: "module_id", select: "name url" }, { path: "user_id", select: "fullName email" } ]).exec();
+    const data = await CommentModel.find().populate([ { path: "module_id", select: "name url" }, { path: "user_id", select: "name email phone" } ]).exec();
     return res.status(200).json({ message: 'Fetched all Comments', data });
   } catch (error) { log(error); }
 }

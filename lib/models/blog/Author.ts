@@ -4,7 +4,7 @@ export interface IAuthor extends Document {
   name: string;
   status: boolean;
   displayOrder?: number;
-  media_id?: mongoose.Types.ObjectId;
+  media_id?: Types.ObjectId;
   content: string;
   createdAt: Date;
   updatedAt: Date;

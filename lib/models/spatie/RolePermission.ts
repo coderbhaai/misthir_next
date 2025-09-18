@@ -1,8 +1,8 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
 export interface IProps extends Document {
-  role_id: mongoose.Types.ObjectId;
-  permission_id: mongoose.Types.ObjectId;
+  role_id: Types.ObjectId;
+  permission_id: Types.ObjectId;
 }
 
 const RolePermissionSchema = new Schema<IProps>({

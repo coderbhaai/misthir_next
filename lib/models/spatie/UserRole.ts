@@ -1,8 +1,8 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
 export interface UserRoleProps extends Document {
-  user_id: mongoose.Types.ObjectId;
-  role_id: mongoose.Types.ObjectId;
+  user_id: Types.ObjectId;
+  role_id: Types.ObjectId;
 }
 
 const UserRoleSchema = new Schema<UserRoleProps>({

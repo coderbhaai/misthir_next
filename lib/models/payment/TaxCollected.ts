@@ -1,8 +1,8 @@
-import mongoose, { Schema, Document, models } from "mongoose";
+import mongoose, { Schema, Document, models, Types } from "mongoose";
 
 export interface ITaxCollected extends Document {
   module: string;
-  module_id: mongoose.Types.ObjectId;
+  module_id: Types.ObjectId;
   cgst?: number;
   sgst?: number;
   igst?: number;
@@ -11,16 +11,14 @@ export interface ITaxCollected extends Document {
   updatedAt?: Date;
 }
 
-const TaxCollectedSchema = new Schema<ITaxCollected>(
-  {
+const TaxCollectedSchema = new Schema<ITaxCollected>({
     module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true }, 
     cgst: { type: Schema.Types.Decimal128, default: null },
     sgst: { type: Schema.Types.Decimal128, default: null },
     igst: { type: Schema.Types.Decimal128, default: null },
     total: { type: Schema.Types.Decimal128, default: null },
-  },
-  { timestamps: true }
+  },{ timestamps: true }
 );
 
 export default models.TaxCollected || mongoose.model<ITaxCollected>("TaxCollected", TaxCollectedSchema);
