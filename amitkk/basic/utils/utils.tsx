@@ -297,5 +297,23 @@ export const isValidWhatsapp = (whatsapp: string) => {
   return regex.test(whatsapp);
 };
 
+export const renderDecimal = (value: number | "" | Types.Decimal128 | { $numberDecimal: string }): number | string => {
+  if (value === "" || value === null || value === undefined) return "";
+  if (typeof value === "number") return value;
+
+  // Handle Mongoose Decimal128 instance
+  if (value instanceof Types.Decimal128) {
+    const parsed = parseFloat(value.toString());
+    return isNaN(parsed) ? "" : parsed;
+  }
+
+  // Handle Mongoose JSON-decoded Decimal128
+  if (typeof value === "object" && "$numberDecimal" in value) {
+    const parsed = parseFloat((value as { $numberDecimal: string }).$numberDecimal);
+    return isNaN(parsed) ? "" : parsed;
+  }
+
+  return String(value);
+};
 
 export default function test(){ <></>}

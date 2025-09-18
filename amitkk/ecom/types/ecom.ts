@@ -6,7 +6,7 @@ import { Types } from "mongoose";
 export type SkuItem = CartSkuProps | OrderSkuProps;
 export type ChargesItem = CartChargesProps | OrderChargesProps;
 
-export interface CartProps extends Document {
+export interface CartProps{
   _id: string | Types.ObjectId;
   user_id?: string | Types.ObjectId;
   billing_address_id?: Types.ObjectId | AddressProps;
@@ -27,7 +27,7 @@ export interface CartProps extends Document {
   cartCharges?: CartChargesProps;
 }
 
-export interface CartSkuProps extends Document {
+export interface CartSkuProps{
   _id: string | Types.ObjectId;
   cart_id: string | Types.ObjectId;
   product_id: string | Types.ObjectId | ProductProps;
@@ -48,7 +48,7 @@ export interface CartSkuProps extends Document {
   sku: { price: number };
 }
 
-export interface CartChargesProps extends Document {
+export interface CartChargesProps{
   cart_id: string | Types.ObjectId;
   shipping_charges?: number;
   shipping_chargeable_value?: number;
@@ -58,7 +58,7 @@ export interface CartChargesProps extends Document {
   cod_charges?: number;
 }
 
-export interface OrderProps extends Document {
+export interface OrderProps{
   _id: string | Types.ObjectId;
   user_id?: string | Types.ObjectId;
   billing_address_id?: Types.ObjectId | AddressProps;
@@ -79,7 +79,7 @@ export interface OrderProps extends Document {
   orderCharges?: OrderChargesProps;
 }
 
-export interface OrderSkuProps extends Document {
+export interface OrderSkuProps{
   _id: string | Types.ObjectId;
   order_id: string | Types.ObjectId;
   product_id: string | Types.ObjectId | ProductProps;
@@ -98,7 +98,7 @@ export interface OrderSkuProps extends Document {
   sku: { price: number };
 }
 
-export interface OrderChargesProps extends Document {
+export interface OrderChargesProps{
   order_id: string | Types.ObjectId;
   shipping_charges?: number;
   shipping_chargeable_value?: number;
@@ -106,4 +106,25 @@ export interface OrderChargesProps extends Document {
   admin_discount?: number;
   total_vendor_discount?: number;
   cod_charges?: number;
+}
+
+export interface SaleProps{
+  _id: string | Types.ObjectId;
+  name: string;
+  valid_from: string | Date;
+  valid_to: string | Date;
+  type: "Amount Based" | "Percent Based"; 
+  discount: number | Types.Decimal128 | "";
+  status: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  saleSkus?: SaleSkuProps[];
+  vendor_id?: Types.ObjectId | { _id: string; name?: string };
+}
+export interface SaleSkuProps {
+  sale_id: Types.ObjectId;
+  sku_id: Types.ObjectId | { _id: string; name?: string; price?: number };
+  product_id: Types.ObjectId | { _id: string; name?: string };
+  quantity: number;
+  discount: number | Types.Decimal128 | "";
 }

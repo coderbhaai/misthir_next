@@ -55,6 +55,8 @@ import State from "./address/State";
 
 import { Cart, CartSku, CartCharges } from "./ecom/Cart";
 import { Order, OrderSku, OrderCharges } from "./ecom/Order";
+import Sale from "./ecom/Sale";
+import SaleSku from "./ecom/SaleSku";
 
 import SiteSetting from "./payment/SiteSetting";
 import Tax from "./payment/Tax";
@@ -73,23 +75,16 @@ const models: Record<string, any> = {
   Address, City, Country, State,
 
   // Ecom
-  ...Cart, ...Order, // spread because multiple exports
+  ...Cart, ...Order, Sale, SaleSku,
 
   // Basic
-  Client, CommentModel, Contact, Faq, Meta, Page, PageDetail,
-  ...Search, ...SearchResult, // spread because named exports
-  Testimonial, UserBrowsingHistory, 
+  Client, CommentModel, Contact, Faq, Meta, Page, PageDetail, ...Search, ...SearchResult, Testimonial, UserBrowsingHistory, 
 
   // Spatie
-   Otp, SpatieRole, SpatiePermission, RolePermission, UserRole, UserPermission,
-  SpatieMenu, SpatieSubmenu, MenuSubmenu,
+   Otp, SpatieRole, SpatiePermission, RolePermission, UserRole, UserPermission, SpatieMenu, SpatieSubmenu, MenuSubmenu,
 
   // Product
-  BankDetail, Commission, Documentation, Ingridient,  ProductBrand,
-  ProductFeature, ProductIngridient, Productmeta, ProductSpecification,
-  ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification,
-  ...Sku, // spread because multiple exports
-  SkuProductFeature, Vendor,
+  BankDetail, Commission, Documentation, Ingridient,  ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, ...Sku, SkuProductFeature, Vendor,
 
   // Payment
   SiteSetting, Tax, Razorpay, TaxCollected,

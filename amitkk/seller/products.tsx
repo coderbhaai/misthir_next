@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useTable, AdminTableHead, emptyRows } from "@amitkk/basic/utils/AdminUtils";
+import { useTable } from "@amitkk/basic/utils/AdminUtils";
 import { apiRequest, clo, useTableFilter, Iconify, withAuth } from "@amitkk/basic/utils/utils";
 import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-product-table";
-import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useRouter } from "next/router";
 import { useVendorId } from "hooks/useVendorId";
 import { Grid } from "@mui/material";

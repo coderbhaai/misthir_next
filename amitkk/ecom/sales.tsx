@@ -1,15 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-sales-table";
+import { AdminDataTable, DataProps } from "@amitkk/ecom/admin/admin-sales-table";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
-import { useVendorId } from "hooks/useVendorId";
 import router from "next/router";
 
-export function SellerSales(){
-    const vendor_id = useVendorId();
+export function AdminSales(){
     const showCheckBox = false;
     const table = useTable();
     const [data, setData] = useState<DataProps[]>([]);
@@ -18,13 +16,13 @@ export function SellerSales(){
 
     const initData = useCallback(async () => {
         try {
-            const res_1 = await apiRequest("get", `ecom/sales?function=get_all_sales&vendor_id=${vendor_id}`);
+            const res_1 = await apiRequest("get", `ecom/sales?function=get_all_sales`);
             setData(res_1?.data ?? []);
 
         } catch (error) { clo( error ); }
     }, []);
 
-   useEffect(() => { if (!vendor_id) return; initData(); }, [vendor_id]);
+   useEffect(() => { initData(); }, []);
     
     return(
         <AdminTableLayout<DataProps>
@@ -32,6 +30,7 @@ export function SellerSales(){
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
+                    { id: "vendor", label: "Vendor" },
                     { id: "name", label: "Name" },
                     { id: "validity", label: "Validity" },
                     { id: "discount", label: "Discount" },
@@ -49,4 +48,4 @@ export function SellerSales(){
     )
 }
 
-export default withAuth(SellerSales);
+export default withAuth(AdminSales);

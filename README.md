@@ -1,4 +1,3 @@
-Review
 Coupon
 Sale
 Comment
