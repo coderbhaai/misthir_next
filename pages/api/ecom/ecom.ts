@@ -3,11 +3,14 @@ import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getGenericContent, getRelatedContent, getUserIdFromToken, log } from '../utils';
 import { deleteCookie, getCartIdFromRequest, setCookie } from '../cartUtils';
-import { Cart, CartCharges, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
+import { Cart, CartCharges, CartCoupon, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
 import { Sku, SkuDocument } from 'lib/models/product/Sku';
 import Product from 'lib/models/product/Product';
 import { Order, OrderCharges, OrderSku } from 'lib/models/ecom/Order';
 import TaxCollected from 'lib/models/payment/TaxCollected';
+import { handleApplyCoupon, remove_coupon, upsertCartCoupon, validateCoupon } from './coupon';
+import Coupon from 'lib/models/ecom/Coupon';
+import { getEffectiveSkuPrice } from './sales';
 
 export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -117,18 +120,30 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
 
 export async function recalculateCart ( cart_id: string){
   try{
-    const updatedCart = await Cart.findById(cart_id).populate([ { path: 'cartSkus', populate: { path: 'sku_id', model: 'Sku' } }, { path: 'cartCharges' } ]).exec();
+    const updatedCart = await Cart.findById(cart_id).populate([ { path: 'cartSkus', populate: { path: 'sku_id', model: 'Sku' } }, { path: 'cartCharges' }, { path: 'cartCoupon' } ]).exec();
     
-    let total = updatedCart.cartSkus.reduce((sum: number, cartSku: CartSkuProps & { sku_id: SkuDocument | null }) => {
+    let total = 0;
+    let sales_discount = 0;
+    for (const cartSku of updatedCart.cartSkus) {
       const sku = cartSku.sku_id;
-
-      const skuPrice = sku?.price ? Number(sku.price) : 0;
       const quantity = cartSku.quantity ?? 0;
+    
+      if (sku) {
+        const originalPrice = sku.price ? Number(sku.price) : 0;
+        const effectivePrice = await getEffectiveSkuPrice(sku, cartSku.vendor_id);
+        total += originalPrice * quantity;
 
-      return sum + skuPrice * quantity;
-    }, 0);
+        if (originalPrice > effectivePrice) {
+          sales_discount += (originalPrice - effectivePrice) * quantity;
 
-    const charges = updatedCart.cartCharges || {}; 
+          console.log(originalPrice, effectivePrice)
+        }
+      }
+    }
+
+    await upsertCartCharges(updatedCart._id, { sales_discount });
+
+    const charges = updatedCart.cartCharges || {};
 
     let admin_discount = Number(charges.admin_discount || 0);
 
@@ -144,6 +159,16 @@ export async function recalculateCart ( cart_id: string){
         charges.admin_discount_validity_value = null;
         await charges.save();
       }
+    }
+
+    const coupon_entry = updatedCart.cartCoupon || {};
+
+    let admin_coupon_discount = 0;
+    let vendor_coupon_discount = 0;
+
+    if ( coupon_entry ) {
+      admin_coupon_discount = coupon_entry.admin_coupon_discount;
+      vendor_coupon_discount = coupon_entry.vendor_coupon_discount;
     }
 
     let totalVendorDiscount = updatedCart.cartSkus.reduce( (sum: number, cartSku: CartSkuProps) => {
@@ -177,7 +202,7 @@ export async function recalculateCart ( cart_id: string){
     const salesDiscount = Number(charges.sales_discount || 0);
     const codCharges = Number(charges.cod_charges || 0);
 
-    const payable_amount = total + shippingCharges + codCharges - (salesDiscount + admin_discount + totalVendorDiscount);
+    const payable_amount = total + shippingCharges + codCharges - (salesDiscount + admin_discount + totalVendorDiscount + admin_coupon_discount + vendor_coupon_discount);
     updatedCart.total = total;
     updatedCart.payable_amount = payable_amount;
 
@@ -190,7 +215,13 @@ export async function get_cart_data(req: NextApiRequest, res: NextApiResponse) {
     let cart_id = await getCartIdFromRequest(req, res);
     if( !cart_id ){ return res.status(200).json({ message: 'Cart not found', data: null }); }
 
-    const data = await Cart.findById(cart_id).populate([ { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }, { path: 'cartCharges' }]).exec();
+    let cartCoupon = await CartCoupon.findOne({ cart_id });
+
+    if( cartCoupon ){
+      const result = await handleApplyCoupon(cart_id, cartCoupon.coupon_code);
+    }
+
+    const data = await Cart.findById(cart_id).populate([ { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }, { path: 'cartCharges' }, { path: 'cartCoupon' } ]).exec();
 
     const cartProductIds = data?.cartSkus.map((item: any) => item.product_id._id);
     const relatedProducts = await Product.find().populate({ path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } }).exec();
@@ -294,6 +325,18 @@ export async function update_cart_array(req: NextApiRequest, res: NextApiRespons
     return res.status(200).json({ status: true, message: "Cart Updated" });
   } catch (error) { return log(error); }
 };
+
+export async function upsertCartCharges(cart_id: string, data: Partial<typeof CartCharges.prototype>) {
+  let cartCharges = await CartCharges.findOne({ cart_id });
+
+  if (!cartCharges) {
+    cartCharges = new CartCharges({ cart_id, ...data });
+  } else {
+    Object.assign(cartCharges, data);
+  }
+
+  return await cartCharges.save();
+}
 
 export async function place_order(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -616,6 +659,26 @@ export async function get_user_orders(req: NextApiRequest, res: NextApiResponse)
   } catch (error) { return log(error); }
 }
 
+export async function apply_coupon(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed", data: null }); }
+
+    const cart_id = await getCartIdFromRequest(req, res);
+    if (!cart_id) { return res.status(400).json({ message: "Cart not found", data: null }); }
+
+    const { coupon_code } = req.body;
+    if (!coupon_code) {
+      await remove_coupon(cart_id);
+      return res.status(400).json({ message: "Coupon code is required", data: null });
+    }
+
+    const result = await handleApplyCoupon(cart_id, coupon_code);
+    if (!result.success) { return res.status(400).json({ message: result.message, data: null }); }
+
+    return res.status(200).json({ message: result.message, data: null });
+  } catch (error) { log(error); }
+}
+
 const functions = {
   add_to_cart,
   get_cart_data,
@@ -634,8 +697,8 @@ const functions = {
   get_seller_orders,
   get_single_order,
 
-  get_user_orders
-
+  get_user_orders,
+  apply_coupon
 };
 
 export const config = { api: { bodyParser: false } };

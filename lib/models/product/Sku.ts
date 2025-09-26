@@ -1,6 +1,7 @@
 import { Schema, Document, Types, model, models } from "mongoose";
 
 export interface SkuDocument extends Document {
+  _id: Types.ObjectId;
   product_id?: Types.ObjectId;
   name: string;
   price: number;

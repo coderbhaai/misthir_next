@@ -7,11 +7,13 @@ type EcomContextType = {
   cartId?: string;
   cart?: any;
   cartItemCount: number;
+  fetchCart: () => Promise<void>; 
   sendAction: (action: string, payload?: any) => void;
 };
 
 const EcomContext = createContext<EcomContextType>({
   cartItemCount: 0,
+  fetchCart: async () => {},
   sendAction: () => {},
 });
 
@@ -70,7 +72,7 @@ export function EcomProvider({ children }: { children: ReactNode }) {
   useEffect(() => { fetchCart(); }, []);
 
   return (
-    <EcomContext.Provider value={{ cartId, cart, cartItemCount, sendAction, relatedProducts }}>
+    <EcomContext.Provider value={{ cartId, cart, cartItemCount, fetchCart, sendAction, relatedProducts }}>
       {children}
     </EcomContext.Provider>
   );

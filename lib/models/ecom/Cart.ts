@@ -58,11 +58,30 @@ const cartChargesSchema = new Schema<CartChargesProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+export interface CartCouponProps extends Document {
+  cart_id: string | Types.ObjectId;
+  coupon_id?: string | Types.ObjectId;
+  admin_coupon_discount?: number;
+  vendor_coupon_discount?: number;
+  coupon_code?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const cartCouponSchema = new Schema<CartCouponProps>({
+    cart_id: { type: Schema.Types.ObjectId, required: true, ref: 'Cart', },
+    coupon_id: { type: Schema.Types.ObjectId, required: false, ref: 'Coupon', },
+    admin_coupon_discount: { type: Number, required: false, },
+    vendor_coupon_discount: { type: Number, required: false, },
+    coupon_code: { type: String, default: null },
+  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
 export interface CartSkuProps extends Document {
   cart_id: string | Types.ObjectId;
   product_id: string | Types.ObjectId;
   sku_id: string | Types.ObjectId;
-  vendor_id: string | Types.ObjectId;
+  vendor_id: Types.ObjectId;
   quantity: number;
   flavor_id?: string | Types.ObjectId;
   vendor_discount?: number;
@@ -89,6 +108,7 @@ const cartSkuSchema = new Schema<CartSkuProps>({
 
 cartSchema.virtual('cartSkus', { ref: 'CartSku', localField: '_id', foreignField: 'cart_id', justOne: false });
 cartSchema.virtual('cartCharges', { ref: 'CartCharges', localField: '_id', foreignField: 'cart_id', justOne: true });
+cartSchema.virtual('cartCoupon', { ref: 'CartCoupon', localField: '_id', foreignField: 'cart_id', justOne: true });
 cartSkuSchema.virtual('product', { ref: 'Product', localField: 'product_id', foreignField: '_id', justOne: true, });
 cartSkuSchema.virtual('vendor', { ref: 'User', localField: 'vendor_id', foreignField: '_id', justOne: true, });
 cartSkuSchema.virtual('sku', { ref: 'Sku', localField: 'sku_id', foreignField: '_id', justOne: true, });
@@ -96,3 +116,4 @@ cartSkuSchema.virtual('sku', { ref: 'Sku', localField: 'sku_id', foreignField: '
 export const Cart = models.Cart || model<CartProps>("Cart", cartSchema);
 export const CartSku = models.CartSku || model<CartSkuProps>("CartSku", cartSkuSchema);
 export const CartCharges = models.CartCharges || model<CartChargesProps>("CartCharges", cartChargesSchema);
+export const CartCoupon = models.CartCoupon || model<CartCouponProps>("CartCoupon", cartCouponSchema);

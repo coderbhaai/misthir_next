@@ -18,8 +18,8 @@ export function SellerSales(){
 
     const initData = useCallback(async () => {
         try {
-            const res_1 = await apiRequest("get", `ecom/sales?function=get_all_sales&vendor_id=${vendor_id}`);
-            setData(res_1?.data ?? []);
+            const res = await apiRequest("get", `ecom/sales?function=get_all_sales&vendor_id=${vendor_id}`);
+            setData(res?.data ?? []);
 
         } catch (error) { clo( error ); }
     }, []);

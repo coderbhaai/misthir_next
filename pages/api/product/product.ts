@@ -237,12 +237,18 @@ export async function get_single_product_module(req: NextApiRequest, res: NextAp
 };
 
 export async function get_product_module(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      const data = await Product.find().select("_id name").exec();
+  try {
+    const { vendor_id } = req.query;
+    const filter: any = {};
+    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
+      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    }
 
-      return res.status(200).json({ message: 'Fetched all Product Modules', data });
-    } catch (error) { log(error); }
-  }
+    const data = await Product.find(filter).select("_id name").exec();
+
+    return res.status(200).json({ message: 'Fetched all Product Modules', data });
+  } catch (error) { log(error); }
+}
 
 interface UpsertSkuInput {
   _id?: string;
@@ -384,6 +390,20 @@ export async function get_single_product_by_url(req: NextApiRequest, res: NextAp
   }catch (error) { return log(error); }
 };
 
+export async function get_sku_options(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { vendor_id } = req.query;
+    const filter: any = {};
+    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
+      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    }
+
+    const data = await Product.find(filter).select("_id name").populate([ { path: "sku", match: { status: true }, select: "_id name price" } ]).exec();
+
+    return res.status(200).json({ message: 'Fetched all SKU Options', data });
+  } catch (error) { log(error); }
+}
+
 const functions = {
   get_all_products,
   get_single_product,
@@ -394,6 +414,7 @@ const functions = {
   get_single_product_module,
   get_single_product_by_url,
   get_product_module,
+  get_sku_options,
 };
 
 export const config = { api: { bodyParser: false } };

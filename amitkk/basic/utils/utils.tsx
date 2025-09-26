@@ -82,12 +82,12 @@ export const apiRequest = async (
       validateStatus: (status) => status >= 200 && status < 300,
     });
 
+    console.log(url, res);
     
     if (!res || !res?.data) { throw new Error("Invalid res structure"); }
     
     const isSuccess = res.status >= 200 && res.status < 300;
     
-    console.log(url, res?.data);
     if (con) {
       hitToastr(isSuccess ? 'success' : 'error', res.data?.message || (isSuccess ? 'Operation successful' : 'Something went wrong'));
     }

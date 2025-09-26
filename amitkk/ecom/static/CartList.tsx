@@ -2,6 +2,7 @@ import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
 import { Box, List, ListItem, Card, Typography, Button, Divider } from "@mui/material";
 import { useEcom } from "contexts/EcomContext";
 import CartCharges from "./CartCharges";
+import CouponForm from "./CouponForm";
 
 export default function CartList() {
     const { sendAction, cart, cartItemCount } = useEcom();
@@ -49,7 +50,9 @@ export default function CartList() {
                 )}
             </Box>
 
-            <CartCharges itemCount={cartItemCount} total={cart?.total?.$numberDecimal || 0} payableAmount={cart?.payable_amount?.$numberDecimal || 0} cartCharges={cart?.cartCharges} cart_status={true}/>
+            <CouponForm/>
+
+            <CartCharges itemCount={cartItemCount} total={cart?.total?.$numberDecimal || 0} payableAmount={cart?.payable_amount?.$numberDecimal || 0} cartCharges={cart?.cartCharges} cartCoupon={cart?.cartCoupon} cart_status={true}/>
         </Box>
     )
 }

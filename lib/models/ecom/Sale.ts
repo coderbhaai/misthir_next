@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface SaleProps extends Document {
   name: string;
-  vendor_id: string | Types.ObjectId;
+  vendor_id: Types.ObjectId;
   valid_from: Date;
   valid_to: Date;
   type: "Amount Based" | "Percent Based";

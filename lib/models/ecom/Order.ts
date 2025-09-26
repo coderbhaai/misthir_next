@@ -48,6 +48,50 @@ const orderChargesSchema = new Schema<OrderChargesProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+export interface OrderCouponProps extends Document {
+  order_id: string | Types.ObjectId;
+  coupon_id?: string | Types.ObjectId;
+  admin_coupon_discount: number;
+  vendor_coupon_discount: number;
+  coupon_code?: string;
+  coupon_by: string;
+  coupon_type: string;
+  vendor_id?: string | Types.ObjectId;
+  usage_type: string;
+  discount?: number;
+  name: string;
+  code: string;
+  sales: number;
+  status: boolean;
+  valid_from: Date;
+  valid_to: Date;
+  buy_one?: string | Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const orderCouponSchema = new Schema<OrderCouponProps>({
+    order_id: { type: Schema.Types.ObjectId, required: true, ref: 'Order', },
+    coupon_id: { type: Schema.Types.ObjectId, required: false, ref: 'Coupon', },
+    admin_coupon_discount: { type: Number, required: false, },
+    vendor_coupon_discount: { type: Number, required: false, },
+    coupon_code: { type: String, default: null },
+    coupon_by: { type: String, required: true },
+    coupon_type: { type: String, required: true },
+    vendor_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+    usage_type: { type: String, required: true },
+    discount: { type: Number, default: null },
+    name: { type: String, required: true },
+    code: { type: String, required: true, unique: true },
+    sales: { type: Number, default: 0 },
+    status: { type: Boolean, default: false },
+    valid_from: { type: Date, required: true },
+    valid_to: { type: Date, required: true },
+    buy_one: { type: Number, default: null }
+
+  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
 export interface OrderSkuProps extends Document {
   order_id: string | Types.ObjectId;
   product_id: string | Types.ObjectId;
@@ -77,6 +121,7 @@ const orderSkuSchema = new Schema<OrderSkuProps>({
 
 orderSchema.virtual('orderSkus', { ref: 'OrderSku', localField: '_id', foreignField: 'order_id', justOne: false });
 orderSchema.virtual('orderCharges', { ref: 'OrderCharges', localField: '_id', foreignField: 'order_id', justOne: true });
+orderSchema.virtual('orderCoupon', { ref: 'orderCoupon', localField: '_id', foreignField: 'order_id', justOne: true });
 orderSkuSchema.virtual('product', { ref: 'Product', localField: 'product_id', foreignField: '_id', justOne: true, });
 orderSkuSchema.virtual('vendor', { ref: 'User', localField: 'vendor_id', foreignField: '_id', justOne: true, });
 orderSkuSchema.virtual('sku', { ref: 'Sku', localField: 'sku_id', foreignField: '_id', justOne: true, });

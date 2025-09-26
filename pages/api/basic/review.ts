@@ -18,8 +18,6 @@ export async function create_update_review(req: ExtendedRequest, res: NextApiRes
 
     const { module, module_id, rating, review } = data;
 
-    console.log("req.body", req.body)
-
     const updatedOrCreated = await Review.findOneAndUpdate({ module, module_id, user_id }, 
           {
             $set: {
@@ -77,8 +75,6 @@ export async function update_review(req: ExtendedRequest, res: NextApiResponse) 
     if ( !data?.review || !data?.rating || !data?.user_id ) { return res.status(400).json({ message: 'Required fields missing' }); }
 
     const { module, module_id, rating, review, user_id } = data;
-
-    console.log("req.body", req.body)
 
     const updatedOrCreated = await Review.findOneAndUpdate({ module, module_id, user_id }, 
           {

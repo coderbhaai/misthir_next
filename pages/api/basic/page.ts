@@ -36,7 +36,6 @@ export async function status_switch(req: NextApiRequest, res: NextApiResponse) {
 
     
     const Model = (models as any)[model];
-    console.log("req.body", req.body, Model )
 
     if (!Model) return res.status(400).json({ message: `Invalid model: ${model}` });
     

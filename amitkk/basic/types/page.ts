@@ -135,7 +135,7 @@ export interface ReviewProps {
   _id: string | Types.ObjectId;
   module: string;
   module_id: string | Types.ObjectId | GenericModule;
-  user_id: UserProps;
+  user_id: string | UserProps;
   rating: number;
   review: string;
   status: boolean;

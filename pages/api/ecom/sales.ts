@@ -5,6 +5,7 @@ import { fetchData, log } from '../utils';
 import Sale from 'lib/models/ecom/Sale';
 import SaleSku from 'lib/models/ecom/SaleSku';
 import Product from 'lib/models/product/Product';
+import { SkuDocument } from 'lib/models/product/Sku';
 
 export async function get_all_sales(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -224,6 +225,40 @@ export async function get_product_sale_modules(req: NextApiRequest, res: NextApi
 
     return res.status(200).json({ message: 'Fetched all Products', data });
   } catch (error) { return log(error); }
+}
+
+export async function getEffectiveSkuPrice(sku: SkuDocument, vendorId: Types.ObjectId): Promise<number> {
+  if (!sku?.price) return 0;
+
+  const now = new Date();
+  const activeSales = await Sale.find({
+    vendor_id: vendorId,
+    valid_from: { $lte: now },
+    valid_to: { $gte: now },
+    status: true,
+  }).sort({ valid_from: 1 }).populate("saleSkus");
+
+  let finalPrice = Number(sku.price);
+  
+  const applicableSale = activeSales.find((sale: any) =>
+    (sale as any).saleSkus.some((s: any) => s.sku_id.toString() === (sku._id as Types.ObjectId).toString())
+  );
+
+  if (applicableSale) {
+    const saleSku = (applicableSale as any).saleSkus.find(
+      (s: any) => s.sku_id.toString() === (sku._id as Types.ObjectId).toString()
+    );
+
+    const discount = Number(saleSku.discount);
+
+    if (applicableSale.type === "Amount Based") {
+      finalPrice = Math.max(0, finalPrice - discount);
+    } else if (applicableSale.type === "Percent Based") {
+      finalPrice = finalPrice - (finalPrice * discount) / 100;
+    }
+  }
+
+  return parseFloat(finalPrice.toFixed(2));
 }
 
 const functions = {

@@ -14,9 +14,15 @@ interface CartChargesProps {
     admin_discount?: number | string;
     total_vendor_discount?: number | string;
   };
+
+  cartCoupon?: {
+    admin_coupon_discount?: number;
+    vendor_coupon_discount?: number;
+    coupon_code?: string;
+  };
 }
 
-export default function CartCharges({ itemCount, total, payableAmount, cartCharges, cart_status=true }: CartChargesProps) {
+export default function CartCharges({ itemCount, total, payableAmount, cartCharges, cartCoupon, cart_status=true }: CartChargesProps) {
   return (
         <>
             
@@ -24,7 +30,7 @@ export default function CartCharges({ itemCount, total, payableAmount, cartCharg
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                 <Typography>Subtotal · {itemCount} Items</Typography>
                 <Typography>₹{total}</Typography>
-            </Box>            
+            </Box>
             {cartCharges && (
                 <>
                     { cartCharges?.shipping_charges && (
@@ -44,8 +50,14 @@ export default function CartCharges({ itemCount, total, payableAmount, cartCharg
                             <Typography>Sales Discount</Typography>
                             <Typography>₹{cartCharges?.sales_discount}</Typography>
                         </Box>
+                    )}                    
+                    {((Number(cartCoupon?.admin_coupon_discount) > 0) || (Number(cartCoupon?.vendor_coupon_discount) > 0)) && (
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Typography>Coupon Discount</Typography>
+                            <Typography>₹{(cartCoupon?.admin_coupon_discount ?? 0) + (cartCoupon?.vendor_coupon_discount ?? 0)}</Typography>
+                        </Box>
                     )}
-                    { (cartCharges?.admin_discount || cartCharges?.total_vendor_discount) && (
+                    {((Number(cartCharges?.admin_discount) > 0) || (Number(cartCharges?.total_vendor_discount) > 0)) && (
                         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                             <Typography>Additional Discount</Typography>
                             <Typography>₹{ (Number(cartCharges?.admin_discount) || 0) + (Number(cartCharges?.total_vendor_discount) || 0) }</Typography>

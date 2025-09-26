@@ -21,69 +21,69 @@ export default function CheckoutPage() {
   const [orderNote, setOrderNote] = useState("");
   
   // Address
-      const [same_as_shipping, setSameAsShipping] = useState(true);
-      const [addressType, setAddressType] = useState<"shipping" | "billing">("shipping");
-      const [shipping_address_id, setShippingAddressId] = useState("");
-      const [billing_address_id, setBillingAddressId] = useState("");
-      const [openAddressModal, setOpenAddressModal] = useState(false);
-      const [selectedAddressToEdit, setSelectedAddressToEdit] = useState<string | number | null>(null);
-      const [addressOptions, setAddressOptions] = useState<AddressProps[]>([]);
-      const fetchAddresses = useCallback(async () => {
-          if( !isLoggedIn ){ return; }
+    const [same_as_shipping, setSameAsShipping] = useState(true);
+    const [addressType, setAddressType] = useState<"shipping" | "billing">("shipping");
+    const [shipping_address_id, setShippingAddressId] = useState("");
+    const [billing_address_id, setBillingAddressId] = useState("");
+    const [openAddressModal, setOpenAddressModal] = useState(false);
+    const [selectedAddressToEdit, setSelectedAddressToEdit] = useState<string | number | null>(null);
+    const [addressOptions, setAddressOptions] = useState<AddressProps[]>([]);
+    const fetchAddresses = useCallback(async () => {
+        if( !isLoggedIn ){ return; }
 
-          try {
-              const res = await apiRequest("get", "address/address?function=get_my_addresses");
-              setAddressOptions(res?.data ?? []);
-          } catch (error) { clo( error ); }
-      }, [isLoggedIn]);
+        try {
+            const res = await apiRequest("get", "address/address?function=get_my_addresses");
+            setAddressOptions(res?.data ?? []);
+        } catch (error) { clo( error ); }
+    }, [isLoggedIn]);
 
-      useEffect(() => { fetchAddresses(); }, [fetchAddresses]);
+    useEffect(() => { fetchAddresses(); }, [fetchAddresses]);
 
-      function syncAddresses() {
-        fetchAddresses();
-        if (!cart) return;
+    function syncAddresses() {
+      fetchAddresses();
+      if (!cart) return;
 
-        const shippingId = cart.shipping_address_id ?? '';
-        let billingId = cart.billing_address_id ?? '';
+      const shippingId = cart.shipping_address_id ?? '';
+      let billingId = cart.billing_address_id ?? '';
 
-        if (same_as_shipping) {
-          billingId = shippingId;
-        }
-
-        setShippingAddressId(shippingId);
-        setBillingAddressId(billingId);
-
-        if (shippingId && billingId && shippingId === billingId) {
-          setSameAsShipping(true);
-        } else if (shippingId && billingId && shippingId !== billingId) {
-          setSameAsShipping(false);
-        }
+      if (same_as_shipping) {
+        billingId = shippingId;
       }
 
-      useEffect(() => { syncAddresses(); }, [cart]);
+      setShippingAddressId(shippingId);
+      setBillingAddressId(billingId);
 
-      function updateCartShippingAddress(addressId: string) {
-        sendAction('update_cart_array', {
-          action: 'update_cart_array',
-          update: { shipping_address_id: addressId },
-        });
-
-        syncAddresses();
+      if (shippingId && billingId && shippingId === billingId) {
+        setSameAsShipping(true);
+      } else if (shippingId && billingId && shippingId !== billingId) {
+        setSameAsShipping(false);
       }
+    }
 
-      function updateCartBillingAddress(addressId: string) {
-        sendAction('update_cart_array', {
-          action: 'update_cart_array',
-          update: { billing_address_id: addressId },
-        });
+    useEffect(() => { syncAddresses(); }, [cart]);
 
-        syncAddresses();
-      }
+    function updateCartShippingAddress(addressId: string) {
+      sendAction('update_cart_array', {
+        action: 'update_cart_array',
+        update: { shipping_address_id: addressId },
+      });
 
-      const handleCloseModal = () => {
-        setOpenAddressModal(false);
-        setSelectedAddressToEdit(null);
-      };
+      syncAddresses();
+    }
+
+    function updateCartBillingAddress(addressId: string) {
+      sendAction('update_cart_array', {
+        action: 'update_cart_array',
+        update: { billing_address_id: addressId },
+      });
+
+      syncAddresses();
+    }
+
+    const handleCloseModal = () => {
+      setOpenAddressModal(false);
+      setSelectedAddressToEdit(null);
+    };
   // Address
 
   // Paymode
@@ -172,9 +172,7 @@ export default function CheckoutPage() {
 
       } catch (error) { clo( error ); }
     }
-
     makePayment({ module: "Cart", module_id: cart._id });
-
   }
 
   return (

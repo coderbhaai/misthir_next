@@ -62,6 +62,7 @@ import SiteSetting from "./payment/SiteSetting";
 import Tax from "./payment/Tax";
 import Razorpay from "./payment/Razorpay";
 import TaxCollected from "./payment/TaxCollected";
+import { auditLoggerPlugin } from "pages/lib/auditLogger";
 
 const models: Record<string, any> = {
   // Refrences
@@ -90,6 +91,16 @@ const models: Record<string, any> = {
   SiteSetting, Tax, Razorpay, TaxCollected,
 };
 
+const modelsToAudit = [
+  "Sale",
+  "SaleSku",
+  "Order",
+  "OrderSku",
+  "Product",
+  "Vendor",
+  "Faq"
+];
+
 
 if (process.env.MODE !== "production") {
   (global as any).mongooseModels = (global as any).mongooseModels || {};
@@ -98,6 +109,10 @@ if (process.env.MODE !== "production") {
     if (isModel(model)) {
       mongoose.models[name] = model;
       (global as any).mongooseModels[name] = model;
+
+      if (modelsToAudit.includes(name)) {
+        model.schema.plugin(auditLoggerPlugin);
+      }
     } else {
       console.warn(`[WARNING] Skipping ${name} because it is not a Mongoose model`);
     }

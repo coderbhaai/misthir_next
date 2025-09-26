@@ -54,7 +54,6 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
 
                         allProducts.forEach((product: any) => {
                             product.saleSkus?.forEach((i: any) => {
-                                console.log("i", i)
                                 skusMap[i._id] = {
                                     checked: false,
                                     product_name: product.name,
@@ -79,8 +78,6 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
     
     const initSkus = (saleSkus: any[] = []) => {
         const skusMap: Record<string, any> = {};
-
-        console.log("saleSkus", saleSkus)
 
         saleSkus.forEach((s) => {
             const sku = typeof s.sku_id === "string" ? { _id: s.sku_id } : s.sku_id;
@@ -126,15 +123,15 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
                     const formatDate = (d: string | Date) => { if (!d) return ""; const date = new Date(d); return date.toISOString().split("T")[0]; };
 
                     setFormData({
-                    _id: res?.data._id,
-                    name: res?.data.name || "",
-                    valid_from: formatDate(res?.data.valid_from),
-                    valid_to: formatDate(res?.data.valid_to),
-                    type: res?.data.type || "",
-                    status: res?.data.status ?? true,
-                    discount,
-                    createdAt: res?.data.createdAt,
-                    updatedAt: res?.data.updatedAt,
+                        _id: res?.data._id,
+                        name: res?.data.name || "",
+                        valid_from: formatDate(res?.data.valid_from),
+                        valid_to: formatDate(res?.data.valid_to),
+                        type: res?.data.type || "",
+                        status: res?.data.status ?? true,
+                        discount,
+                        createdAt: res?.data.createdAt,
+                        updatedAt: res?.data.updatedAt,
                     });
 
                     initSkus(res?.data.saleSkus);
@@ -193,8 +190,7 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
         const applyDiscountRules = () => {
             if (!formData.type || formData.discount === undefined || formData.discount === null) { return; }
 
-            let validDiscount = Number( formData.discount );            
-            console.log("validDiscount", validDiscount)
+            let validDiscount = Number( formData.discount );
 
             if (formData.type === "Percent Based" && validDiscount >= 100) {
                 validDiscount = 0;
@@ -203,7 +199,6 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
             }
 
             if (allProducts) {
-                console.log("allProducts", allProducts, validDiscount)
                 setSelectedSkus((prev: any) => {
                     const updated = { ...prev };
                     Object.keys(updated).forEach((skuId) => {
@@ -211,15 +206,12 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
                         let appliedDiscount = validDiscount;
 
                         if (formData.type === "Amount Based" && appliedDiscount > sku.price) {
-                            console.log(1111)
                             appliedDiscount = sku.price;
                         }
 
                         if (formData.type === "Percent Based" && appliedDiscount >= 100) {
                             appliedDiscount = 0;
                         }
-
-                        console.log("appliedDiscount", appliedDiscount)
 
                         updated[skuId] = { ...sku, discount: appliedDiscount };
                     });
@@ -233,8 +225,6 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
-        console.log("submit")
         if (!selectedSkus || Object.keys(selectedSkus).length === 0) { hitToastr("error", "SKUs are Required"); return; }
 
         const formDataToSend = new FormData();
@@ -259,8 +249,8 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
                     <Grid size={12}>
                         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, width: "100%" }}>
                             <TextField variant="outlined" type="text" label="Name" name="name" value={formData.name} onChange={handleChange} required/>
-                           <TextField variant="outlined" type="date" label="Valid From" name="valid_from" value={formData.valid_from} onChange={handleChange} slotProps={{ inputLabel: { shrink: true, }, }} fullWidth required/>
-                           <TextField variant="outlined" type="date" label="Valid To" name="valid_to" value={formData.valid_to} onChange={handleChange} slotProps={{ inputLabel: { shrink: true, }, }} fullWidth required/>
+                            <TextField variant="outlined" type="date" label="Valid From" name="valid_from" value={formData.valid_from} onChange={handleChange} slotProps={{ inputLabel: { shrink: true, }, }} fullWidth required/>
+                            <TextField variant="outlined" type="date" label="Valid To" name="valid_to" value={formData.valid_to} onChange={handleChange} slotProps={{ inputLabel: { shrink: true, }, }} fullWidth required/>
                             <TextField select variant="outlined" label="Type" name="type" value={formData.type} onChange={handleChange} required>
                                 <MenuItem value="Amount Based">Amount Based</MenuItem>
                                 <MenuItem value="Percent Based">Percent Based</MenuItem>
