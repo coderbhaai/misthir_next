@@ -6,11 +6,12 @@ import { deleteCookie, getCartIdFromRequest, setCookie } from '../cartUtils';
 import { Cart, CartCharges, CartCoupon, CartSku, CartSkuProps } from 'lib/models/ecom/Cart';
 import { Sku, SkuDocument } from 'lib/models/product/Sku';
 import Product from 'lib/models/product/Product';
-import { Order, OrderCharges, OrderSku } from 'lib/models/ecom/Order';
+import { Order, OrderCharges, OrderCoupon, OrderSku } from 'lib/models/ecom/Order';
 import TaxCollected from 'lib/models/payment/TaxCollected';
 import { handleApplyCoupon, remove_coupon, upsertCartCoupon, validateCoupon } from './coupon';
 import Coupon from 'lib/models/ecom/Coupon';
 import { getEffectiveSkuPrice } from './sales';
+import { initAction } from '../basic/action';
 
 export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -350,7 +351,7 @@ export async function place_order(req: NextApiRequest, res: NextApiResponse) {
 };
 
 export async function createOrderFromCart(cart_id: string, res: NextApiResponse) {
-  const cart = await Cart.findOne({ _id: cart_id }).populate([ { path: "cartCharges"}, { path: "billing_address_id", populate: { path: "city_id", populate: { path: "state_id", }, }, }, { path: "cartSkus", populate: { path: "sku_id" } } ]);
+  const cart = await Cart.findOne({ _id: cart_id }).populate([ { path: "cartCharges"}, { path: "cartCoupon"}, { path: "billing_address_id", populate: { path: "city_id", populate: { path: "state_id", }, }, }, { path: "cartSkus", populate: { path: "sku_id" } } ]);
   if (!cart) { return { status: false, message: "Cart not found" }; }
 
   const newEntry = new Order({
@@ -369,7 +370,7 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
   const order_id = savedOrder._id.toString();
   setCookie(res, "order_id", order_id);
 
-  if (cart.cartCharges) {
+  if(cart.cartCharges) {
     await new OrderCharges({
       order_id: savedOrder._id,
       shipping_charges: cart.cartCharges.shipping_charges,
@@ -378,6 +379,28 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
       admin_discount: cart.cartCharges.admin_discount,
       total_vendor_discount: cart.cartCharges.total_vendor_discount,
       cod_charges: cart.cartCharges.cod_charges,
+    }).save();
+  }
+
+  if(cart.cartCoupon) {
+    await new OrderCoupon({
+      order_id: savedOrder._id,
+      coupon_id: cart.cartCoupon.coupon_id,
+      admin_coupon_discount: cart.cartCoupon.admin_coupon_discount,
+      vendor_coupon_discount: cart.cartCoupon.vendor_coupon_discount,
+      coupon_code: cart.cartCoupon.coupon_code,
+      coupon_by: cart.cartCoupon.coupon.coupon_by,
+      coupon_type: cart.cartCoupon.coupon.coupon_type,
+      vendor_id: cart.cartCoupon.coupon.vendor_id,
+      usage_type: cart.cartCoupon.coupon.usage_type,
+      discount: cart.cartCoupon.coupon.discount,
+      name: cart.cartCoupon.coupon.name,
+      code: cart.cartCoupon.coupon.code,
+      sales: cart.cartCoupon.coupon.sales,
+      status: cart.cartCoupon.coupon.status,
+      valid_from: cart.cartCoupon.coupon.valid_from,
+      valid_to: cart.cartCoupon.coupon.valid_to,
+      buy_one: cart.cartCoupon.coupon.buy_one,
     }).save();
   }
 
@@ -444,6 +467,8 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
   });
 
   await taxDoc.save();
+
+  await initAction('Ecom', savedOrder._id as Types.ObjectId);
 
   return { status: true, message: "Order Placed", order_id };
 }

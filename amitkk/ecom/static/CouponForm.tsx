@@ -8,21 +8,20 @@ import React from "react";
 import { useState } from "react";
 
 type CouponFormProps = {
-  function: string;
-  coupon_code: string;
+  function?: string;
+  coupon_code?: string | null;
   // cart_id: string | Types.ObjectId;
 }
 
-export default function CouponForm() {
+export default function CouponForm({ coupon_code }: CouponFormProps) {
   const { fetchCart } = useEcom();
   
   const initialFormData: CouponFormProps = {
     function: 'apply_coupon',
-    coupon_code: '',
+    coupon_code,
   };
   const [formData, setFormData] = React.useState<CouponFormProps>(initialFormData);
-  
-  const [coupon, setCoupon] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -34,12 +33,16 @@ export default function CouponForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();  
       try {
+        setLoading(true);
+
         const res = await apiRequest("post", `ecom/ecom`, formData);
   
         if( res ){
           await fetchCart();
           hitToastr('success', res?.message);
         }
+        
+        setLoading(false);
       } catch (error) { clo( error ); }
     };
 

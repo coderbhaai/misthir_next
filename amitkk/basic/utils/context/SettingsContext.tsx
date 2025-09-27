@@ -1,6 +1,7 @@
 
 'use client';
 
+import CartSidebar from '@amitkk/ecom/static/CartSidebar';
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 export interface SiteSettings {
@@ -58,6 +59,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   return (
     <SettingsContext.Provider value={{ settings, setSettings }}>
       {children}
+      <CartSidebar/>
     </SettingsContext.Provider>
   );
 };

@@ -50,7 +50,7 @@ export default function CartList() {
                 )}
             </Box>
 
-            <CouponForm/>
+            <CouponForm coupon_code={cart?.cartCoupon?.coupon_code}/>
 
             <CartCharges itemCount={cartItemCount} total={cart?.total?.$numberDecimal || 0} payableAmount={cart?.payable_amount?.$numberDecimal || 0} cartCharges={cart?.cartCharges} cartCoupon={cart?.cartCoupon} cart_status={true}/>
         </Box>

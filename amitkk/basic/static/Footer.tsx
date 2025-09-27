@@ -120,7 +120,7 @@ const Footer = () => {
       </Container>
 
       <CopyRight/>
-      <CartSidebar/>
+      
     </Box>
   );
 };

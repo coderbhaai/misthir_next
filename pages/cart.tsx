@@ -172,6 +172,9 @@ export default function CheckoutPage() {
 
       } catch (error) { clo( error ); }
     }
+
+
+
     makePayment({ module: "Cart", module_id: cart._id });
   }
 
@@ -246,7 +249,7 @@ export default function CheckoutPage() {
 
         <Divider orientation="vertical" flexItem />
         <Grid size={4}>
-            <CartList/>
+          <CartList/>
         </Grid>
 
         {relatedProducts && relatedProducts.length && ( <SuggestProducts products={relatedProducts}/> )}
@@ -261,8 +264,6 @@ export default function CheckoutPage() {
           }
           handleCloseModal();
         }}/>
-
-      {/* <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive"/> */}
     </>
   );
 }

@@ -1,7 +1,3 @@
-Coupon
-Sale
-
-
 Comment
 Middleware
     Front   
@@ -15,5 +11,5 @@ Filters
 Chat
 MUI sx
 Excelsheet export
-Email & Whatsapp Integration
+Whatsapp Integration
 Yoast
