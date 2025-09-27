@@ -67,9 +67,11 @@ export  function AdminComment(){
             head={
                 <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
                 headLabel={[
-                    { id: "name", label: "Name" },
+                    { id: "model", label: "Module" },
+                    { id: "model_id", label: "Model" },
+                    { id: "user", label: "User" },
+                    { id: "comment", label: "Comment" },
                     { id: "status", label: "Status" },
-                    { id: "permission", label: "Permissions" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
                 ]}/>

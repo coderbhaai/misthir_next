@@ -6,7 +6,7 @@ import Blogmeta from "./blog/Blogmeta";
 import BlogBlogmeta from "./blog/BlogBlogmeta";
 
 import Client from "./basic/Client";
-import CommentModel from "./basic/CommentModel";
+import CommentModel from "./basic/Comment";
 import Contact from "./basic/Contact";
 import Faq from "./basic/Faq";
 import Media from "./basic/Media";
@@ -53,8 +53,8 @@ import City from "./address/City";
 import Country from "./address/Country";
 import State from "./address/State";
 
-import { Cart, CartSku, CartCharges } from "./ecom/Cart";
-import { Order, OrderSku, OrderCharges } from "./ecom/Order";
+import { Cart, CartSku, CartCharges, CartCoupon } from "./ecom/Cart";
+import { Order, OrderSku, OrderCharges, OrderCoupon } from "./ecom/Order";
 import Sale from "./ecom/Sale";
 import SaleSku from "./ecom/SaleSku";
 
@@ -76,7 +76,7 @@ const models: Record<string, any> = {
   Address, City, Country, State,
 
   // Ecom
-  ...Cart, ...Order, Sale, SaleSku,
+  ...Cart, ...CartSku, ...CartCharges, ...CartCoupon, ...Order, ...OrderSku, ...OrderCharges, ...OrderCoupon, Sale, SaleSku,
 
   // Basic
   Client, CommentModel, Contact, Faq, Meta, Page, PageDetail, ...Search, ...SearchResult, Testimonial, UserBrowsingHistory, 
@@ -85,7 +85,7 @@ const models: Record<string, any> = {
    Otp, SpatieRole, SpatiePermission, RolePermission, UserRole, UserPermission, SpatieMenu, SpatieSubmenu, MenuSubmenu,
 
   // Product
-  BankDetail, Commission, Documentation, Ingridient,  ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, ...Sku, SkuProductFeature, Vendor,
+  BankDetail, Commission, Documentation, Ingridient,  ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, ...Sku, ...SkuDetail, SkuProductFeature, Vendor,
 
   // Payment
   SiteSetting, Tax, Razorpay, TaxCollected,

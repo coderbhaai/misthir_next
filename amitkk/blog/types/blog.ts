@@ -30,9 +30,24 @@ export interface SingleBlogProps {
     blogmetas?: BlogMetaProps[];
 }
 
+export interface SingleBlogPageProps {
+    _id: string;
+    name: string;
+    url: string;
+    media_id?: string | MediaProps;
+    author_id?: string | AuthorProps;
+    blogmetas?: BlogMetaProps[];
+    category?: BlogMetaProps[];
+    tag?: BlogMetaProps[];
+    meta_id?: string | Types.ObjectId;
+    content: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 export interface CommentProps {
   _id: string | Types.ObjectId;
-  function: string;
+  function?: string;
   module?: string;
   module_id?: string;
   name: string;

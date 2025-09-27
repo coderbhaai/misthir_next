@@ -22,7 +22,9 @@ interface CurrentUser {
 
 const navItems = [
   { label: 'Home', to: '/' },
+  { label: 'Blogs', to: '/blogs' },
   { label: 'Shop', to: '/shop' },
+  { label: 'Contact Us', to: '/contact' },
 ];
 
 

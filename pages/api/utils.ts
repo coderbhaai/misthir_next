@@ -1,4 +1,4 @@
-import mongoose, { FilterQuery, Model, PopulateOptions } from "mongoose";
+import mongoose, { FilterQuery, Model, PopulateOptions, Types } from "mongoose";
 import { NextApiRequest, NextApiResponse } from "next";
 import jwt from "jsonwebtoken";
 import Page from "lib/models/basic/Page";
@@ -12,6 +12,7 @@ import connectDB from "pages/lib/mongodb";
 import Faq from "lib/models/basic/Faq";
 import Testimonial from "lib/models/basic/Testimonial";
 import Product from "lib/models/product/Product";
+import CommentModel from 'lib/models/basic/Comment';
 
 export const log = (...args: any[]) => {
   if (process.env.MODE !== 'production') {
@@ -210,9 +211,12 @@ interface RelatedContentParams {
 
 export async function getRelatedContent({ module, moduleId, blogId = null, productId = null }: RelatedContentParams) {
   try{
-    const [faq, testimonials, blogs, products] = await Promise.all([
-      Faq.find({ module, module_id: moduleId, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
-      Testimonial.find({ module, module_id: moduleId, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+    const id = new Types.ObjectId(moduleId);
+
+    const [faq, testimonials, comments, blogs, products] = await Promise.all([
+      Faq.find({ module, module_id: id, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      Testimonial.find({ module, module_id: id, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      CommentModel.find({ module, module_id: moduleId, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
       Blog.find({ status: true, ...(blogId ? { _id: { $ne: blogId } } : {}), }).populate([ { path: 'media_id' }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).limit(10).lean().exec(),
 
       Product.find({ status: true, ...(productId ? { _id: { $ne: productId } } : {}), })
@@ -224,9 +228,9 @@ export async function getRelatedContent({ module, moduleId, blogId = null, produ
         ]).limit(10).exec(),
     ]);
 
-    const serializedProducts = products.map(p => p.toJSON()); 
+    const serializedProducts = products.map((p: any) => p.toJSON());
   
-    return { faq, testimonials, blogs, products:serializedProducts };
+    return { faq, testimonials, comments, blogs, products:serializedProducts };
   }catch (err) { log(err); }
 }
 
@@ -247,4 +251,18 @@ export async function getGenericContent() {
   
     return { blogs, products:serializedProducts };
   }catch (err) { log(err); }
+}
+
+export function toObjectId(id: string | mongoose.Types.ObjectId | null | undefined) {
+  if (!id) return null;
+
+  try {
+    return typeof id === "string" ? new mongoose.Types.ObjectId(id) : id;
+  } catch (e) {
+    return null;
+  }
+}
+
+function normalizeId(id: string | Types.ObjectId) {
+  return typeof id === "string" ? new Types.ObjectId(id) : id;
 }

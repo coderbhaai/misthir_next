@@ -35,6 +35,7 @@ interface RelatedContent {
   testimonials: ITestimonialProps[];
   blogs: BlogDocument[];
   products: ProductRawDocument[];
+  comments: CommentProps[];
 }
 
 interface BlogProps{

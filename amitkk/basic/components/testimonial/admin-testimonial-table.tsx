@@ -51,7 +51,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
         <TableCell>{row.module}</TableCell>
         <TableCell>
-            { row.module === "Blog" ? ( <Link href={`/blog/${(row.module_id as any).url}`} target="_blank">{(row.module_id as any).name}</Link>) : null }
+            { row.module === "Blog" ? ( <Link href={`/${(row.module_id as any).url}`} target="_blank">{(row.module_id as any).name}</Link>) : null }
             { row.module === "Page" ? ( <Link href={`/${(row.module_id as any).url}`} target="_blank">{(row.module_id as any).name}</Link>) : null }
             { row.module === "Product" ? ( <Link href={`/product/${(row.module_id as any).url}`} target="_blank">{(row.module_id as any).name}</Link>) : null }
           </TableCell>

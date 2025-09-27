@@ -375,7 +375,7 @@ export async function get_single_product_by_url(req: NextApiRequest, res: NextAp
         },
       ]).lean(false).exec() as ProductRawDocument | null;;
   
-    if (!data) { return res.status(404).json({ message: `Product  with ID ${url} not found` }); }
+    if (!data) { return res.status(404).json({ message: `Product  with URL ${url} not found` }); }
 
     const relatedContent = await getRelatedContent({
       module: "Product",

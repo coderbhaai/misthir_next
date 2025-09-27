@@ -490,6 +490,7 @@ export async function get_page_data(req: NextApiRequest, res: NextApiResponse) {
     if (!url) { return res.status(400).json({ message: 'Invalid or missing URL' }); }
 
     const data = await Page.findOne({ url }).populate([ { path: 'media_id' }, { path: 'meta_id' }, { path: 'details' } ]).exec();
+    if (!data) { return res.status(404).json({ message: 'Page not found' }); }
 
     const relatedContent = await getRelatedContent({
           module: "Page",

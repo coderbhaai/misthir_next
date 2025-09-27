@@ -5,49 +5,24 @@ import CommentForm from "./CommentForm";
 import DateFormat from "@amitkk/basic/components/static/date-format";
 import { apiRequest, clo } from "@amitkk/basic/utils/utils";
 import { Types } from "mongoose";
+import { useAuth } from "contexts/AuthContext";
 
 interface CommentProps {
   _id: string | Types.ObjectId;
   name?: string;
   content?: string;
   createdAt?: string;
+  
 }
 
-export default function CommentPanel({ module, module_id, module_name }: { module: string; module_id: string | Types.ObjectId; module_name?: string;  }) {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [data, setData] = useState<CommentProps[]>([]);
+export default function CommentPanel({ module, module_id, module_name, comments }: { module: string; module_id?: string | Types.ObjectId; module_name?: string; comments: CommentProps[];  }) {
+  if (!module_id) return null;
 
-  const loadUser = useCallback(() => {
-    if (typeof window !== "undefined") {
-      if ( localStorage.getItem("authToken") ) {
-        setLoggedIn(true);
-      }
-    }
-  }, []);
+  const { isLoggedIn } = useAuth();
 
-  const fetchData = useCallback(async () => {
-    if (!module_id) return;
-
-    try {
-      const updatedData = {
-        'function' : "get_comments",
-        'module' : module,
-        'module_id' : module_id,
-      }
-      const res = await apiRequest("post", `basic/comment`, updatedData);
-      setData(res?.data)
-    } catch (error) { clo( error ); }
-  }, [module_id]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  useEffect(() => {
-    loadUser();
-    // const handleAuthChange = () => loadUser();
-  }, [loadUser]);
   return(
     <>
-      {!loggedIn ? (
+      {!isLoggedIn ? (
         <Grid textAlign="center" sx={{ py: 4 }}>
           <Typography variant="h6" gutterBottom>Please login to share your views on {module_name}.</Typography>
           <Link href="/auth/login" color="primary">
@@ -62,8 +37,8 @@ export default function CommentPanel({ module, module_id, module_name }: { modul
       </Grid>
       )}
 
-      {data?.map?.((i) => (
-        <Paper elevation={3} sx={{ p: 2, mb: 2, width: "100%", borderRadius: 2, display: "flex", alignItems: "flex-start", }}>
+      {comments?.map?.((i) => (
+        <Paper key={i._id.toString()} elevation={3} sx={{ p: 2, mb: 2, width: "100%", borderRadius: 2, display: "flex", alignItems: "flex-start", }}>
           <Avatar sx={{ bgcolor: "red", color: "white", fontWeight: 600, width: 40, height: 40, mr: 2, }}>
             {(i?.name || "A").charAt(0).toUpperCase()}
           </Avatar>

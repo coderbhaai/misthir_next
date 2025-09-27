@@ -37,17 +37,17 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
+        <TableCell>{row.module}</TableCell>
         <TableCell>
-          {row.module}<br/>
-          {row.module === "Blog" && ( <Link href={`/blog/${row.module_id.url}`} target="_blank">{row.module_id.name}</Link> )}
+          { row.module === "Blog" ? ( <Link href={`/${(row.module_id as any).url}`} target="_blank">{(row.module_id as any).name}</Link>) : null }
+          { row.module === "Page" ? ( <Link href={`/${(row.module_id as any).url}`} target="_blank">{(row.module_id as any).name}</Link>) : null }
+          { row.module === "Product" ? ( <Link href={`/product/${(row.module_id as any).url}`} target="_blank">{(row.module_id as any).name}</Link>) : null }
         </TableCell>
         <TableCell>{row.name}<br/>{row.email}</TableCell>
         <TableCell>{row.content}</TableCell>
         <TableCell><StatusSwitch id={row._id.toString()} status={row.status} modelName="CommentModel"/></TableCell>
         <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
-        <TableCell align='right'>
-          <IconButton id={row._id.toString()} onClick={(e) => handlePopover(e)}><Iconify icon='Edit'/></IconButton>
-        </TableCell>
+        <TableCell align='right'><IconButton id={row._id.toString()} onClick={(e) => handlePopover(e)}><Iconify icon='Edit'/></IconButton></TableCell>
       </TableRow>
 
       <Popover open={!!openPopover} anchorEl={openPopover} onClick={() => handlePopover(null)} anchorOrigin={{vertical: 'top', horizontal: 'left'}} transformOrigin={{vertical: 'top', horizontal: 'right'}}>

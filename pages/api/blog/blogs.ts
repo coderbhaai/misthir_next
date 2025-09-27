@@ -4,7 +4,7 @@ import Blog from 'lib/models/blog/Blog';
 import { uploadMedia } from '../basic/media';
 import { upsertMeta } from '../basic/meta';
 import BlogBlogmeta from 'lib/models/blog/BlogBlogmeta';
-import { generateSitemap, log, pivotEntry } from '../utils';
+import { generateSitemap, getRelatedContent, log, pivotEntry } from '../utils';
 import Blogmeta from 'lib/models/blog/Blogmeta';
 import { slugify } from '@amitkk/basic/utils/utils';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
@@ -125,9 +125,19 @@ export async function get_single_blog_by_url(req: NextApiRequest, res: NextApiRe
     if ( !url ) { return res.status(400).json({ message: 'Invalid or missing URL' }); }  
   
     const data = await Blog.findOne({ url }).populate([ { path: 'media_id' }, { path: 'meta_id' }, { path: 'author_id', populate: { path: 'media_id', model: 'Media' } }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).exec();
+    
     if (!data) { return res.status(404).json({ message: `Blog with URL ${url} not found` }); }
 
-    return res.status(200).json({ message: 'Fetched Single Blog', data });
+    // const comments = CommentModel.find({ module, module_id: data._id, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec();
+
+    const relatedContent = await getRelatedContent({
+      module: "Blog",
+      moduleId: data._id.toString(),
+      productId: null,
+      blogId : data._id.toString()
+    });
+
+    return res.status(200).json({ message: 'Fetched Single Blog', data, relatedContent });
   }catch (error) { return log(error); }
 };
 

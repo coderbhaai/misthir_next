@@ -136,8 +136,6 @@ export async function recalculateCart ( cart_id: string){
 
         if (originalPrice > effectivePrice) {
           sales_discount += (originalPrice - effectivePrice) * quantity;
-
-          console.log(originalPrice, effectivePrice)
         }
       }
     }
@@ -351,7 +349,7 @@ export async function place_order(req: NextApiRequest, res: NextApiResponse) {
 };
 
 export async function createOrderFromCart(cart_id: string, res: NextApiResponse) {
-  const cart = await Cart.findOne({ _id: cart_id }).populate([ { path: "cartCharges"}, { path: "cartCoupon"}, { path: "billing_address_id", populate: { path: "city_id", populate: { path: "state_id", }, }, }, { path: "cartSkus", populate: { path: "sku_id" } } ]);
+  const cart = await Cart.findOne({ _id: cart_id }).populate([ { path: "cartCharges"}, { path: "cartCoupon", populate: { path: "coupon_id", model: "Coupon" } }, { path: "billing_address_id", populate: { path: "city_id", populate: { path: "state_id", }, }, }, { path: "cartSkus", populate: { path: "sku_id" } } ]);
   if (!cart) { return { status: false, message: "Cart not found" }; }
 
   const newEntry = new Order({
@@ -382,25 +380,27 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
     }).save();
   }
 
-  if(cart.cartCoupon) {
+  if (cart.cartCoupon?.coupon_id) {
+    const coupon = cart.cartCoupon.coupon_id as any;
+    
     await new OrderCoupon({
       order_id: savedOrder._id,
       coupon_id: cart.cartCoupon.coupon_id,
       admin_coupon_discount: cart.cartCoupon.admin_coupon_discount,
       vendor_coupon_discount: cart.cartCoupon.vendor_coupon_discount,
       coupon_code: cart.cartCoupon.coupon_code,
-      coupon_by: cart.cartCoupon.coupon.coupon_by,
-      coupon_type: cart.cartCoupon.coupon.coupon_type,
-      vendor_id: cart.cartCoupon.coupon.vendor_id,
-      usage_type: cart.cartCoupon.coupon.usage_type,
-      discount: cart.cartCoupon.coupon.discount,
-      name: cart.cartCoupon.coupon.name,
-      code: cart.cartCoupon.coupon.code,
-      sales: cart.cartCoupon.coupon.sales,
-      status: cart.cartCoupon.coupon.status,
-      valid_from: cart.cartCoupon.coupon.valid_from,
-      valid_to: cart.cartCoupon.coupon.valid_to,
-      buy_one: cart.cartCoupon.coupon.buy_one,
+      coupon_by: coupon.coupon_by,
+      coupon_type: coupon.coupon_type,
+      vendor_id: coupon.vendor_id,
+      usage_type: coupon.usage_type,
+      discount: coupon.discount,
+      name: coupon.name,
+      code: coupon.code,
+      sales: coupon.sales,
+      status: coupon.status,
+      valid_from: coupon.valid_from,
+      valid_to: coupon.valid_to,
+      buy_one: coupon.buy_one,
     }).save();
   }
 

@@ -11,26 +11,17 @@ import MultiSelectDropdown from "@amitkk/basic/components/static/multiselect-dro
 import MediaImage from "@amitkk/basic/components/static/table-image";
 import { apiRequest, clo, hitToastr, handleMultiSelectChange } from "@amitkk/basic/utils/utils";
 import { MediaProps } from "@amitkk/basic/types/page";
+import { SingleBlogPageProps } from "../types/blog";
+import GenericSelect from "@amitkk/basic/components/static/generic-select";
 
 const CkEditor = dynamic(() => import("@amitkk/basic/components/static/ckeditor-input"), { 
   ssr: false, loading: () => <p>Loading editor...</p>,
 });
 
-interface DataProps {
-    name: string;
-    url: string;
+interface DataProps extends SingleBlogPageProps{
     media: string | MediaProps;
-    media_id: string | MediaProps;
-    author_id: string;
-    category: string[];
-    tag: string[];
-    content: string;
-    createdAt: Date;
-    updatedAt: Date;
-    meta_id ?: string;
     title: string;
     description: string;
-    _id: string;
 }
 
 interface DataFormProps {
@@ -154,11 +145,11 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
             formDataToSend.append("_id", formData._id);
             formDataToSend.append("name", formData.name);
             formDataToSend.append("url", formData.url);
-            formDataToSend.append("author_id", formData.author_id);
+            formDataToSend.append("author_id", formData.author_id as string);
             formDataToSend.append("content", content);
             const blogmeta = [...selectedCategory, ...selectedTag];
             
-            formDataToSend.append("meta_id", formData.meta_id || "");
+            formDataToSend.append("meta_id", formData.meta_id as string || "");
             formDataToSend.append("title", formData.title);
             formDataToSend.append("description", formData.description);
 
@@ -212,15 +203,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
                             <MediaImage media={formData.media as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
                             <ImageUpload name="image" required error={imageError} onChange={(name, file) => { setImage(file); }}/>
                         </div>
-                        <FormControl sx={{ width: "100%" }}>
-                            <InputLabel id="author-label">Author<span style={{ color: "red" }}>*</span></InputLabel>
-                            <Select labelId="author-label" id="author" name="author_id" value={formData.author_id} onChange={handleAuthorChange}>
-                                {Array.isArray(author_options) && author_options.length > 0 ? (author_options?.map((i, index) => (
-                                    <MenuItem key={index} value={i._id}>{i.name}</MenuItem>
-                                    ))
-                                ) : ( <MenuItem disabled>No authors available</MenuItem>)}
-                            </Select>
-                        </FormControl>
+                        <GenericSelect label="State" name="author_id" value={formData.author_id?.toString() ?? ""} options={author_options} onChange={(val) => setFormData({ ...formData, author_id: val as string })}/>
                     </Box>
 
                     <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2, width: "100%" }}>

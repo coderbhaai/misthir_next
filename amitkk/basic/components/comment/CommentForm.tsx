@@ -13,7 +13,8 @@ export default function CommentForm({ module, module_id, }: { module: string; mo
     name: '',
     email: '',
     content: '',
-    selectedDataId: '',
+    module,
+    module_id: module_id as string,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -30,9 +31,8 @@ export default function CommentForm({ module, module_id, }: { module: string; mo
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedData: CommentProps = {...formData, module:module, module_id:module_id as string, function: 'create_update_comment', updatedAt: new Date(), _id: formData.selectedDataId as string | Types.ObjectId };
     try {
-      const res = await apiRequest("post", `basic/comment`, updatedData);
+      const res = await apiRequest("post", `basic/comment`, formData);
 
       setFormData({
         function: 'create_update_comment',
@@ -40,7 +40,8 @@ export default function CommentForm({ module, module_id, }: { module: string; mo
         name: res?.data?.name,
         email: res?.data?.email,
         content: res?.data?.content,
-        selectedDataId: res?.data?._id,
+        module: res?.data?.module,
+        module_id: res?.data?.module_id,
       });
       
       hitToastr('success', res.message);
@@ -54,7 +55,7 @@ export default function CommentForm({ module, module_id, }: { module: string; mo
               <TextField label='Name' variant='outlined' value={formData.name} name='name' fullWidth onChange={handleChange} required/>
               <TextField label='Email' variant='outlined' value={formData.email} name='email' fullWidth onChange={handleChange} required/>
             </Box>
-            <TextField label="Your Comments" variant="outlined" value={formData.content} name="description" fullWidth onChange={handleChange} required multiline rows={2}/>
+            <TextField label="Your Comments" variant="outlined" value={formData.content} name="content" fullWidth onChange={handleChange} required multiline rows={2}/>
             <Button type='submit' variant='contained' color='primary'>Add Comment</Button>
           </Box>
         </form>

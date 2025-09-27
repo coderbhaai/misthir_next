@@ -18,9 +18,13 @@ export default function CouponForm({ coupon_code }: CouponFormProps) {
   
   const initialFormData: CouponFormProps = {
     function: 'apply_coupon',
-    coupon_code,
+    coupon_code: '',
   };
   const [formData, setFormData] = React.useState<CouponFormProps>(initialFormData);
+
+  React.useEffect(() => {
+    setFormData((prev) => ({ ...prev, coupon_code: coupon_code || '' }));
+  }, [coupon_code]);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

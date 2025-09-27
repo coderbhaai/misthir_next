@@ -118,9 +118,9 @@ const orderSkuSchema = new Schema<OrderSkuProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-orderSchema.virtual('orderSkus', { ref: 'orderSku', localField: '_id', foreignField: 'order_id', justOne: false });
-orderSchema.virtual('orderCharges', { ref: 'orderCharges', localField: '_id', foreignField: 'order_id', justOne: true });
-orderSchema.virtual('orderCoupon', { ref: 'orderCoupon', localField: '_id', foreignField: 'order_id', justOne: true });
+orderSchema.virtual('orderSkus', { ref: 'OrderSku', localField: '_id', foreignField: 'order_id', justOne: false });
+orderSchema.virtual('orderCharges', { ref: 'OrderCharges', localField: '_id', foreignField: 'order_id', justOne: true });
+orderSchema.virtual('orderCoupon', { ref: 'PrderCoupon', localField: '_id', foreignField: 'order_id', justOne: true });
 orderSkuSchema.virtual('product', { ref: 'Product', localField: 'product_id', foreignField: '_id', justOne: true, });
 orderSkuSchema.virtual('vendor', { ref: 'User', localField: 'vendor_id', foreignField: '_id', justOne: true, });
 orderSkuSchema.virtual('sku', { ref: 'Sku', localField: 'sku_id', foreignField: '_id', justOne: true, });

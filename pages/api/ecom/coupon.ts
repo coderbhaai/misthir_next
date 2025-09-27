@@ -13,14 +13,11 @@ import { SkuDocument } from 'lib/models/product/Sku';
 import { getEffectiveSkuPrice } from './sales';
 
 export async function create_update_coupon(req: ExtendedRequest, res: NextApiResponse) {
-  console.log('create_update_coupon', req.body)
   try {
     if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
 
     const data = req.body;  
     if ( !data?.coupon_by || !data?.coupon_type || !data?.usage_type  || !data?.name || !data?.code || !data?.sales || !data?.status || !data?.valid_from || !data?.valid_to ) { return res.status(400).json({ message: 'Required fields missing' }); }
-
-    console.log("req.body", req.body)
     
     const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
 

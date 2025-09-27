@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getUserIdFromToken, log } from '../utils';
-import CommentModel from 'lib/models/basic/CommentModel';
+import CommentModel from 'lib/models/basic/Comment';
 import { createApiHandler } from '../apiHandler';
 
 export async function create_update_comment(req: NextApiRequest, res: NextApiResponse) {
@@ -13,9 +13,8 @@ export async function create_update_comment(req: NextApiRequest, res: NextApiRes
     if (!user_id) { return res.status(401).json({ message: "Unauthorized" }); }
 
     const { module, module_id, name, email, content } = data;
-    const updatedOrCreated = await CommentModel.findOneAndUpdate(
-      { module, module_id, user_id }, 
-      {
+    
+    const updatedOrCreated = await CommentModel.findOneAndUpdate( { module, module_id, user_id }, {
         $set: {
           name,
           email,
@@ -24,8 +23,7 @@ export async function create_update_comment(req: NextApiRequest, res: NextApiRes
           updatedAt: new Date(),
         },
         $setOnInsert: { createdAt: new Date() }
-      },
-      { new: true, upsert: true }
+      }, { new: true, upsert: true }
     );
 
     return res.status(200).json({
