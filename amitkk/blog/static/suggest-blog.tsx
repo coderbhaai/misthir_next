@@ -7,8 +7,10 @@ export interface BlogFinalProps {
   blogs: BlogProps[];
 }
   
-export default function SuggestBlogs({ blogs }: BlogFinalProps) {
-
+export default function SuggestBlogs({ blogs = [] }: BlogFinalProps) {
+  
+  if (!blogs || blogs.length === 0) return null;
+  
   const settings = {
     dots: true,
     infinite: true,
@@ -25,9 +27,7 @@ export default function SuggestBlogs({ blogs }: BlogFinalProps) {
       { breakpoint: 1200, settings: { slidesToShow: 3, slidesToScroll: 1, } },
     ]
   };
-
-  if (!blogs || blogs.length === 0) return null;
-
+  
   return (
     <Grid size={12} sx={{ py: 5 }}>
       <Typography variant="h3" gutterBottom>Interesting Reads</Typography>

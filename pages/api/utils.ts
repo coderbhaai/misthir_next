@@ -13,6 +13,8 @@ import Faq from "lib/models/basic/Faq";
 import Testimonial from "lib/models/basic/Testimonial";
 import Product from "lib/models/product/Product";
 import CommentModel from 'lib/models/basic/Comment';
+import ExcelJS from "exceljs";
+import { nanoid } from "nanoid";
 
 export const log = (...args: any[]) => {
   if (process.env.MODE !== 'production') {
@@ -258,11 +260,26 @@ export function toObjectId(id: string | mongoose.Types.ObjectId | null | undefin
 
   try {
     return typeof id === "string" ? new mongoose.Types.ObjectId(id) : id;
-  } catch (e) {
-    return null;
-  }
+  }catch (err) { log(err); return null; }
 }
 
-function normalizeId(id: string | Types.ObjectId) {
-  return typeof id === "string" ? new Types.ObjectId(id) : id;
+export interface ExcelColumn {
+  header: string;
+  key: string;
+}
+
+export async function exportToExcel( res: NextApiResponse, columns: ExcelColumn[], data: any[] ) {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sheet1");
+
+    worksheet.columns = columns.map(col => ({ header: col.header, key: col.key }));
+    data.forEach(item => worksheet.addRow(item));
+    const fileName = `export_${nanoid()}.xlsx`;
+    res.setHeader( "Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" );
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) { log(err); res.status(500).json({ message: "Failed to export Excel" }); }
 }

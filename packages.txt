@@ -21,6 +21,9 @@ cookie
 pdfkit
 jspdf 
 jspdf-autotable
+exceljs
+nanoid
+
 
 
 [dev]

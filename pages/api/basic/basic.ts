@@ -1,7 +1,7 @@
 import { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { uploadMedia } from './media';
-import { log } from '../utils';
+import { exportToExcel, log } from '../utils';
 import Client from 'lib/models/basic/Client';
 import Contact from 'lib/models/basic/Contact';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
@@ -158,6 +158,37 @@ import SiteSetting from 'lib/models/payment/SiteSetting';
       return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
     } catch (error) { return log(error); }
   }
+
+  export async function export_contacts(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const contacts = await Contact.find().lean();
+
+      const data = contacts.map( (i, key) => ({
+        _id: key+1,
+        name: i.name,
+        email: i.email,
+        phone: i.phone,
+        status: i.status,
+        user_remarks: i.user_remarks ?? "",
+        admin_remarks: i.admin_remarks ?? "",
+      }));
+
+      const columns = [
+        { header: "ID", key: "_id" },
+        { header: "Name", key: "name" },
+        { header: "Email", key: "email" },
+        { header: "Status", key: "status" },
+        { header: "User Remarks", key: "user_remarks" },
+        { header: "Admin Remarks", key: "admin_remarks" },
+      ];
+
+      await exportToExcel( res, columns, data );
+
+      return res.status(200).json({ message: 'Fetched all Contacts for Export' });
+    } catch (error) { return log(error); }
+  }
 // Contact
 
 // SiteSetting
@@ -217,6 +248,7 @@ const functions = {
   get_all_contacts,
   get_single_contact,
   create_update_contact,
+  export_contacts,
 
   get_all_settings,
   get_single_setting,

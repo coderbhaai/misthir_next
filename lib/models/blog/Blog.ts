@@ -8,7 +8,7 @@ interface BlogmetaReference {
   };
 }
 
-interface BlogDocument extends Document {
+export interface BlogDocument extends Document {
   name: string;
   url: string;
   status: boolean;

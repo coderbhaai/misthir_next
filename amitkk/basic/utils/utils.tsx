@@ -211,7 +211,6 @@ export interface LayoutLinks {
   userSubmenus: any[];
 }
 
-
 export const getLayoutLinks = async (): Promise<LayoutLinks> => {
   const token                 = getCookie("authToken") || "";
   if( !token ){ return { adminLinks: [], userSubmenus: [] }; }
@@ -315,5 +314,22 @@ export const renderDecimal = (value: number | "" | Types.Decimal128 | { $numberD
 
   return String(value);
 };
+
+export async function downloadExcel({ url, payload, filename }: { url: string; payload?: any; filename?: string; }) {
+  try {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", }, body: JSON.stringify(payload) });
+    if (!response.ok) throw new Error("Failed to download file");
+
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = filename ?? `export_${new Date().toISOString()}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (err) { clo( err ); }
+}
 
 export default function test(){ <></>}

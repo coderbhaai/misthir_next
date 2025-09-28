@@ -16,6 +16,7 @@ import { Search, SearchResult } from 'lib/models/basic/Search';
 import UserBrowsingHistory from 'lib/models/basic/UserBrowsingHistory';
 import dayjs from 'dayjs';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
+import Product from 'lib/models/product/Product';
 
 type PageInput = {
   name: string;
@@ -503,6 +504,48 @@ export async function get_page_data(req: NextApiRequest, res: NextApiResponse) {
   } catch (error) { log(error); }
 }
 
+export async function get_page_static_data(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const blogsArray = await Blog.find()
+      .limit(10)
+      .populate([
+        { path: 'media_id' },
+        {
+          path: 'metas',
+          populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' }
+        }
+      ])
+      .exec();
+
+    const productsArray = await Product.find({ status: true })
+      .populate([
+        { path: 'meta_id', select: '_id title description' },
+        {
+          path: 'productMeta',
+          populate: { path: 'productmeta_id', select: '_id module name url' }
+        },
+        {
+          path: 'mediaHubs',
+          populate: { path: 'media_id', model: 'Media', select: '_id path alt' }
+        }
+      ])
+      .limit(10)
+      .exec();
+
+    const blogs = blogsArray.map((b: any) => b.toJSON());
+    const products = productsArray.map((p: any) => p.toJSON());
+
+    return res.status(200).json({
+      message: 'Fetched Page Static Data',
+      blogs,
+      products
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Error fetching page static data' });
+  }
+}
+
 const functions = {
   create_update_page,
   get_all_pages,
@@ -528,6 +571,7 @@ const functions = {
   get_search_results,
 
   create_update_browsing_history,
+  get_page_static_data
 };
 
 export const config = { api: { bodyParser: false } };

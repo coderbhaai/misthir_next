@@ -9,7 +9,7 @@ export interface ProductFinalProps {
   products: ProductRawDocument[];
 }
 
-export default function SuggestProducts({ products }: ProductFinalProps) {
+export default function SuggestProducts({ products = [] }: ProductFinalProps) {
   const settings = {
     dots: true,
     infinite: true,

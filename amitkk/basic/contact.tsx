@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
+import { useTableFilter, apiRequest, clo, withAuth, hitToastr, downloadExcel } from "@amitkk/basic/utils/utils";
 import DataModal from "@amitkk/basic/components/contact/contact-modal";
 import { AdminDataTable, DataProps } from "@amitkk/basic/components/contact/admin-contact-table";
+import { Button } from "@mui/material";
 
 export function AdminService(){
     const showCheckBox = false;
@@ -60,26 +61,34 @@ export function AdminService(){
             fetchData();
         }
     }, [updatedDataId]);
-    
+
+    const handleExport = async () => {
+        downloadExcel({ url: "/api/basic/basic", payload: { function: "export_contacts" }, filename: "Contact" });
+    };
+
     return(
-        <AdminTableLayout<DataProps>
-            title="Contacts" addButtonLabel="New Contact" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
-                    { id: "name", label: "User" },
-                    { id: "status", label: "Status" },
-                    { id: "remarks", label: "Remarks" },
-                    { id: "date", label: "Date" },
-                    { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i?._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
-                ))}>
-            <DataModal {...modalProps} />
-        </AdminTableLayout>
+        <>
+            <Button variant="contained" color="primary" onClick={handleExport}>Export Products to Excel</Button>
+            
+            <AdminTableLayout<DataProps>
+                title="Contacts" addButtonLabel="New Contact" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
+                head={
+                    <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
+                    headLabel={[
+                        { id: "name", label: "User" },
+                        { id: "status", label: "Status" },
+                        { id: "remarks", label: "Remarks" },
+                        { id: "date", label: "Date" },
+                        { id: "", label: "" },
+                    ]}/>
+                }
+                rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
+                    .map((i) => (
+                        <AdminDataTable key={i?._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
+                    ))}>
+                <DataModal {...modalProps} />
+            </AdminTableLayout>
+        </>
     )
 }
 

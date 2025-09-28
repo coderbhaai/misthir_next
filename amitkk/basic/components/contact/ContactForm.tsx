@@ -55,8 +55,6 @@ export default function ContactForm({ handleClose }: ContactFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
-        <Typography variant='h4' align='center' gutterBottom>Connect With Us</Typography>
-
         <TextField label='Name' variant='outlined' value={formData.name} name='name' fullWidth onChange={handleChange} required/>
         <TextField label='Email' variant='outlined' value={formData.email} name='email' fullWidth onChange={handleChange} required/>
         <TextField label='Phone' variant='outlined' value={formData.phone} name='phone' fullWidth onChange={handleChange} required/>
