@@ -6,13 +6,14 @@ import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import MenuItem, {menuItemClasses} from '@mui/material/MenuItem';
 import { Iconify, TableRowPropsBase } from '@amitkk/basic/utils/utils';
+import Link from 'next/link';
 import DateFormat from '@amitkk/basic/components/static/date-format';
 import { IconButton } from '@mui/material';
-import { OrderProps } from '@amitkk/ecom/types/ecom';
-import CartSkuDetails from '@amitkk/ecom/admin/CartSkuDetails';
-import CartChargesDetails from '@amitkk/ecom/admin/CartChargesDetails';
+import UserRow from '@amitkk/basic/static/UserRow';
+import { UserRowProps } from '@amitkk/blog/types/blog';
+import { BulkProps } from '../types/ecom';
 
-export interface DataProps extends OrderProps{
+export interface DataProps extends BulkProps{
 }
 
 type UserTableRowProps = TableRowPropsBase & {
@@ -35,12 +36,19 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow, onEdit
     <>
       <TableRow hover tabIndex={-1} role='checkbox' selected={selected}>
         { showCheckBox ? <TableCell padding='checkbox'><Checkbox disableRipple checked={selected} onChange={onSelectRow}/></TableCell> : null }
-        <TableCell><CartSkuDetails skus={row.orderSkus}/></TableCell>
+        <TableCell><UserRow row={row as unknown as UserRowProps}/></TableCell>
+        <TableCell><UserRow row={row.vendor_id as unknown as UserRowProps}/></TableCell>
         <TableCell>
-          Total : {row.total?.$numberDecimal}<br/>
-          Paid : {row.paid?.$numberDecimal}
+          {row?.product_id && (row.product_id as any)?.name ? (
+            <Link href={`/product/${(row.product_id as any)?.url}`} passHref>{(row.product_id as any)?.name}</Link>
+          ) : ( "" )}
         </TableCell>
-        <TableCell><CartChargesDetails charges={row.orderCharges}/></TableCell>
+        <TableCell>{row.quantity}</TableCell>
+        <TableCell>
+          {row.user_remarks && ( <><strong>User:</strong> {row.user_remarks}<br/></> )}
+          {row.admin_remarks && ( <><strong>Admin:</strong> {row.admin_remarks}<br/></> )}
+          {row.vendor_remarks && ( <><strong>Vendor:</strong> {row.vendor_remarks}</> )}
+        </TableCell>
         <TableCell><DateFormat date={row.createdAt} /></TableCell>
         <TableCell align='right'><IconButton id={row._id.toString()} onClick={handleOpenPopover}><Iconify icon='Edit'/></IconButton></TableCell>
       </TableRow>

@@ -22,6 +22,7 @@ import { useEcom } from "contexts/EcomContext";
 import ReviewForm from "@amitkk/basic/components/review/ReviewForm";
 import { ReviewProps } from "@amitkk/basic/types/page";
 import ReviewPanel from "@amitkk/basic/components/review/ReviewPanel";
+import BulkOrderModal from "@amitkk/ecom/static/BulkOrderModal";
 
 interface ProductPageProps {
   product: ProductRawDocument;
@@ -32,7 +33,8 @@ interface ProductPageProps {
 export default function ProductPage({ product, relatedContent, reviews }: ProductPageProps) {
   const { sendAction } = useEcom();
 
-  const [aboutOpen, setAboutOpen] = useState(true);  
+  const [aboutOpen, setAboutOpen] = useState(true);
+  const [openBulkModal, setOpenBulkModal] = useState(false);
   // const [mounted, setMounted] = useState(false);
   const [activeImage, setActiveImage] = useState<any>(null);
   const images = Array.isArray(product?.medias) ? product.medias : [];
@@ -81,7 +83,7 @@ export default function ProductPage({ product, relatedContent, reviews }: Produc
   if (!product) {
     return <Typography variant="h4">Product not found</Typography>;
   }
-
+  
   return (
     <>
       <Grid container spacing={4} sx={{ px: 2, py: 4, width: "85vw", mx: "auto" }} gap={4}>
@@ -167,6 +169,8 @@ export default function ProductPage({ product, relatedContent, reviews }: Produc
         </Grid>
 
         <Grid size={12}>
+          <Button variant="contained" sx={{ background: "linear-gradient(45deg, #f48fb1, #ec407a)", borderRadius: 2, px: 2, py: 1, fontSize: "1rem", "&:hover": { background: "linear-gradient(45deg, #ec407a, #f06292)" } }} onClick={() => setOpenBulkModal(true)}>Bulk Order</Button>
+
           <Stack direction="row" alignItems="center" spacing={1}>
             <Typography variant="h6" fontWeight="medium" color="text.primary">About {product.name}</Typography>
             <IconButton size="small" onClick={() => setAboutOpen(!aboutOpen)} sx={{ borderRadius: "50%", border: "1px solid", borderColor: "#ec407a", width: 32, height: 32 }}>{aboutOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}</IconButton>
@@ -186,6 +190,14 @@ export default function ProductPage({ product, relatedContent, reviews }: Produc
         <ReviewPanel reviews={reviews} module="Product" module_id={product?._id}/>
         <SuggestProducts products={relatedContent.products} />
         <SuggestBlogs blogs={relatedContent.blogs} />
+
+        <BulkOrderModal
+          isOpen={openBulkModal}
+          onClose={() => setOpenBulkModal(false)}
+          product_id = {product?._id as string || ""}
+          sku_id = {selectedSku?._id as string || ""}
+          vendor_id = {product?.vendor_id as unknown as string || ""}
+        />
       </Grid>
     </>
   );

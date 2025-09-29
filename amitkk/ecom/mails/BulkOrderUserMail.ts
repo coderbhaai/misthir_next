@@ -3,13 +3,13 @@ import { sendMail } from "@amitkk/basic/utils/mailer";
 import { apiRequest, clo } from "@amitkk/basic/utils/utils";
 import { OrderProps } from '@amitkk/ecom/types/ecom';
 
-export async function OrderMail(data_id: string) {
+export async function BulkOrderUserMail(data_id: string) {
     if (!data_id) throw new Error("data_id is required");
 
     let data: OrderProps | null = null;
 
     try {
-        const res = await apiRequest("post", `ecom/ecom`, { function: "get_single_order", data_id });
+        const res = await apiRequest("post", `product/product`, { function: "get_single_bulk_order", data_id });
         if ( !res?.data ) { throw new Error("Entry not found"); }
 
         data = res.data as OrderProps;
@@ -18,19 +18,15 @@ export async function OrderMail(data_id: string) {
         throw error;
     }
 
-    const billingAddress = data?.billing_address_id as AddressProps;
-
     // Prepare HTML
     const html = `
-        <h2>Hello ${billingAddress.first_name},</h2>
+        <h2>Hi,</h2>
         <p>Thanks for your order!</p>
-        <p>Your Order ID is <strong>${data._id}</strong></p>
-        <p>Total Amount: ₹${data.paid}</p>
     `;
 
     const subject = `Order Confirmation #${data._id}`;
 
-    const to = [ billingAddress?.email ].filter( (e): e is string => Boolean(e) );
+    const to = [ data?.email ].filter( (e): e is string => Boolean(e) );
     if (to.length === 0) throw new Error("No recipient email found");
 
     const cc = ["admin@example.com"];

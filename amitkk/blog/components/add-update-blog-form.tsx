@@ -95,16 +95,16 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
     const [content, setContent] = useState("");
     const [contentError, setContentError] = useState<string | null>(null);
     const [author_id, setAuthor_id] = useState("");
-    const [author_options, setAuthorOptions] = React.useState<{_id: string; name: string}[]>([]);
+    const [author_options, setAuthorOptions] = useState<{_id: string; name: string}[]>([]);
 
     const [image, setImage] = useState<File | null>(null);
     const [imageError, setImageError] = useState<string | null>(null);
     
-    const [selectedCategory, setSelectedCategory] = React.useState<string[]>([]);
-    const [category, setCategory] = React.useState<{_id: string; name: string}[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
+    const [category, setCategory] = useState<{_id: string; name: string}[]>([]);
 
-    const [selectedTag, setSelectedTag] = React.useState<string[]>([]);
-    const [tag, setTag] = React.useState<{_id: string; name: string}[]>([]);
+    const [selectedTag, setSelectedTag] = useState<string[]>([]);
+    const [tag, setTag] = useState<{_id: string; name: string}[]>([]);
 
     React.useEffect(() => {
         const fetchCategory = async () => {

@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import CustomModal from '@amitkk/basic/static/CustomModal';
 import ContactForm from '@amitkk/basic/components/contact/ContactForm';
-import { ContactProps } from '@amitkk/basic/types/page';
 
 type ContactModalProps = {
   isOpen: boolean;

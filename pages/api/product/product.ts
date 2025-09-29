@@ -1,6 +1,6 @@
 import mongoose, { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { fetchData, generateSitemap, getRelatedContent, log, pivotEntry } from '../utils';
+import { fetchData, generateSitemap, getRelatedContent, getUserIdFromToken, log, pivotEntry } from '../utils';
 import { syncMediaHub } from '../basic/media';
 import Productmeta from 'lib/models/product/Productmeta';
 import { slugify } from '@amitkk/basic/utils/utils';
@@ -19,6 +19,8 @@ import { ProductRawDocument } from 'lib/models/types';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import Tax from 'lib/models/payment/Tax';
 import { getReviews } from '../basic/review';
+import BulkOrder from 'lib/models/ecom/BulkOrder';
+import { initAction } from '../basic/action';
 
 export async function get_all_products(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -404,6 +406,87 @@ export async function get_sku_options(req: NextApiRequest, res: NextApiResponse)
   } catch (error) { log(error); }
 }
 
+// Bulk Order
+  export async function create_bulk_order(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const data = req.body;
+      if (!data?.name || !data?.email || !data?.phone ) { return res.status(400).json({ message: 'Required fields missing' }); }
+
+      const user_id = getUserIdFromToken(req);    
+      const newEntry = new BulkOrder({
+          user_id: user_id,
+          product_id: data.product_id,
+          sku_id: data.sku_id,
+          vendor_id: data.vendor_id,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          status: data.status,
+          quantity: data.quantity,
+          user_remarks: data.user_remarks,
+          updatedAt: new Date(),
+          createdAt: new Date(),
+      });
+      await newEntry.save();
+
+      await initAction('Bulk Order', newEntry._id as Types.ObjectId);
+      
+      return res.status(201).json({ message: 'Entry created successfully', data: newEntry });
+    } catch (error) { log(error); }
+  }
+
+  export async function get_single_bulk_order(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+  
+      const { id } = req.body;
+      if ( !id ) { return res.status(400).json({ message: 'Invalid or missing Id' }); }
+  
+      const data = await BulkOrder.findById(id).populate([ { path: 'product_id', select: 'name url' }, { path: 'vendor_id', select: 'name email phone' }, { path: 'sku_id', select: 'name' } ]).exec();
+  
+      return res.status(200).json({ message: 'Single Bulk Order Fetched', data });
+    } catch (error) { return log(error); }
+  }
+
+  export async function get_all_bulk_orders(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await BulkOrder.find().populate([ { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ]}, { path: 'vendor_id', select: 'name email phone' }, { path: 'sku_id' } ]);     
+  
+      return res.status(200).json({ message: 'All Bulk Orders Fetched', data });
+    } catch (error) { return log(error); }
+  }
+
+  export async function update_bulk_order(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+
+      const data = req.body;
+      if (!data?.name || !data?.email || !data?.phone ) { return res.status(400).json({ message: 'Required fields missing' }); }
+      const entry = await BulkOrder.findByIdAndUpdate(data._id, {
+          product_id: data.product_id,
+          sku_id: data.sku_id,
+          vendor_id: data.vendor_id,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          status: data.status,
+          quantity: data.quantity,
+          user_remarks: data.user_remarks,
+          admin_remarks: data.admin_remarks,
+          vendor_remarks: data.vendor_remarks,
+          updatedAt: new Date(),
+        },{ new: true, upsert: true }
+      );
+      
+      return res.status(201).json({ message: 'Entry created successfully', data: entry });
+
+
+    } catch (error) { log(error); }
+  }
+// Bulk Order
+
 const functions = {
   get_all_products,
   get_single_product,
@@ -415,6 +498,11 @@ const functions = {
   get_single_product_by_url,
   get_product_module,
   get_sku_options,
+
+  create_bulk_order,
+  update_bulk_order,
+  get_all_bulk_orders,
+  get_single_bulk_order
 };
 
 export const config = { api: { bodyParser: false } };

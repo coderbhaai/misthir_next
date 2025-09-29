@@ -643,10 +643,10 @@ export async function get_single_order(req: NextApiRequest, res: NextApiResponse
   try {
     if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
 
-    const { order_id } = req.body;
-    if ( !order_id ) { return res.status(400).json({ message: 'Invalid or missing Id' }); }
+    const { data_id } = req.body;
+    if ( !data_id ) { return res.status(400).json({ message: 'Invalid or missing Id' }); }
 
-    const data = await Order.findById(order_id).populate([ { path: 'orderCharges' }, { path: 'billing_address_id' }, { path: 'shipping_address_id' }, { path: 'orderSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).exec();
+    const data = await Order.findById(data_id).populate([ { path: 'orderCharges' }, { path: 'billing_address_id' }, { path: 'shipping_address_id' }, { path: 'orderSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).exec();
 
     const relatedContent = await getGenericContent();
 

@@ -161,3 +161,22 @@ export interface BuyOneGetOneProps {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface BulkProps{
+  _id: string | Types.ObjectId;
+  user_id?: string | Types.ObjectId;
+  product_id: string | Types.ObjectId;
+  sku_id?: string | Types.ObjectId;
+  vendor_id?: string | Types.ObjectId;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  quantity: number;
+  user_remarks?: string;
+  admin_remarks?: string;
+  vendor_remarks?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+

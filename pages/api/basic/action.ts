@@ -5,6 +5,8 @@ import { Action } from 'lib/models/basic/Action';
 import { log } from '../utils';
 import { Order } from 'lib/models/ecom/Order';
 import { OrderMail } from '@amitkk/ecom/mails/OrderMail';
+import { BulkOrderAdminMail } from '@amitkk/ecom/mails/BulkOrderAdminMail';
+import { BulkOrderUserMail } from '@amitkk/ecom/mails/BulkOrderUserMail';
 
 export async function initAction(module: string, module_id: Types.ObjectId) {
   try {
@@ -25,6 +27,11 @@ export async function closeAction(action_id?: string) {
 
     if (action.module === "Ecom") {
       await OrderMail(action.module_id.toString());      
+    }
+
+    if (action.module === "Bulk Order") {
+      await BulkOrderUserMail(action.module_id.toString());      
+      await BulkOrderAdminMail(action.module_id.toString());      
     }
 
     action.status = true;
