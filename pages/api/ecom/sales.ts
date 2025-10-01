@@ -6,6 +6,7 @@ import Sale from 'lib/models/ecom/Sale';
 import SaleSku from 'lib/models/ecom/SaleSku';
 import Product from 'lib/models/product/Product';
 import { SkuDocument } from 'lib/models/product/Sku';
+import { APIHandlers } from '../middleware';
 
 export async function get_all_sales(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -261,11 +262,18 @@ export async function getEffectiveSkuPrice(sku: SkuDocument, vendorId: Types.Obj
   return parseFloat(finalPrice.toFixed(2));
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  get_all_sales : { middlewares: [] },
+  get_single_sale : { middlewares: [] },
+  create_update_sale : { middlewares: [] },
+  get_product_sale_modules : { middlewares: [] },
+}
+
+export const salesHandlers = {
   get_all_sales,
   get_single_sale,
   create_update_sale,
-  get_product_sale_modules
+  get_product_sale_modules,
 };
 
 export const config = { api: { bodyParser: false } };

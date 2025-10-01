@@ -14,6 +14,7 @@ import { MediaProps } from '@amitkk/basic/types/page';
 import User from 'lib/models/spatie/User';
 import { createApiHandler, ExtendedRequest, HandlerMap, } from '../apiHandler';
 import "lib/models";
+import { APIHandlers } from '../middleware';
 
 export interface SpatieMenuWithSubmenus {
   _id: string;
@@ -507,7 +508,32 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
   } catch (error) { log(error); return res.status(500).json({ allowed: false }); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  create_update_role : { middlewares: [] },
+  get_all_roles : { middlewares: [] },
+  get_single_role : { middlewares: [] },
+
+  create_update_permission : { middlewares: [] },
+  get_all_permissions : { middlewares: [] },
+  get_single_permission : { middlewares: [] },
+  
+  get_all_users : { middlewares: [] },
+  get_single_user : { middlewares: [] },
+  create_update_user : { middlewares: [] },
+
+  create_update_menu : { middlewares: [] },
+  get_all_menus : { middlewares: [] },
+  get_single_menu : { middlewares: [] },
+
+  create_update_submenu : { middlewares: [] },
+  get_all_submenus : { middlewares: [] },
+  get_single_submenu : { middlewares: [] },
+
+  get_admin_menu : { middlewares: [] },
+  check_permission : { middlewares: [] },
+}
+
+export const spatieHandlers = {
   create_update_role,
   get_all_roles,
   get_single_role,

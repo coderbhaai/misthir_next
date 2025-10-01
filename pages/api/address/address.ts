@@ -7,6 +7,7 @@ import Country from 'lib/models/address/Country';
 import State from 'lib/models/address/State';
 import City from 'lib/models/address/City';
 import Address from 'lib/models/address/Address';
+import { APIHandlers } from '../middleware';
 
 // Country
   export async function get_all_country(req: NextApiRequest, res: NextApiResponse) {
@@ -431,7 +432,31 @@ import Address from 'lib/models/address/Address';
   }
 // Address
 
-const functions = {
+export const functions: APIHandlers = {
+  get_all_country : { middlewares: [] },
+  get_single_country : { middlewares: [] },
+  create_update_country : { middlewares: [] },
+  get_country_options : { middlewares: [] },
+  
+  get_all_state : { middlewares: [] },
+  get_single_state : { middlewares: [] },
+  create_update_state : { middlewares: [] },
+  get_state_options : { middlewares: [] },
+  get_states_of_country : { middlewares: [] },
+
+  get_all_city : { middlewares: [] },
+  get_single_city : { middlewares: [] },
+  create_update_city : { middlewares: [] },
+  get_cities_of_state : { middlewares: [] },
+
+  get_my_addresses : { middlewares: [] },
+  get_single_address : { middlewares: [] },
+  create_update_address : { middlewares: [] },
+  get_all_addresses : { middlewares: [] },
+  get_single_address_id_selected : { middlewares: [] },
+};
+
+export const addressHandlers = {
   get_all_country,
   get_single_country,
   create_update_country,
@@ -453,7 +478,6 @@ const functions = {
   create_update_address,
   get_all_addresses,
   get_single_address_id_selected
-
 };
 
 export const config = { api: { bodyParser: false } };

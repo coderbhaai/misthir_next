@@ -2,9 +2,10 @@ import { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getUserIdFromToken, log } from '../utils';
 import { syncMediaHub, uploadMedia } from './media';
-import { createApiHandler, ExtendedRequest, } from '../apiHandler';
+import { createApiHandler, ExtendedRequest, HandlerMap, } from '../apiHandler';
 import Review from 'lib/models/basic/Review';
 import "lib/models";
+import { APIHandlers } from '../middleware';
 
 export async function create_update_review(req: ExtendedRequest, res: NextApiResponse) { 
   try {
@@ -100,7 +101,23 @@ export async function getReviews({ module, moduleId }: { module: string; moduleI
   }catch (err) { log(err); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  create_update_review: {
+    middlewares: [],
+    // "authRequired", "roleOwnerVendorStaff", "canCreateOrUpdateReview"
+  },
+  get_all_reviews: {
+    middlewares: [],
+  },
+  get_single_review: {
+    middlewares: [],
+  },
+  update_review: {
+    middlewares: [],
+  },
+};
+
+export const reviewHandlers = {
   create_update_review,
   get_all_reviews,
   get_single_review,

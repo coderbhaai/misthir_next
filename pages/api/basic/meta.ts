@@ -6,6 +6,7 @@ import { clo, slugify } from '@amitkk/basic/utils/utils';
 import Blog from 'lib/models/blog/Blog';
 import Page from 'lib/models/basic/Page';
 import { createApiHandler } from '../apiHandler';
+import { APIHandlers } from '../middleware';
 
 type MetaInput = {
   meta_id: mongoose.Types.ObjectId | string | null;
@@ -106,7 +107,14 @@ export async function get_sitemap_links(req: NextApiRequest, res: NextApiRespons
   } catch (error) { log(error); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  create_update_meta : { middlewares: [] },
+  get_all_meta : { middlewares: [] },
+  get_single_meta : { middlewares: [] },
+  get_sitemap_links : { middlewares: [] },
+}
+
+export const metaHandlers = {
   create_update_meta,
   get_all_meta,
   get_single_meta,

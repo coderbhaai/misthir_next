@@ -5,6 +5,7 @@ import { upsertMeta } from '../basic/meta';
 import { log } from '../utils';
 import { slugify } from '@amitkk/basic/utils/utils';
 import { createApiHandler } from '../apiHandler';
+import { APIHandlers } from '../middleware';
 
 export async function create_update_blog_meta(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -88,7 +89,15 @@ export async function get_single_blog_meta(req: NextApiRequest, res: NextApiResp
   return res.status(200).json({ message: 'Fetched Single Blog', data });
 };
 
-const functions = {
+export const functions: APIHandlers = {
+  create_update_blog_meta : { middlewares: [] },
+  get_all_blog_meta : { middlewares: [] },
+  get_category : { middlewares: [] },
+  get_tag : { middlewares: [] },
+  get_single_blog_meta : { middlewares: [] },
+}
+
+export const blogmetaHandlers = {
   create_update_blog_meta,
   get_all_blog_meta,
   get_category,

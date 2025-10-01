@@ -7,6 +7,7 @@ import { Order } from 'lib/models/ecom/Order';
 import { OrderMail } from '@amitkk/ecom/mails/OrderMail';
 import { BulkOrderAdminMail } from '@amitkk/ecom/mails/BulkOrderAdminMail';
 import { BulkOrderUserMail } from '@amitkk/ecom/mails/BulkOrderUserMail';
+import { APIHandlers } from '../middleware';
 
 export async function initAction(module: string, module_id: Types.ObjectId) {
   try {
@@ -50,8 +51,12 @@ export async function cleanActions() {
   } catch (error) { log(error); }
 }
 
+export const functions: APIHandlers = {
+  // create_update_comment : { middlewares: [] },	
+}
 
-const functions = {
+
+export const actionHandlers = {
   // create_update_comment,
 };
 

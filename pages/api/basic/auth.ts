@@ -11,6 +11,7 @@ import SpatieRole, { IRoleWithPermissions } from "lib/models/spatie/SpatieRole";
 import UserPermission from "lib/models/spatie/UserPermission";
 import UserRole from "lib/models/spatie/UserRole";
 import { createApiHandler } from "../apiHandler";
+import { APIHandlers } from "../middleware";
 
 export async function login(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -199,7 +200,16 @@ export async function check_user_access(req: NextApiRequest, res: NextApiRespons
   } catch (error) { log(error); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  login : { middlewares: [] },
+  register : { middlewares: [] },
+  reset_password : { middlewares: [] },
+  generate_otp : { middlewares: [] },
+  register_or_login : { middlewares: [] },
+  check_user_access : { middlewares: [] },
+}
+
+export const authHandlers = {
   login,
   register,
   reset_password,

@@ -21,6 +21,7 @@ import Tax from 'lib/models/payment/Tax';
 import { getReviews } from '../basic/review';
 import BulkOrder from 'lib/models/ecom/BulkOrder';
 import { initAction } from '../basic/action';
+import { APIHandlers } from '../middleware';
 
 export async function get_all_products(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -487,7 +488,25 @@ export async function get_sku_options(req: NextApiRequest, res: NextApiResponse)
   }
 // Bulk Order
 
-const functions = {
+export const functions: APIHandlers = {
+  get_all_products : { middlewares: [] },
+  get_single_product : { middlewares: [] },
+  create_update_product : { middlewares: [] },
+
+  get_product_modules : { middlewares: [] },
+  get_products : { middlewares: [] },
+  get_single_product_module : { middlewares: [] },
+  get_single_product_by_url : { middlewares: [] },
+  get_product_module : { middlewares: [] },
+  get_sku_options : { middlewares: [] },
+
+  create_bulk_order : { middlewares: [] },
+  update_bulk_order : { middlewares: [] },
+  get_all_bulk_orders : { middlewares: [] },
+  get_single_bulk_order : { middlewares: [] },
+}
+
+export const productHandlers = {
   get_all_products,
   get_single_product,
   create_update_product,
@@ -502,7 +521,7 @@ const functions = {
   create_bulk_order,
   update_bulk_order,
   get_all_bulk_orders,
-  get_single_bulk_order
+  get_single_bulk_order,
 };
 
 export const config = { api: { bodyParser: false } };

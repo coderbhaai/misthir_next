@@ -6,6 +6,7 @@ import Client from 'lib/models/basic/Client';
 import Contact from 'lib/models/basic/Contact';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import SiteSetting from 'lib/models/payment/SiteSetting';
+import { APIHandlers } from '../middleware';
 
 // Client
   export async function get_all_clients(req: NextApiRequest, res: NextApiResponse) {
@@ -239,7 +240,24 @@ import SiteSetting from 'lib/models/payment/SiteSetting';
   }
 // SiteSetting
 
-const functions = {
+export const functions: APIHandlers = {
+  get_all_clients : { middlewares: [] },	
+  get_single_client : { middlewares: [] },	
+  create_update_client : { middlewares: [] },	
+  get_all_client_options : { middlewares: [] },	
+
+  get_all_contacts : { middlewares: [] },	
+  get_single_contact : { middlewares: [] },	
+  create_update_contact : { middlewares: [] },	
+  export_contacts : { middlewares: [] },	
+
+  get_all_settings : { middlewares: [] },	
+  get_single_setting : { middlewares: [] },	
+  create_update_setting : { middlewares: [] },	
+  get_site_settings : { middlewares: [] },	
+}
+
+export const basicHandlers = {
   get_all_clients,
   get_single_client,
   create_update_client,

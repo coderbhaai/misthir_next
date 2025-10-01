@@ -12,6 +12,7 @@ import { handleApplyCoupon, remove_coupon, upsertCartCoupon, validateCoupon } fr
 import Coupon from 'lib/models/ecom/Coupon';
 import { getEffectiveSkuPrice } from './sales';
 import { initAction } from '../basic/action';
+import { APIHandlers } from '../middleware';
 
 export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -704,7 +705,29 @@ export async function apply_coupon(req: NextApiRequest, res: NextApiResponse) {
   } catch (error) { log(error); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  add_to_cart : { middlewares: [] },
+  get_cart_data : { middlewares: [] },
+  increment_cart : { middlewares: [] },
+  decrement_cart : { middlewares: [] },
+  update_user_remarks : { middlewares: [] },
+  update_cart_array : { middlewares: [] },
+  get_abandoned_carts : { middlewares: [] },
+  get_single_abdandoned_cart : { middlewares: [] },
+  place_order : { middlewares: [] },
+  apply_admin_discount : { middlewares: [] },
+  apply_vendor_discount : { middlewares: [] },
+  get_vendor_abandoned_carts : { middlewares: [] },
+
+  get_all_orders : { middlewares: [] },
+  get_seller_orders : { middlewares: [] },
+  get_single_order : { middlewares: [] },
+
+  get_user_orders : { middlewares: [] },
+  apply_coupon : { middlewares: [] },
+}
+
+export const ecomHandlers = {
   add_to_cart,
   get_cart_data,
   increment_cart,

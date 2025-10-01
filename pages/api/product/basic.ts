@@ -16,6 +16,7 @@ import Commission from 'lib/models/product/Commission';
 import BankDetail from 'lib/models/product/BankDetail';
 import Documentation from 'lib/models/product/Documentation';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
+import { APIHandlers } from '../middleware';
 
 // Productmeta
   export async function get_all_product_metas(req: NextApiRequest, res: NextApiResponse) {
@@ -647,7 +648,46 @@ import { createApiHandler, ExtendedRequest } from '../apiHandler';
   }
 // Document
 
-const functions = {
+export const functions: APIHandlers = {
+  get_user_by_role : { middlewares: [] },
+  get_single_vendor : { middlewares: [] },
+  get_user_module : { middlewares: [] },
+
+  get_all_product_metas : { middlewares: [] },
+  get_single_product_meta : { middlewares: [] },
+  create_update_product_meta : { middlewares: [] },
+  get_product_meta_by_module : { middlewares: [] },
+
+  get_all_product_brands : { middlewares: [] },
+  get_single_product_brand : { middlewares: [] },
+  create_update_product_brand : { middlewares: [] },
+  get_product_brand_module : { middlewares: [] },
+  
+  get_all_product_ingridients : { middlewares: [] },
+  get_single_product_ingridient : { middlewares: [] },
+  create_update_product_ingridient : { middlewares: [] },
+  get_product_ingridient_module : { middlewares: [] },
+
+  get_all_product_features : { middlewares: [] },
+  get_single_product_feature : { middlewares: [] },
+  create_update_product_feature : { middlewares: [] },
+  get_product_feature_module : { middlewares: [] },
+
+  get_all_commissions : { middlewares: [] },
+  get_single_commission : { middlewares: [] },
+  create_update_commission : { middlewares: [] },
+  create_update_vendor_commission : { middlewares: [] },
+
+  get_all_bank_details : { middlewares: [] },
+  get_single_bank_detail : { middlewares: [] },
+  create_update_bank_detail : { middlewares: [] },
+
+  get_all_documents : { middlewares: [] },
+  get_single_document : { middlewares: [] },
+  create_update_document : { middlewares: [] },
+}
+
+export const basicHandlers = {
   get_user_by_role,
   get_single_vendor,
   get_user_module,

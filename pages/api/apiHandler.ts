@@ -4,6 +4,9 @@ import fs from "fs";
 import { IncomingForm, Fields, Files } from 'formidable';
 import connectDB from "pages/lib/mongodb";
 import { log } from "./utils";
+import { FunctionsMap, MiddlewareConfig, runMiddlewares } from "./middleware";
+import { reviewHandlers } from "./basic/review";
+import { getAllHandlers } from "./allHandlers";
 
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) {
@@ -43,11 +46,25 @@ export type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
 };
 
+// // dynamic import at runtime to avoid circular reference
+// let allHandlers: Record<string, any> | null = null;
+
+// async function getAllHandlers() {
+//   if (!allHandlers) {
+//     const { reviewHandlers } = await import("./basic/review");
+//     // import { reviewHandlers } from "./basic/review";
+
+//     allHandlers = { ...reviewHandlers };
+//   }
+//   return allHandlers;
+// }
+
 export interface ExtendedRequest extends NextApiRequest { file?: File; files?: { [key: string]: File | File[] }; }
 
-export function createApiHandler(functions: HandlerMap) {
+export function createApiHandler(functions: FunctionsMap) {
   return async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
+      const handlers = await getAllHandlers();
       let fnName: string;
       let body: any = {};
       let files: any = null;
@@ -69,16 +86,37 @@ export function createApiHandler(functions: HandlerMap) {
       }
 
       const targetFn = functions[fnName];
-      if (typeof targetFn !== 'function') {
-        return res.status(400).json({ message: `Invalid function name: ${fnName}` });
-      }
+      if (!targetFn) { return res.status(400).json({ message: `Invalid function name: ${fnName}` }); }
 
       await connectDB();
 
       req.body = body;
       if (files) (req as any).files = files;
 
-      await targetFn(req, res);
+
+      if (targetFn.middlewares?.length) {
+        const passed = await runMiddlewares(req, res, targetFn.middlewares);
+        if (!passed) return;
+      }
+
+      // await targetFn(req, res);
+
+
+      
+      
+      const handlerFn = handlers[fnName as keyof typeof handlers];
+      console.log('targetFn', targetFn)
+      console.log('fnName', fnName)
+      console.log('handlerFn', handlerFn)
+      console.log('typeof handlerFn', typeof handlerFn)
+
+    if (!handlerFn) return res.status(500).json({ message: `No handler defined for ${fnName}` });
+
+
+    await handlerFn(req, res);
+
+
+
     } catch (error) {
       console.error('❌ API handler error:', error);
       if (!res.headersSent) {

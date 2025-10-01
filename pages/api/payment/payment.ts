@@ -11,6 +11,7 @@ import Razorpay from 'lib/models/payment/Razorpay';
 import TaxCollected from 'lib/models/payment/TaxCollected';
 import { createOrderFromCart, place_order } from '../ecom/ecom';
 import Tax from 'lib/models/payment/Tax';
+import { APIHandlers } from '../middleware';
 
 export async function get_payment_data(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -190,8 +191,18 @@ export async function razorpay_summary( module: string, module_id: number, sourc
   }
 // Taxes
 
+export const functions: APIHandlers = {
+  get_payment_data : { middlewares: [] },
+  payment_response : { middlewares: [] },
 
-const functions = {
+  get_all_taxes : { middlewares: [] },
+  get_single_tax : { middlewares: [] },
+  create_update_tax : { middlewares: [] },
+  get_tax_module : { middlewares: [] },
+  get_all_tax_collected : { middlewares: [] },
+}
+
+export const paymentHandlers = {
   get_payment_data,
   payment_response,
 

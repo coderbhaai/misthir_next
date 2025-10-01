@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getUserIdFromToken, log } from '../utils';
 import CommentModel from 'lib/models/basic/Comment';
 import { createApiHandler } from '../apiHandler';
+import { APIHandlers } from '../middleware';
 
 export async function create_update_comment(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -66,7 +67,14 @@ export async function get_comments(req: NextApiRequest, res: NextApiResponse) {
   } catch (error) { log(error); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  create_update_comment : { middlewares: [] },
+  get_all_comments : { middlewares: [] },
+  get_single_comment : { middlewares: [] },
+  get_comments : { middlewares: [] },
+}
+
+export const commentHandlers = {
   create_update_comment,
   get_all_comments,
   get_single_comment,

@@ -17,6 +17,7 @@ import UserBrowsingHistory from 'lib/models/basic/UserBrowsingHistory';
 import dayjs from 'dayjs';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import Product from 'lib/models/product/Product';
+import { APIHandlers } from '../middleware';
 
 type PageInput = {
   name: string;
@@ -546,7 +547,35 @@ export async function get_page_static_data(req: NextApiRequest, res: NextApiResp
   }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  create_update_page : { middlewares: [] },
+  get_all_pages : { middlewares: [] },
+  get_single_page : { middlewares: [] },
+  get_single_page_module : { middlewares: [] },
+  status_switch : { middlewares: [] },
+  get_page_module : { middlewares: [] },
+  get_page_data : { middlewares: [] },
+
+  get_all_faqs : { middlewares: [] },
+  create_update_faq : { middlewares: [] },
+  get_faq : { middlewares: [] },
+  get_single_faq : { middlewares: [] },
+
+  get_all_testimonials : { middlewares: [] },
+  create_update_testimonial : { middlewares: [] },
+  get_single_testimonial : { middlewares: [] },
+  get_testimonial : { middlewares: [] },
+
+  get_all_searches : { middlewares: [] },
+  create_update_search : { middlewares: [] },
+  get_search_pages : { middlewares: [] },
+  get_search_results : { middlewares: [] },
+
+  create_update_browsing_history : { middlewares: [] },
+  get_page_static_data : { middlewares: [] },
+}
+
+export const pageHandlers = {
   create_update_page,
   get_all_pages,
   get_single_page,

@@ -11,6 +11,7 @@ import { recalculateCart } from './ecom';
 import { Cart, CartCoupon, CartCouponProps } from 'lib/models/ecom/Cart';
 import { SkuDocument } from 'lib/models/product/Sku';
 import { getEffectiveSkuPrice } from './sales';
+import { APIHandlers } from '../middleware';
 
 export async function create_update_coupon(req: ExtendedRequest, res: NextApiResponse) {
   try {
@@ -210,7 +211,13 @@ export async function handleApplyCoupon(cart_id: string, coupon_code: string) {
   return { success: true, message: "Coupon Applied Successfully" };
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  create_update_coupon : { middlewares: [] },
+  get_all_coupons : { middlewares: [] },
+  get_single_coupon : { middlewares: [] },
+}
+
+export const couponHandlers = {
   create_update_coupon,
   get_all_coupons,
   get_single_coupon,

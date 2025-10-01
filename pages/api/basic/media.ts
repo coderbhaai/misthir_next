@@ -11,6 +11,7 @@ import { sanitizeText } from '@amitkk/basic/utils/utils';
 import { uploadMediaToS3 } from 'services/uploadMediaToS3';
 import MediaHub from 'lib/models/basic/MediaHub';
 import { createApiHandler } from '../apiHandler';
+import { APIHandlers } from '../middleware';
 
 const MEDIA_PATH = path.join(process.cwd(), 'public', 'storage');
 
@@ -251,7 +252,15 @@ export async function syncMediaHub({ module, module_id, mediaArray }: SyncMediaH
   await MediaHub.deleteMany({ module, module_id, media_id: { $nin: mediaArray } });
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  get_all_media : { middlewares: [] },
+  get_single_media : { middlewares: [] },
+  create_update_media : { middlewares: [] },
+  create_update_media_library : { middlewares: [] },
+  get_selected_media : { middlewares: [] },
+}
+
+export const mediaHandlers = {
   get_all_media,
   get_single_media,
   create_update_media,

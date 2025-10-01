@@ -8,6 +8,7 @@ import { generateSitemap, getRelatedContent, log, pivotEntry } from '../utils';
 import Blogmeta from 'lib/models/blog/Blogmeta';
 import { slugify } from '@amitkk/basic/utils/utils';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
+import { APIHandlers } from '../middleware';
 
 export async function get_all_blogs(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -177,7 +178,18 @@ export async function get_single_blog_sidebar(req: NextApiRequest, res: NextApiR
   } catch (error) { return log(error); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  get_blogs : { middlewares: [] },
+  get_all_blogs : { middlewares: [] },
+  get_single_blog : { middlewares: [] },
+  create_update_blog : { middlewares: [] },
+  get_single_blog_by_url : { middlewares: [] },
+  get_blogs_module : { middlewares: [] },
+  get_single_blog_module : { middlewares: [] },
+  get_single_blog_sidebar : { middlewares: [] },
+}
+
+export const blogHandlers = {
   get_blogs,
   get_all_blogs,
   get_single_blog,

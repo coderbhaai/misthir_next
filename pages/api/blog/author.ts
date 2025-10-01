@@ -5,6 +5,7 @@ import Author from 'lib/models/blog/Author';
 import { uploadMedia } from '../basic/media';
 import { log } from '../utils';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
+import { APIHandlers } from '../middleware';
 
 export async function get_all_author(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -86,7 +87,13 @@ export async function create_update_author(req: ExtendedRequest, res: NextApiRes
   } catch (error) { return log(error); }
 }
 
-const functions = {
+export const functions: APIHandlers = {
+  get_all_author : { middlewares: [] },
+  get_single_author : { middlewares: [] },
+  create_update_author : { middlewares: [] },
+}
+
+export const authorHandlers = {
   get_all_author,
   get_single_author,
   create_update_author,
