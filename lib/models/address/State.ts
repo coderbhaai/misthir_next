@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types, model } from 'mongoose';
 
-interface StateDocument extends Document {
+interface StateDocument extends Document<Types.ObjectId> {
   country_id?: Types.ObjectId;
   name: string;
   major?: boolean;

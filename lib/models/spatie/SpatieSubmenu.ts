@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface ISubmenuProps extends Document {
+export interface ISubmenuProps extends Document<Types.ObjectId> {
   name: string;
   url: string;
   status: boolean;

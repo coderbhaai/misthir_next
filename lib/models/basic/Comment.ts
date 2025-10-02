@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types, Model } from "mongoose";
 
-export interface ICommentModelProps extends Document {
+export interface ICommentModelProps extends Document<Types.ObjectId> {
   module: "Blog" | "Product" | "Page";
   module_id: string | Types.ObjectId;
   user_id?: string | Types.ObjectId;

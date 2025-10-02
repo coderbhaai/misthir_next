@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface CommissionDoc extends Document {
+interface CommissionDoc extends Document<Types.ObjectId> {
   productmeta_id?: Types.ObjectId;
   vendor_id?: Types.ObjectId;
   percentage: number;

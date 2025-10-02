@@ -2,18 +2,21 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import jwt from 'jsonwebtoken'; 
 import connectDB from '../../lib/mongodb';
-import { generateJWTToken, getUserIdFromToken, log, pivotEntry } from "../utils";
+import { createOtp, generateJWTToken, getUserIdFromToken, log, pivotEntry } from "../utils";
 import User from "lib/models/spatie/User";
 import Otp from "lib/models/spatie/Otp";
-import crypto from 'crypto';
 import RolePermission from "lib/models/spatie/RolePermission";
 import SpatieRole, { IRoleWithPermissions } from "lib/models/spatie/SpatieRole";
 import UserPermission from "lib/models/spatie/UserPermission";
 import UserRole from "lib/models/spatie/UserRole";
 import { createApiHandler } from "../apiHandler";
 import { APIHandlers } from "../middleware";
+import { UserOtpMail } from "@amitkk/basic/mails/UserOtpMail";
+import { Types } from "mongoose";
+import { IUserRegisteredData, IUserWithRelations } from "lib/models/types/User";
+import ResetPassword from "lib/models/spatie/ResetPassword";
 
-export async function login(req: NextApiRequest, res: NextApiResponse) {
+export async function login_via_email(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method !== "POST") { return res.status(405).json({ message: "Method not allowed", data: null }); }
 
@@ -25,159 +28,114 @@ export async function login(req: NextApiRequest, res: NextApiResponse) {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) { return res.status(401).json({ message: "Invalid credentials", data: null }); }
-    
-    const token = generateJWTToken(user);
 
-    const data = {
-      _id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      token: token,
-    }
+    const data = generateAuthLoad(user._id);
 
     return res.status(200).json({ message: 'Welcome Aboard', data });
   } catch (error) { log(error); }
 }
 
-export async function register(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-  
-  try {
-    const { name, email, phone, password } = req.body;
-
-    if (!name || !email || !password) { return res.status(400).json({ message: 'All fields are required' }); }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) { return res.status(400).json({ message: 'Email already registered' }); }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const entry = await User.create({
-      name,
-      email,
-      phone,
-      password: hashedPassword,
-    });
-
-    return res.status(201).json({ message: 'Registration successfully', data: entry });
-  } catch (error) { log(error); }  
-}
-
-export async function reset_password(req: NextApiRequest, res: NextApiResponse) {
+export async function generate_phone_otp(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') { return res.status(405).json({ message: 'Method not allowed' }); }
 
-  const { email } = req.body;
-
-  if (!email ) {
-    return res.status(400).json({ message: 'Email and new password are required' });
-  }
+  const { phone } = req.body;
+  if ( !phone) { return res.status(400).json({ message: 'Phone required' }); }
 
   try {
-    const mongoose = await connectDB();
-    // const db = mongoose.connection;
-
-    // const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // const result = await db.collection('users').updateOne(
-    //   { email },
-    //   { $set: { password: hashedPassword } }
-    // );
-
-    // if (result.matchedCount === 0) {
-    //   return res.status(404).json({ message: 'User not found' });
-    // }
-
-    return res.status(200).json({ message: 'Password reset successfully', data:true });
-  } catch (error) { log(error); }
-}
-
-export async function generate_otp(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') { return res.status(405).json({ message: 'Method not allowed' }); }
-
-  const { email, phone } = req.body;
-  const user_id = getUserIdFromToken(req);
-
-  if (!email && !phone) { return res.status(400).json({ message: 'Email or phone required' }); }
-
-  try {
-    const otp = crypto.randomInt(100000, 999999).toString();
-    // const otp = "525205";
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    const deleteConditions: any = {};
-    if (email) deleteConditions.email = email;
-    if (phone) deleteConditions.phone = phone;
-    
-    await Otp.deleteMany(deleteConditions);
-
-    const otpRecord = await Otp.create({
-      type: email && phone ? 'both' : email ? 'email' : 'phone',
-      ...(email && { email }),
-      ...(phone && { phone }),
-      otp,
-      expiresAt,
-      ...(user_id && { user_id: user_id }),
-    });
+    const otp = await createOtp({ type: "phone", phone, req });
 
     return res.status(200).json({ message: 'OTP Generated Successfully', data:true });
   } catch (error) { log(error); }
 }
 
-export async function register_or_login(req: NextApiRequest, res: NextApiResponse) {
+export async function generate_email_otp(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') { return res.status(405).json({ message: 'Method not allowed' }); }
+
+  const { email } = req.body;
+  if (!email) { return res.status(400).json({ message: 'Email or phone required' }); }
+
+  try {
+    const otp = await createOtp({ type: "email", email, req });
+    await UserOtpMail( otp._id.toString() );
+
+    return res.status(200).json({ message: 'OTP Generated Successfully', data:true });
+  } catch (error) { log(error); }
+}
+
+export async function register_or_login_via_mobile(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
   
   try {
-    const { name, email, phone,  otp } = req.body; 
-    if ( !otp ) { return res.status(400).json({ message: 'All fields are required' }); }
-    if (!email && !phone) { return res.status(400).json({ message: 'Email or phone number is required' }); }
+    const { name, phone,  otp } = req.body; 
 
     let { role } = req.body;
     if (!role) { role = "User"; }
 
+    const otpEntry = await Otp.findOne({ phone });
+    if( !otpEntry ){ return res.status(400).json({ message: 'No OTP was Requested' }); }
+    if (otpEntry.otp !== otp) { return res.status(400).json({ message: "Invalid OTP" }); }
+    if (otpEntry.expiresAt < new Date()) { return res.status(400).json({ message: "OTP has expired" }); }
+
     const existingUserQuery = { $or: [] as Array<{ email?: string } | { phone?: string }> };
-    if (email) existingUserQuery.$or.push({ email });
     if (phone) existingUserQuery.$or.push({ phone });
     const existingUser = await User.findOne(existingUserQuery);
 
     if (existingUser) {
-      const user_data = {
-        _id: existingUser._id.toString(),
-        name: existingUser.name,
-        email: existingUser.email,
-        phone: existingUser.phone,
-      }
+      const user_data = generateAuthLoad(existingUser._id);
+      return res.status(200).json({ message: 'Welcome Aboard', data:user_data });
+    }    
 
-      const token = generateJWTToken(user_data);
-      const userWithToken = { ...user_data, token };
+    const newUser = await User.create({
+      name,
+      phone,
+      status : 1
+    });
+    
+    await attachRoleAndPermissions(newUser._id, role);
+    const user_registered_data = await generateAuthLoad(newUser._id);
 
-      return res.status(200).json({ message: 'Welcome Aboard', data:userWithToken });
-    }
+    await Otp.deleteOne({ _id: otpEntry._id });
 
-    const roleData = await SpatieRole.findOne({ name: role }).populate([{ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } }]).lean<IRoleWithPermissions>();
+    return res.status(201).json({ message: 'Registration Successfully', data: user_registered_data });
+  } catch (error) { log(error); }  
+}
+
+export async function register_via_email(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+  
+  try {
+    const { name, email, phone, otp, password, confirm_password } = req.body; 
+    if ( !name || !email || !phone || !otp || !password || !confirm_password ) { return res.status(400).json({ message: 'All fields are required' }); }
+    if( password !== confirm_password ){ return res.status(400).json({ message: 'Passwords Mismatch' }); }
+    
+    let { role } = req.body;
+    if (!role) { role = "User"; }
+    
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) { return res.status(400).json({ message: 'Email already Registered' }); }
+
+    const existingPhone = await User.findOne({ phone });
+    if (existingPhone) { return res.status(400).json({ message: 'Phone already Registered' }); }
+
+    const otpEntry = await Otp.findOne({ email });
+    if( !otpEntry ){ return res.status(400).json({ message: 'No OTP was Requested' }); }
+    if (otpEntry.otp !== otp) { return res.status(400).json({ message: "Invalid OTP" }); }
+    if (otpEntry.expiresAt < new Date()) { return res.status(400).json({ message: "OTP has expired" }); }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
       name,
       email,
       phone,
+      password: hashedPassword,
+      status: 1
     });
-    
-    const token = generateJWTToken(newUser);
-    const user_registered_data = {
-      _id: newUser._id.toString(),
-      name: newUser.name,
-      email: newUser.email,
-      phone: newUser.phone,
-      token: token,
-    }
 
-    if (roleData) { 
-      const rolePermissions = await RolePermission.find({ role_id: roleData?._id }).populate("permission_id", "name").lean().exec();
-      const permissionIds = rolePermissions.map(rp => rp.permission_id?._id).filter(Boolean);      
-      
-      await pivotEntry( UserRole,  newUser._id, [roleData._id], 'user_id', 'role_id');
-      await pivotEntry( UserPermission, newUser._id, permissionIds, 'user_id', 'permission_id' );
-    }
+    await attachRoleAndPermissions(newUser._id, role);
+    const user_registered_data = generateAuthLoad(newUser._id);
+
+    await Otp.deleteOne({ _id: otpEntry._id });
 
     return res.status(201).json({ message: 'Registration successfully', data: user_registered_data });
   } catch (error) { log(error); }  
@@ -200,22 +158,138 @@ export async function check_user_access(req: NextApiRequest, res: NextApiRespons
   } catch (error) { log(error); }
 }
 
+export async function get_single_otp(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
+  
+  try {
+    const { id } = req.body;
+    if ( !id ) { return res.status(400).json({ message: 'All fields are required' }); }
+
+    const data = await Otp.findById(id);
+
+    return res.status(201).json({ message: 'Single Entry Fetched', data });
+  } catch (error) { log(error); }  
+}
+
+export async function generateAuthLoad( user_id: Types.ObjectId ): Promise<IUserRegisteredData | null> {
+  const user = await User.findById(user_id).populate("role_id", "_id name").populate("permission_id", "_id name").lean<IUserWithRelations>().exec();
+  if (!user) return null;
+
+  const roles = Array.isArray(user.role_id)
+    ? user.role_id.map(r => ({ _id: r._id.toString(), name: r.name }))
+    : user.role_id
+    ? [{ _id: user.role_id._id.toString(), name: user.role_id.name }]
+    : [];
+
+  const permissions = Array.isArray(user.permission_id)
+    ? user.permission_id.map(p => ({ _id: p._id.toString(), name: p.name }))
+    : user.permission_id
+    ? [{ _id: user.permission_id._id.toString(), name: user.permission_id.name }]
+    : [];
+
+  const token = generateJWTToken(user, roles, permissions);
+
+  return {
+    _id: user._id.toString(),
+    name: user.name ?? "",
+    email: user.email,
+    phone: user.phone,
+    token,
+    roles,
+    permissions,
+  };
+}
+
+export async function attachRoleAndPermissions( user_id: Types.ObjectId, role?: string): Promise<void>{
+  if (!user_id || !role ) { return; }
+
+  const roleData = await SpatieRole.findOne({ name: role }).populate([{ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } }]).lean<IRoleWithPermissions>();
+  
+  if (roleData) {
+    const rolePermissions = await RolePermission.find({ role_id: roleData._id }).populate("permission_id", "name").lean().exec();
+    const permissionIds = rolePermissions.map(rp => rp.permission_id?._id).filter(Boolean);
+
+    await pivotEntry(UserRole, user_id, [roleData._id], "user_id", "role_id");
+    await pivotEntry(UserPermission, user_id, permissionIds, "user_id", "permission_id");
+  }
+}
+
+export async function forgot_password(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') { return res.status(405).json({ message: 'Method not allowed' }); }
+
+  const { email } = req.body;
+  if (!email) { return res.status(400).json({ message: 'Email or phone required' }); }
+
+  const user = await User.findOne({ email })
+  if (!user) { return res.status(400).json({ message: 'No User by this email found' }); }
+
+  try {
+    const otp = await createOtp({ type: "email", email, req });
+    if( !otp ){ return res.status(400).json({ message: 'OTP Not Found' }); }
+    
+    const otpEntry = await Otp.findById( otp._id );
+    if (!otpEntry) { return res.status(400).json({ message: 'OTP Entry Not Found' }); }
+    
+    const newUser = await ResetPassword.create({
+      email,
+      otp: otpEntry?.otp,
+    });
+
+    await UserOtpMail( otp._id.toString() );
+
+    return res.status(200).json({ message: 'OTP Generated Successfully', data:true });
+  } catch (error) { log(error); }
+}
+
+export async function reset_password(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') { return res.status(405).json({ message: 'Method not allowed' }); }
+
+  const { email, otp, password, confirm_password } = req.body;
+  if ( !email || !otp || !password || !confirm_password ) { return res.status(400).json({ message: 'Email and new password are  required' }); }
+  if( password !== confirm_password ){ return res.status(400).json({ message: 'Passwords Mismatch' }); }
+
+  const resetEntry = await ResetPassword.findOne({ email });
+  if( !resetEntry ){ return res.status(400).json({ message: 'No Reset Password was Requested' }); }
+  if (resetEntry.otp !== otp) { return res.status(400).json({ message: "Invalid OTP" }); }
+  if (resetEntry.expiresAt < new Date()) { return res.status(400).json({ message: "OTP has expired" }); }
+
+  const user = await User.findOne({ email })
+  if (!user) { return res.status(400).json({ message: 'No User by this email found' }); }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+    await ResetPassword.deleteOne({ _id: resetEntry._id });
+    await Otp.deleteOne({ email });
+
+    return res.status(200).json({ message: 'Password reset successfully', data:true });
+  } catch (error) { log(error); }
+}
+
 export const functions: APIHandlers = {
-  login : { middlewares: [] },
-  register : { middlewares: [] },
-  reset_password : { middlewares: [] },
-  generate_otp : { middlewares: [] },
-  register_or_login : { middlewares: [] },
+  login_via_email : { middlewares: [] },
+  generate_phone_otp : { middlewares: [] },
+  generate_email_otp : { middlewares: [] },
+  register_or_login_via_mobile : { middlewares: [] },
+  register_via_email : { middlewares: [] },
   check_user_access : { middlewares: [] },
+  get_single_otp : { middlewares: [] },
+  forgot_password : { middlewares: [] },
+  reset_password : { middlewares: [] },
 }
 
 export const authHandlers = {
-  login,
-  register,
-  reset_password,
-  generate_otp,
-  register_or_login,
+  login_via_email,
+  generate_phone_otp,
+  generate_email_otp,
+  register_or_login_via_mobile,
+  register_via_email,
   check_user_access,
+  get_single_otp,
+  forgot_password,
+  reset_password,
 };
 
 export const config = { api: { bodyParser: false } };

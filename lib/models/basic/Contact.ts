@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
-export interface IContact extends Document {
+export interface IContact extends Document<Types.ObjectId> {
   name: string;
   email: string;
   phone: string;

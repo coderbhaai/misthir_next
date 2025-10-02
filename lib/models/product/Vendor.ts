@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface VendorDoc extends Document {
+interface VendorDoc extends Document<Types.ObjectId> {
   user_id?: Types.ObjectId;
   adminApproval: boolean;
   heading?: string;

@@ -1,6 +1,6 @@
 import { Schema, model, models, Types, Document } from "mongoose";
 
-export interface OrderProps extends Document {
+export interface OrderProps extends Document<Types.ObjectId> {
   user_id?: string | Types.ObjectId;
   billing_address_id?: string | Types.ObjectId;
   shipping_address_id?: string | Types.ObjectId;
@@ -27,7 +27,7 @@ const orderSchema = new Schema<OrderProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export interface OrderChargesProps extends Document {
+export interface OrderChargesProps extends Document<Types.ObjectId> {
   order_id: string | Types.ObjectId;
   shipping_charges?: number;
   shipping_chargeable_value?: number;
@@ -48,7 +48,7 @@ const orderChargesSchema = new Schema<OrderChargesProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export interface OrderCouponProps extends Document {
+export interface OrderCouponProps extends Document<Types.ObjectId> {
   order_id: string | Types.ObjectId;
   coupon_id?: string | Types.ObjectId;
   admin_coupon_discount: number;
@@ -91,7 +91,7 @@ const orderCouponSchema = new Schema<OrderCouponProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export interface OrderSkuProps extends Document {
+export interface OrderSkuProps extends Document<Types.ObjectId> {
   order_id: string | Types.ObjectId;
   product_id: string | Types.ObjectId;
   sku_id: string | Types.ObjectId;

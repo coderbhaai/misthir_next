@@ -1,6 +1,6 @@
 import { Schema, model, models, Types, Document } from "mongoose";
 
-export interface CartProps extends Document {
+export interface CartProps extends Document<Types.ObjectId> {
   user_id?: string | Types.ObjectId;
   email?: string;
   whatsapp?: string;
@@ -31,7 +31,7 @@ const cartSchema = new Schema<CartProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export interface CartChargesProps extends Document {
+export interface CartChargesProps extends Document<Types.ObjectId> {
   cart_id: string | Types.ObjectId;
   shipping_charges?: number;
   shipping_chargeable_value?: number;
@@ -58,7 +58,7 @@ const cartChargesSchema = new Schema<CartChargesProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export interface CartCouponProps extends Document {
+export interface CartCouponProps extends Document<Types.ObjectId> {
   cart_id: string | Types.ObjectId;
   coupon_id?: string | Types.ObjectId;
   admin_coupon_discount?: number;
@@ -77,7 +77,7 @@ const cartCouponSchema = new Schema<CartCouponProps>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-export interface CartSkuProps extends Document {
+export interface CartSkuProps extends Document<Types.ObjectId> {
   cart_id: string | Types.ObjectId;
   product_id: string | Types.ObjectId;
   sku_id: string | Types.ObjectId;

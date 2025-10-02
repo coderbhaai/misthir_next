@@ -1,6 +1,6 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 
-interface PageDoc extends Document {
+interface PageDoc extends Document<Types.ObjectId> {
   module: string;
   name: string;
   url: string;

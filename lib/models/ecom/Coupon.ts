@@ -1,7 +1,7 @@
 // models/Coupon.ts
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export interface CouponProps extends Document {
+export interface CouponProps extends Document<Types.ObjectId> {
     coupon_by: string;
     coupon_type: string;
     vendor_id?: string | Types.ObjectId;

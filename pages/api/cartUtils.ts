@@ -61,7 +61,3 @@ export function deleteCookie(res: NextApiResponse, name: string): void {
 
   res.setHeader('Set-Cookie', cookieStr);
 }
-
-
-// setCookie(res, 'cartId', 'generated-cart-id');
-// deleteCookie(res, 'cartId');

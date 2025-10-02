@@ -1,6 +1,6 @@
 import { Schema, model, models, Document } from "mongoose";
 
-interface MetaDoc extends Document {
+interface MetaDoc extends Document<Types.ObjectId> {
   url: string;
   title: string;
   description: string;

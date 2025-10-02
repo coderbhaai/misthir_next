@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types, model } from 'mongoose';
 
-interface AddressDocument extends Document {
+interface AddressDocument extends Document<Types.ObjectId> {
   user_id?: Types.ObjectId;
   first_name: string;
   last_name?: string;

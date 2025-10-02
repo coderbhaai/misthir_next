@@ -2,7 +2,7 @@ import { IPermissionProps } from 'lib/models/spatie/SpatiePermission';
 import { IRoleProps } from 'lib/models/spatie/SpatieRole';
 import mongoose, { Schema, Types, Document } from 'mongoose';
 
-export interface IUserProps extends Document {
+export interface IUserProps extends Document<Types.ObjectId> {
   name?: string;
   email?: string;
   password?: string;

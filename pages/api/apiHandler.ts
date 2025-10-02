@@ -46,19 +46,6 @@ export type HandlerMap = {
   [key: string]: (req: NextApiRequest, res: NextApiResponse) => Promise<void>;
 };
 
-// // dynamic import at runtime to avoid circular reference
-// let allHandlers: Record<string, any> | null = null;
-
-// async function getAllHandlers() {
-//   if (!allHandlers) {
-//     const { reviewHandlers } = await import("./basic/review");
-//     // import { reviewHandlers } from "./basic/review";
-
-//     allHandlers = { ...reviewHandlers };
-//   }
-//   return allHandlers;
-// }
-
 export interface ExtendedRequest extends NextApiRequest { file?: File; files?: { [key: string]: File | File[] }; }
 
 export function createApiHandler(functions: FunctionsMap) {

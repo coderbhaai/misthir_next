@@ -1,10 +1,11 @@
 import { Box, Button, Grid, List, Typography } from "@mui/material";
 import { Login as LoginIcon, PersonAdd as PersonAddIcon, Logout as LogoutIcon, } from "@mui/icons-material";
-import RegisterModal from "../components/auth/RegisterModal";
+import MobileRegisterModal from "@amitkk/basic/components/auth/Mobile/MobileRegisterModal";
 import { useAuth } from "contexts/AuthContext";
 import { hitToastr } from "../utils/utils";
 import { useState, useEffect } from "react";
 import router from "next/router";
+import EmailRegisterModal from "../components/auth/Email/EmailRegisterModal";
 
 export default function LogOut() {
   const { logout, isLoggedIn } = useAuth();
@@ -14,16 +15,16 @@ export default function LogOut() {
     router.push("/")
   };
 
-  const [authModal, setAuthModal] = useState({ open: false, type: 'login' });
-    const handleAuthClick = (type: 'login' | 'signup') => {
-      setAuthModal({ open: true, type });
-    };
-  
-    useEffect(() => {
-      if (isLoggedIn) {
-        setAuthModal(prev => ({ ...prev, open: false }));
-      }
-    }, [isLoggedIn]); 
+  const [authModal, setAuthModal] = useState({ open: false, type: 'Login' });
+  const handleAuthClick = (type: 'Login' | 'Register') => {
+    setAuthModal({ open: true, type });
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      setAuthModal(prev => ({ ...prev, open: false }));
+    }
+  }, [isLoggedIn]); 
 
   return(
     <>
@@ -32,13 +33,15 @@ export default function LogOut() {
             <Button fullWidth variant="outlined" color="error" startIcon={<LogoutIcon />} onClick={handleLogout}>Log out</Button>
           ) : (
             <List>
-              <Button fullWidth startIcon={<LoginIcon />} onClick={() => handleAuthClick('login')} sx={{ justifyContent: 'flex-start' }}>Log In</Button>
-              <Button fullWidth startIcon={<PersonAddIcon />} onClick={() => handleAuthClick('signup')} sx={{ justifyContent: 'flex-start', mt: 1 }}>Sign Up</Button>
+              <Button fullWidth startIcon={<LoginIcon />} onClick={() => handleAuthClick('Login')} sx={{ justifyContent: 'flex-start' }}>Log In</Button>
+              <Button fullWidth startIcon={<PersonAddIcon />} onClick={() => handleAuthClick('Register')} sx={{ justifyContent: 'flex-start', mt: 1 }}>Sign Up</Button>
             </List>
           )}
       </Box>
 
-      <RegisterModal open={authModal.open} title={authModal.type === 'login' ? 'Login' : 'Sign Up'} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/>
+      <MobileRegisterModal open={authModal.open} title={authModal.type === 'Login' ? 'Login' : 'Sign Up'} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/>
+
+      <EmailRegisterModal module={authModal.type} open={authModal.open} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/>
     </>
   );
 }

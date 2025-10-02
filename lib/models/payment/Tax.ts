@@ -1,6 +1,6 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 
-interface TaxProps extends Document {
+interface TaxProps extends Document<Types.ObjectId> {
   name: string;
   rate: number;
   status: boolean;

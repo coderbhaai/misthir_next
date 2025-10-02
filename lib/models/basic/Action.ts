@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export interface ActionProps extends Document {
+export interface ActionProps extends Document<Types.ObjectId> {
   _id: Types.ObjectId;
   module: string;
   module_id: mongoose.Types.ObjectId;

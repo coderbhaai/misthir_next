@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
-export interface IClient extends Document {
+export interface IClient extends Document<Types.ObjectId> {
   name: string;
   email?: string;
   phone?: string;

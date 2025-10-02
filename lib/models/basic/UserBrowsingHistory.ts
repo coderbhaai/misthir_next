@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-export interface UserBrowsingHistoryProps extends Document {
+export interface UserBrowsingHistoryProps extends Document<Types.ObjectId> {
   module: "Blog" | "Destination" | "Page" | "Product";
   module_id: string | Types.ObjectId;
   user_id?: Types.ObjectId;

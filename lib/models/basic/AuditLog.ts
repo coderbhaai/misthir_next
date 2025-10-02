@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export interface IAuditLog extends Document {
+export interface IAuditLog extends Document<Types.ObjectId> {
   module: string;
   module_id: mongoose.Types.ObjectId;
   user_id?: mongoose.Types.ObjectId;

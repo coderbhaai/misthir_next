@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface ProductBrandDoc extends Document {
+interface ProductBrandDoc extends Document<Types.ObjectId> {
   name: string;
   url: string;
   content: string;

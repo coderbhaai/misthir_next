@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface BankDetailDoc extends Document {
+interface BankDetailDoc extends Document<Types.ObjectId> {
   user_id?: Types.ObjectId;
   account: string;
   ifsc: string;

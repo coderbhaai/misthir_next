@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 import { auditLoggerPlugin } from "pages/lib/auditLogger";
 
-export interface IFaqProps extends Document {
+export interface IFaqProps extends Document<Types.ObjectId> {
   module: string;
   module_id: string | Types.ObjectId;
   question: string;

@@ -12,7 +12,7 @@ export interface ICloudflare {
   uploaded?: Date;
 }
 
-export interface IMedia extends Document {
+export interface IMedia extends Document<Types.ObjectId> {
   _id: Types.ObjectId;
   user_id?: Types.ObjectId;
   alt?: string;

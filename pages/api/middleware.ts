@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextApiRequest, NextApiResponse } from "next";
 
 export interface MiddlewareConfig {
@@ -25,28 +24,12 @@ export interface HandlerConfig {
 
 export type APIHandlers = Record<string, HandlerConfig>;
 
-// export const middlewareRegistry: Record<string, MiddlewareFn> = {
-//   checkUserId: async (req, res) => !!req.body.user_id || "User ID missing",
-
-//   checkPostMethod: async (req, res) =>
-//     req.method === "POST" || "POST method required",
-
-//   checkRole: async (req, res, options?: { roles: string[] }) =>
-//     options?.roles?.includes(req.body.role) || "Role not allowed",
-
-//   checkPermissions: async (req, res, options?: { permissions: string[] }) => {
-//     const userPerms: string[] = req.body.permissions || [];
-//     return options?.permissions?.some((p) => userPerms.includes(p)) || "Permission denied";
-//   },
-// };
-
 interface UploadedFile {
   filepath: string;
   originalFilename?: string;
   mimetype?: string;
   size: number;
 }
-
 
 export function requireUserId(fn: MiddlewareFn): MiddlewareFn {
   return async (req, res, options) => {
@@ -89,41 +72,39 @@ export const middlewareRegistry: Record<string, MiddlewareFn> = {
   },
 
   validateFileType: async (req: NextApiRequest, res: NextApiResponse, options?: { allowedTypes?: string[] }) => {
-  const files = (req as any).files || {};
-  const allowed = options?.allowedTypes || [];
+    const files = (req as any).files || {};
+    const allowed = options?.allowedTypes || [];
 
-  for (const key of Object.keys(files)) {
-    const file = files[key] as UploadedFile | UploadedFile[];
-    const fileArray = Array.isArray(file) ? file : [file];
+    for (const key of Object.keys(files)) {
+      const file = files[key] as UploadedFile | UploadedFile[];
+      const fileArray = Array.isArray(file) ? file : [file];
 
-    for (const f of fileArray) {
-      if (!f.mimetype || !allowed.includes(f.mimetype)) {
-        return `Invalid file type: ${f.mimetype || "unknown"}`;
+      for (const f of fileArray) {
+        if (!f.mimetype || !allowed.includes(f.mimetype)) {
+          return `Invalid file type: ${f.mimetype || "unknown"}`;
+        }
       }
     }
-  }
-  return true;
-},
+    return true;
+  },
 
-// File size validation
-validateFileSize: async (req: NextApiRequest, res: NextApiResponse, options?: { maxSizeMB?: number }) => {
-  const files = (req as any).files || {};
-  const maxSize = (options?.maxSizeMB || 5) * 1024 * 1024;
+  validateFileSize: async (req: NextApiRequest, res: NextApiResponse, options?: { maxSizeMB?: number }) => {
+    const files = (req as any).files || {};
+    const maxSize = (options?.maxSizeMB || 5) * 1024 * 1024;
 
-  for (const key of Object.keys(files)) {
-    const file = files[key] as UploadedFile | UploadedFile[];
-    const fileArray = Array.isArray(file) ? file : [file];
+    for (const key of Object.keys(files)) {
+      const file = files[key] as UploadedFile | UploadedFile[];
+      const fileArray = Array.isArray(file) ? file : [file];
 
-    for (const f of fileArray) {
-      if (f.size > maxSize) {
-        return `File too large: ${f.originalFilename || "unknown"}`;
+      for (const f of fileArray) {
+        if (f.size > maxSize) {
+          return `File too large: ${f.originalFilename || "unknown"}`;
+        }
       }
     }
-  }
-  return true;
-},
+    return true;
+  },
 
-  // Optional audit/logging
   logActivity: async (req, res, options?: { action?: string }) => {
     console.log(`[Activity] User ${req.body.user_id} performed ${options?.action}`);
     return true;

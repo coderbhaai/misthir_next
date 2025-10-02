@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface IngridientDoc extends Document {
+interface IngridientDoc extends Document<Types.ObjectId> {
   name: string;
   media_id?: Types.ObjectId;
   status: boolean;

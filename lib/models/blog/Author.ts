@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
-export interface IAuthor extends Document {
+export interface IAuthor extends Document<Types.ObjectId> {
   name: string;
   status: boolean;
   displayOrder?: number;

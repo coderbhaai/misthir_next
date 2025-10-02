@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface DocumentationDoc extends Document {
+interface DocumentationDoc extends Document<Types.ObjectId> {
   user_id?: Types.ObjectId;
   name: string;
   media_id?: Types.ObjectId;

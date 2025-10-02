@@ -23,5 +23,12 @@ export interface MailProps{
 }
 
 export async function sendMail({ to, subject, html, cc, bcc }: MailProps) {
-  return transporter.sendMail({ from: `"My App" <no-reply@myapp.com>`, to, subject, html, cc, bcc });
+  return transporter.sendMail({ 
+    from: `"My App" <no-reply@myapp.com>`, 
+    to,
+    subject,
+    html,
+    cc: cc && cc.length > 0 ? cc : undefined,
+    bcc: bcc && bcc.length > 0 ? bcc : undefined
+  });
 }

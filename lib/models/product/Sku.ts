@@ -1,6 +1,6 @@
 import { Schema, Document, Types, model, models } from "mongoose";
 
-export interface SkuDocument extends Document {
+export interface SkuDocument extends Document<Types.ObjectId> {
   _id: Types.ObjectId;
   product_id?: Types.ObjectId;
   name: string;
@@ -47,7 +47,7 @@ skuSchema.virtual("details", { ref: "SkuDetail", localField: "_id", foreignField
 
 export const Sku = models.Sku || model<SkuDocument>("Sku", skuSchema);
 
-export interface SkuDetailDocument extends Document {
+export interface SkuDetailDocument extends Document<Types.ObjectId> {
   sku_id: Types.ObjectId;
   weight?: number;
   length?: number;

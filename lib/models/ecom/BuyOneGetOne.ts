@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export interface BuyOneGetOneProps extends Document {
+export interface BuyOneGetOneProps extends Document<Types.ObjectId> {
   coupon_id: Types.ObjectId;
   buy_id: Types.ObjectId;
   get_id: Types.ObjectId;

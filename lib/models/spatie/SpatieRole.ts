@@ -1,7 +1,7 @@
 // models/Role.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface IRoleProps extends Document {
+export interface IRoleProps extends Document<Types.ObjectId> {
   name: string;
   status: boolean;
   displayOrder?: number;

@@ -494,10 +494,8 @@ export async function check_permission(req: NextApiRequest, res: NextApiResponse
     
     if (url.includes('/user/')) {
       return res.status(200).json({ message: 'Auto-allowed because of /user/', data: true });
-    }    
+    }
     
-
-    console.log("check_permission", user_id, url)
     const submenu = await SpatieSubmenu.findOne({ url });
     if (!submenu) return res.status(404).json({ message: 'Checked Permissions - Menu MIssing', data: false });
 

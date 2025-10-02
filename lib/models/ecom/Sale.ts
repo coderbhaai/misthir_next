@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface SaleProps extends Document {
+export interface SaleProps extends Document<Types.ObjectId> {
   name: string;
   vendor_id: Types.ObjectId;
   valid_from: Date;

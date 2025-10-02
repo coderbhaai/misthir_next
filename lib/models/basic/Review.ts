@@ -1,6 +1,6 @@
 import mongoose, { Schema, model, models, Document, Types } from "mongoose";
 
-export interface ReviewProps extends Document {
+export interface ReviewProps extends Document<Types.ObjectId> {
   module: string;
   module_id: Types.ObjectId;
   user_id: Types.ObjectId;

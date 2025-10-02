@@ -15,6 +15,9 @@ import Product from "lib/models/product/Product";
 import CommentModel from 'lib/models/basic/Comment';
 import ExcelJS from "exceljs";
 import { nanoid } from "nanoid";
+import { IJwtPayload, IUser, JwtPayload } from "lib/models/types/User";
+import Otp, { IOtp } from "lib/models/spatie/Otp";
+import crypto from 'crypto';
 
 export const log = (...args: any[]) => {
   if (process.env.MODE !== 'production') {
@@ -71,11 +74,6 @@ export async function addUpdateMediaModel({ path, alt, media_id = null }: AddUpd
   } catch (err) { return null; }
 }
 
-interface JwtPayload {
-  user_id: string;
-  [key: string]: any; // for extra fields if needed
-}
-
 export function getUserIdFromToken(req: NextApiRequest): string | null {
   try {
     const authHeader = req.headers.authorization;
@@ -90,24 +88,19 @@ export function getUserIdFromToken(req: NextApiRequest): string | null {
   } catch (error) { log(error); return null; }
 }
 
-export interface User {
-  _id: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-}
+export function generateJWTToken(user: IUser, roles: { _id: string; name: string }[], permissions: { _id: string; name: string }[]): string {
+  if (!process.env.JWT_SECRET) { throw new Error("JWT_SECRET is not defined in environment variables"); }
 
-export function generateJWTToken(user: User): string {
-  if (!process.env.JWT_SECRET) { throw new Error('JWT_SECRET is not defined in environment variables'); }
+  const payload: IJwtPayload = {
+    _id: user._id.toString(),
+    name: user.name ?? "",
+    email: user.email ?? "",
+    phone: user.phone ?? "",
+    roles,
+    permissions,
+  };
 
-  return jwt.sign(
-    {
-      _id: user._id.toString(),
-      name: user.name ?? "",
-      email: user.email ?? "",
-      phone: user.phone ?? "",
-    }, process.env.JWT_SECRET, { expiresIn: '7d' }
-  );
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 }
 
 export const generateSitemap =async () => {
@@ -282,4 +275,36 @@ export async function exportToExcel( res: NextApiResponse, columns: ExcelColumn[
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) { log(err); res.status(500).json({ message: "Failed to export Excel" }); }
+}
+
+interface OtpPayload {
+  type: string;
+  email?: string;
+  phone?: string;
+  ttlMinutes?: number;
+  req: NextApiRequest;
+}
+
+export async function createOtp({ type, email, phone, ttlMinutes = 5, req }: OtpPayload): Promise<IOtp> {
+  const user_id = getUserIdFromToken(req);
+  const otp = crypto.randomInt(100000, 999999).toString();
+  const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+
+  const deleteConditions: Record<string, any> = {};
+  if (email) deleteConditions.email = email;
+  if (phone) deleteConditions.phone = phone;
+  if (user_id) deleteConditions.user_id = user_id;
+
+  await Otp.deleteMany(deleteConditions);
+
+  const entry = await Otp.create({
+    type,
+    email,
+    phone,
+    otp,
+    expiresAt,
+    ...(user_id && { user_id }),
+  });
+
+  return entry;
 }

@@ -1,7 +1,7 @@
   import mongoose, { Schema, Document, Types, model } from 'mongoose';
   import { ArrayProps, MediaProps, ModuleProps, SkuDetailProps, SkuFlavorColorProps, SkuProps } from '../types';
 
-  export interface ProductDocument extends Document {
+  export interface ProductDocument extends Document<Types.ObjectId> {
     name: string;
     url: string;
     vendor_id?: Types.ObjectId;

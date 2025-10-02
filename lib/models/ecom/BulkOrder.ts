@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export interface BulkOrderProps extends Document {
+export interface BulkOrderProps extends Document<Types.ObjectId> {
   user_id?: Types.ObjectId;
   product_id: Types.ObjectId;
   sku_id?: Types.ObjectId;

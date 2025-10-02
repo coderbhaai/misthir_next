@@ -1,6 +1,6 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 
-export interface SearchDoc extends Document {
+export interface SearchDoc extends Document<Types.ObjectId> {
   term: string;
   frequency: number;
   user_id?: Types.ObjectId | null;
@@ -17,7 +17,7 @@ const searchSchema = new Schema<SearchDoc>({
 
 export const Search = models.Search || model<SearchDoc>("Search", searchSchema);
 
-export interface SearchResultDoc extends Document {
+export interface SearchResultDoc extends Document<Types.ObjectId> {
   search_id: Types.ObjectId;
   module: "Blog" | "Destination" | "Product" | "Page";
   module_id: Types.ObjectId;

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IPermissionProps extends Document {
+export interface IPermissionProps extends Document<Types.ObjectId> {
   name: string;
   status: boolean;
   displayOrder?: number;

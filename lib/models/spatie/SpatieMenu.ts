@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface IMenuProps extends Document {
+export interface IMenuProps extends Document<Types.ObjectId> {
   name: string;
   status: boolean;
   displayOrder?: number;

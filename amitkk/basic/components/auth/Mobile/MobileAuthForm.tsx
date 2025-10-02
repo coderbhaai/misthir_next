@@ -1,7 +1,7 @@
 import React, {useState } from 'react';
 import {TextField, Button, Box, Typography} from '@mui/material';
 import { hitToastr, apiRequest, clo } from '@amitkk/basic/utils/utils';
-import { DataProps } from '@amitkk/basic/components/auth/RegisterModal';
+import { DataProps } from '@amitkk/basic/components/auth/Mobile/MobileRegisterModal';
 import { useAuth } from 'contexts/AuthContext';
 
 type AutProps = DataProps & {
@@ -26,7 +26,7 @@ export default function MobileAuthForm({ role="User", handleClose, attachUser= f
 
     try {
       const res = await apiRequest("post", `basic/auth`, { 
-        function: 'generate_otp',
+        function: 'generate_phone_otp',
         type:'phone',
         email:null,
         phone: phone
@@ -44,7 +44,7 @@ export default function MobileAuthForm({ role="User", handleClose, attachUser= f
 
     try {
       const res = await apiRequest("post", `basic/auth`, {
-        function:'register_or_login',
+        function:'register_or_login_via_mobile',
         name: name,
         role: role,
         phone: phone,
@@ -54,7 +54,7 @@ export default function MobileAuthForm({ role="User", handleClose, attachUser= f
 
       if( res?.data ){
         login(res?.data?.token, res?.data); 
-        // hitToastr('success', "Welcome Aboard");
+        hitToastr('success', "Welcome Aboard");
       }
     } catch (error) { clo( error ); }
   };

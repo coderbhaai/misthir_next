@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
-export interface IProps extends Document {
+export interface IProps extends Document<Types.ObjectId> {
   menu_id: Types.ObjectId;
   submenu_id: Types.ObjectId;
 }

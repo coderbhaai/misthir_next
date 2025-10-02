@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types } from "mongoose";
 
-export interface UserPermissionProps extends Document {
+export interface UserPermissionProps extends Document<Types.ObjectId> {
   user_id: Types.ObjectId;
   permission_id: Types.ObjectId;
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import MobileAuthForm from '@amitkk/basic/components/auth/MobileAuthForm';
+import MobileAuthForm from '@amitkk/basic/components/auth/Mobile/MobileAuthForm';
 
 export interface DataProps {
   role: string;
@@ -14,7 +14,7 @@ type DataFormProps = DataProps & {
   title: string;
 };
 
-export default function RegisterModal({ role="User", open, title, attachUser = false, saveUser= true, onUpdate }: DataFormProps) {
+export default function MobileRegisterModal({ role="User", open, title, attachUser = false, saveUser= true, onUpdate }: DataFormProps) {
   return (
     <CustomModal open={open} handleClose={onUpdate} title={title}>
       <MobileAuthForm role = { role } handleClose={onUpdate} attachUser saveUser onUpdate={onUpdate}/>

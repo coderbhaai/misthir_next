@@ -79,22 +79,23 @@ export const apiRequest = async (
       url: `/api/${url}`,
       data: finalData,
       headers,
-      validateStatus: (status) => status >= 200 && status < 300,
+      validateStatus: () => true,
     });
 
     console.log(url, res);
-    
-    if (!res || !res?.data) { throw new Error("Invalid res structure"); }
-    
+
     const isSuccess = res.status >= 200 && res.status < 300;
+    const message = res.data?.message || (isSuccess ? "Operation successful" : "Something went wrong");
+    if (con || !isSuccess) { hitToastr(isSuccess ? "success" : "error", message); }
     
-    if (con) {
-      hitToastr(isSuccess ? 'success' : 'error', res.data?.message || (isSuccess ? 'Operation successful' : 'Something went wrong'));
-    }
-    return res?.data;
+    if (!isSuccess) { return { error: true, status: res.status, message }; }
+
+    return res.data;
   } catch ( error ) { 
     // logErrorToFile(error);
-    return null;
+    console.error("API error:", error);
+    hitToastr("error", "Something went wrong. Please try again.");
+    return { error: true, message: "Request failed" };
   }
 };
 

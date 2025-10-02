@@ -15,6 +15,7 @@ import { SettingsProvider } from "@amitkk/basic/utils/context/SettingsContext";
 import theme from "@amitkk/basic/utils/theme";
 import MenuLink from "@amitkk/basic/static/MenuLink";
 import LogOut from "@amitkk/basic/static/LogOut";
+import { useMiddleware } from "../middleware";
 
 const drawerWidth = 0;
 const collapsedWidth = 70;
@@ -53,6 +54,8 @@ interface SidebarLayoutProps {
 }
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
+  useMiddleware([ "auth" ]);
+  
   const [open, setOpen] = useState(true);
   
   const handleSidebarToggle = () => {

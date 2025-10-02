@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document, model } from 'mongoose';
+import mongoose, { Schema, Document, model, Types } from 'mongoose';
 
-interface CountryDocument extends Document {
+interface CountryDocument extends Document<Types.ObjectId> {
   name: string;
   capital?: string;
   code?: string;

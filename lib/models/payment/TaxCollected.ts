@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, models, Types } from "mongoose";
 
-export interface ITaxCollected extends Document {
+export interface ITaxCollected extends Document<Types.ObjectId> {
   module: string;
   module_id: Types.ObjectId;
   cgst?: number;

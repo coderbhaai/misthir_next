@@ -1,7 +1,6 @@
 Middleware
-    Front   
-    API
-Auth
+    Front
+    
 Comission Payout
 Pagination
 SEO

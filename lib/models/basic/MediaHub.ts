@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-export interface MediaHubProps extends Document {
+export interface MediaHubProps extends Document<Types.ObjectId> {
   module: string;
   module_id: string | Types.ObjectId;
   media_id: Types.ObjectId;

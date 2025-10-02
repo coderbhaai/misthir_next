@@ -8,7 +8,7 @@ interface BlogmetaReference {
   };
 }
 
-export interface BlogDocument extends Document {
+export interface BlogDocument extends Document<Types.ObjectId> {
   name: string;
   url: string;
   status: boolean;

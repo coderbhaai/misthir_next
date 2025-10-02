@@ -1,6 +1,6 @@
 import { Schema, model, models, Document } from "mongoose";
 
-interface SiteSettingDoc extends Document {
+interface SiteSettingDoc extends Document<Types.ObjectId> {
   module: string;
   module_value: string;
   status: boolean;

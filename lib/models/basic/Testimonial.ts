@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-export interface ITestimonialProps extends Document {
+export interface ITestimonialProps extends Document<Types.ObjectId> {
   module: "Blog" | "Destination" | "Page" | "Product";
   module_id: string | Types.ObjectId;
   media_id?: Types.ObjectId;

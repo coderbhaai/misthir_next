@@ -1,6 +1,6 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 
-interface RazorpayProps extends Document {
+interface RazorpayProps extends Document<Types.ObjectId> {
   module: string;
   module_id: string | Types.ObjectId;
   source: string;

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types, Document, model } from "mongoose";
 
-interface ProductFeatureDoc extends Document {
+interface ProductFeatureDoc extends Document<Types.ObjectId> {
   module: string;
   module_value: string;
   name: string;

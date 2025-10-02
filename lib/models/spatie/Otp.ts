@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 
 export type OtpType = 'email' | 'phone' | 'both';
 
-export interface IOtp extends Document {
+export interface IOtp extends Document<Types.ObjectId> {
   type: OtpType;
   email?: string;
   phone?: string;
