@@ -6,10 +6,17 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import Image from 'next/image';
 import Link from 'next/link';
 import { SingleBlogProps } from '@amitkk/blog/types/blog';
+import { MediaProps } from '@amitkk/basic/types/page';
 
-export function SingleBlogItem({ row }: { row: Partial<SingleBlogProps> }) {
-    const imagePath = (row.media_id as any)?.path || "/default.jpg";
-    const imageAlt = (row.media_id as any)?.alt || "Inspiration Image";
+export function SingleBlogItem({ row }: { row: Partial<SingleBlogProps & { media_id?: string | MediaProps }> }) {
+  const imagePath = typeof row.media_id === "string"
+    ? "/default.jpg"
+    : (row.media_id as any)?.path || "/default.jpg";
+    
+  const imageAlt = typeof row.media_id === "string"
+    ? row.name || "Inspiration Image"
+    : (row.media_id as any)?.alt || "Inspiration Image";
+
   return (
     <Grid size={4}>
         <Card sx={{ mb: 2, boxShadow: 3, position: "relative", width: '100%', height: '300px', overflow: "hidden" }}>

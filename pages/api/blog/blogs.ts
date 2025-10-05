@@ -178,6 +178,26 @@ export async function get_single_blog_sidebar(req: NextApiRequest, res: NextApiR
   } catch (error) { return log(error); }
 }
 
+export async function get_blogs_by_meta(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { meta_type, meta_url, skip, limit } = req.body;
+    if (!meta_type || !meta_url) { return res.status(400).json({ message: "Missing meta_type or meta_url" }); }
+
+    const blogmeta = await Blogmeta.findOne({ type: meta_type, url: meta_url, status: true });
+    if (!blogmeta) { return res.status(200).json({ message: "No meta found", data: [] }); }
+
+    const attached = await BlogBlogmeta.find({ blogmeta_id: blogmeta._id }).select("blog_id");
+    if (!attached.length) { return res.status(200).json({ message: "No blogs found", data: [] }); }
+
+    const blogIds = attached.map((b) => b.blog_id);
+
+    const data = await Blog.find({ _id: { $in: blogIds }, status: true }).populate([ { path: "media_id" }, { path: "metas", populate: { path: "blogmeta_id", model: "Blogmeta", select: "_id type name url" } }, ]).sort({ createdAt: -1 });
+    
+    return res.status(200).json({ message: `Fetched blogs for ${meta_type}: ${meta_url}`, data, blogmeta });
+  } catch (error) { log(error); return res.status(500).json({ message: "Server error", error: (error as Error).message });
+  }
+}
+
 export const functions: APIHandlers = {
   get_blogs : { middlewares: [] },
   get_all_blogs : { middlewares: [] },
@@ -187,6 +207,7 @@ export const functions: APIHandlers = {
   get_blogs_module : { middlewares: [] },
   get_single_blog_module : { middlewares: [] },
   get_single_blog_sidebar : { middlewares: [] },
+  get_blogs_by_meta : { middlewares: [] },
 }
 
 export const blogHandlers = {
@@ -198,6 +219,7 @@ export const blogHandlers = {
   get_blogs_module,
   get_single_blog_module,
   get_single_blog_sidebar,
+  get_blogs_by_meta
 };
 
 export const config = { api: { bodyParser: false } };

@@ -67,7 +67,6 @@ export default function Shop() {
 
   return (
     <Container sx={{ py: 6 }}>
-      {/* {isFetching && <div style={{ position: "absolute" }}>Refreshing...</div>} */}
       <Grid container spacing={2}>
         <SidebarShop {...sidebarData} selected={selectedFilters} onChange={handleFilterChange}/>
         <Grid container size={9}>

@@ -72,7 +72,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
             <div>
               Category:{" "}
               {row.metas.filter(m => m.blogmeta_id.type === 'category')?.map((m) => (
-                  <Link key={m.blogmeta_id._id} href={m.blogmeta_id.url} style={{ marginRight: '8px' }}>{m.blogmeta_id.name}</Link>
+                  <Link key={m.blogmeta_id._id} href={`/blogs/category/${m.blogmeta_id.url}`} style={{ marginRight: '8px' }}>{m.blogmeta_id.name}</Link>
                 ))}
             </div>
           )}
@@ -80,7 +80,7 @@ export function AdminDataTable({showCheckBox, row, selected, onSelectRow}: UserT
             <div>
               Tags:{" "}
               {row.metas.filter(m => m.blogmeta_id.type === 'tag')?.map((m) => (
-                  <Link key={m.blogmeta_id._id} href={m.blogmeta_id.url} style={{ marginRight: '8px' }}>{m.blogmeta_id.name}</Link>
+                  <Link key={m.blogmeta_id._id} href={`/blogs/tag/${m.blogmeta_id.url}`} style={{ marginRight: '8px' }}>{m.blogmeta_id.name}</Link>
               ))}
             </div>
           )}

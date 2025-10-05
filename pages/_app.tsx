@@ -26,8 +26,6 @@ export default function App({ Component, pageProps, emotionCache = clientSideEmo
 
   const delayedRender = (Component as any).delayLayoutRender ?? false;
 
-  console.log("delayedRender", delayedRender)
-
   return (
     <Providers>
       {adminLayout ? (

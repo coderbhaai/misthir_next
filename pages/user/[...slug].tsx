@@ -1,7 +1,7 @@
 // pages > admin > [...slug].tsx
 
 "use client";
-import { checkPermission, clo } from "@amitkk/basic/utils/utils";
+import { checkPermission, clo, get404Url } from "@amitkk/basic/utils/utils";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { userComponentMap } from "../../amitkk/componentMaps";
@@ -20,7 +20,7 @@ const DynamicUserPage = () => {
         const redirectUrl = process.env.MODE === "dev" ? process.env.DEV_URL : process.env.PROD_URL;
         const token = getCookie("authToken");
         if (!token) {
-          window.location.href = `${redirectUrl?.replace(/\/$/, "") ?? "http://localhost:3000"}/404`;
+          window.location.href = get404Url();
           return;
         }
 

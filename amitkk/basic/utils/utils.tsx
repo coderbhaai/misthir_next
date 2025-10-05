@@ -82,7 +82,7 @@ export const apiRequest = async (
       validateStatus: () => true,
     });
 
-    console.log(url, res);
+    console.log(url, res?.data);
 
     const isSuccess = res.status >= 200 && res.status < 300;
     const message = res.data?.message || (isSuccess ? "Operation successful" : "Something went wrong");
@@ -315,6 +315,14 @@ export async function downloadExcel({ url, payload, filename }: { url: string; p
     a.remove();
     window.URL.revokeObjectURL(downloadUrl);
   } catch (err) { clo( err ); }
+}
+
+export function get404Url(): string {
+  const mode = process.env.MODE;
+  const baseUrl = mode === "dev" ? process.env.DEV_URL : process.env.PROD_URL;
+
+  const safeBase = (baseUrl || "http://localhost:3000").replace(/\/$/, "");
+  return `${safeBase}/404`;
 }
 
 export default function test(){ <></>}

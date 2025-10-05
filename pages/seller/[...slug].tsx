@@ -4,7 +4,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { sellerComponentMap } from "../../amitkk/componentMaps";
-import { checkPermission, clo } from "@amitkk/basic/utils/utils";
+import { checkPermission, clo, get404Url } from "@amitkk/basic/utils/utils";
 import Loader from "@amitkk/basic/static/Loader";
 import { getCookie } from "hooks/CookieHook";
 
@@ -23,7 +23,7 @@ const DynamicSellerPage: React.FC & { delayLayoutRender?: boolean } = () => {
         const redirectUrl = process.env.MODE === "dev" ? process.env.DEV_URL : process.env.PROD_URL;
         const token = getCookie("authToken");
         if (!token) {
-          window.location.href = `${redirectUrl?.replace(/\/$/, "") ?? "http://localhost:3000"}/404`;
+         window.location.href = get404Url();
           return;
         }
 
@@ -33,7 +33,7 @@ const DynamicSellerPage: React.FC & { delayLayoutRender?: boolean } = () => {
         const fullPath = `/seller/${slugParts.join("/")}`;
         const allowed = await checkPermission(fullPath);
         if (!allowed) {
-          window.location.href = `${redirectUrl?.replace(/\/$/, "") ?? "http://localhost:3000"}/404`;
+         window.location.href = get404Url();
           return;
         }
         
