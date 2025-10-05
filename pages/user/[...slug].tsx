@@ -5,28 +5,27 @@ import { checkPermission, clo } from "@amitkk/basic/utils/utils";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { userComponentMap } from "../../amitkk/componentMaps";
+import { getCookie } from "hooks/CookieHook";
 
 const DynamicUserPage = () => {
   const router = useRouter();
   const { slug } = router.query;
   const [Component, setComponent] = useState<React.FC<any> | null>(null);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!router.isReady || !slug) return;
 
     const loadComponent = async () => {
       try {
-        const slugParts = Array.isArray(slug) ? slug : [slug];
-        const baseSlug = slugParts[0];
-
-        const fullPath = `/user/${slugParts.join("/")}`;
-        const allowed = await checkPermission(fullPath);
-        if (!allowed) {
-          setHasAccess(false);
+        const redirectUrl = process.env.MODE === "dev" ? process.env.DEV_URL : process.env.PROD_URL;
+        const token = getCookie("authToken");
+        if (!token) {
+          window.location.href = `${redirectUrl?.replace(/\/$/, "") ?? "http://localhost:3000"}/404`;
           return;
         }
-        setHasAccess(true);
+
+        const slugParts = Array.isArray(slug) ? slug : [slug];
+        const baseSlug = slugParts[0];
 
         if (baseSlug && userComponentMap[baseSlug]) {
           const PageComponent = await userComponentMap[baseSlug]();
@@ -44,12 +43,14 @@ const DynamicUserPage = () => {
 
     loadComponent();
   }, [slug, router.isReady]);
-
-  if (hasAccess === false) return <h1>You are Not Permitted</h1>;
+  
   if (!Component) return <h1>Loading...</h1>;
+
   return (
     <Component module={Array.isArray(slug) && slug[1] ? slug[1] : ""} module_id={Array.isArray(slug) && slug[2] ? slug[2] : ""}/>
   );
 };
+
+DynamicUserPage.delayLayoutRender = true;
 
 export default DynamicUserPage;

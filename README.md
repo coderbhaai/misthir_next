@@ -1,11 +1,13 @@
 Middleware
     Front
-    
+
 Comission Payout
 Pagination
 SEO
 Filters
-Chat
 MUI sx
+
+
+Chat
 Whatsapp Integration
 Yoast

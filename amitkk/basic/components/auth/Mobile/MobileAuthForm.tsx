@@ -53,7 +53,7 @@ export default function MobileAuthForm({ role="User", handleClose, attachUser= f
       });
 
       if( res?.data ){
-        login(res?.data?.token, res?.data); 
+        login(res?.data); 
         hitToastr('success', "Welcome Aboard");
       }
     } catch (error) { clo( error ); }

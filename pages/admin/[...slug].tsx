@@ -1,33 +1,45 @@
-// pages > admin > [...slug].tsx
-
 "use client";
-import { checkPermission, clo } from "@amitkk/basic/utils/utils";
+
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { adminComponentMap } from "../../amitkk/componentMaps";
+import { getCookie } from "hooks/CookieHook";
+import { checkPermission, clo } from "@amitkk/basic/utils/utils";
+import AdminLayout from "@amitkk/basic/utils/layouts/AdminLayout";
+import Loader from "@amitkk/basic/static/Loader";
 
-const DynamicAdminPage = () => {
+interface DynamicAdminPageType extends React.FC {
+  delayLayoutRender?: boolean;
+}
+
+const DynamicAdminPage: DynamicAdminPageType = () => {
   const router = useRouter();
   const { slug } = router.query;
-  const [Component, setComponent] = useState<React.FC<any> | null>(null);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
+  const [Component, setComponent] = useState<React.FC<any> | null>(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (!router.isReady || !slug) return;
 
-    const loadComponent = async () => {
+    const loadPage = async () => {
       try {
-        const slugParts = Array.isArray(slug) ? slug : [slug];
-        const baseSlug = slugParts[0];
-        
-        const fullPath = `/admin/${slugParts.join("/")}`;
-        const allowed = await checkPermission(fullPath);
-        if (!allowed) {
-          setHasAccess(false);
+        const redirectUrl = process.env.MODE === "dev" ? process.env.DEV_URL : process.env.PROD_URL;
+        const token = getCookie("authToken");
+        if (!token) {
+          window.location.href = `${redirectUrl?.replace(/\/$/, "") ?? "http://localhost:3000"}/404`;
           return;
         }
-        setHasAccess(true);
 
+        const slugParts = Array.isArray(slug) ? slug : [slug];
+        const baseSlug = slugParts[0];
+        const fullPath = `/admin/${slugParts.join("/")}`;
+        
+        const allowed = await checkPermission(fullPath);
+        if (!allowed) {
+          window.location.href = `${redirectUrl?.replace(/\/$/, "") ?? "http://localhost:3000"}/404`;
+          return;
+        }
+        
         if (baseSlug && adminComponentMap[baseSlug]) {
           const PageComponent = await adminComponentMap[baseSlug]();
           setComponent(() => PageComponent.default);
@@ -35,22 +47,29 @@ const DynamicAdminPage = () => {
           throw new Error(`Unknown base slug: ${baseSlug}`);
         }
       } catch (error) {
-        const NotFoundComponent = () => <h1>Page Not Found</h1>;
-        NotFoundComponent.displayName = "NotFoundPage";
-        setComponent(() => NotFoundComponent);
         clo(error);
+        const NotFoundComponent = () => <h1>Page Not Found</h1>;
+        setComponent(() => NotFoundComponent);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadComponent();
-  }, [slug, router.isReady]);
+    loadPage();
+  }, [router.isReady, slug]);
+  
+  if (loading || !Component) {
+    return <Loader message="Loading admin page..." />;
+  }
 
-  if (hasAccess === false) return <h1>You are Not Permitted</h1>;
-
-  if (!Component) return <h1>Loading...</h1>;
   return (
-    <Component module={Array.isArray(slug) && slug[1] ? slug[1] : ""} module_id={Array.isArray(slug) && slug[2] ? slug[2] : ""}/>
+      <Component
+        module={Array.isArray(slug) && slug[1] ? slug[1] : ""}
+        module_id={Array.isArray(slug) && slug[2] ? slug[2] : ""}
+      />
   );
 };
+
+DynamicAdminPage.delayLayoutRender = true;
 
 export default DynamicAdminPage;

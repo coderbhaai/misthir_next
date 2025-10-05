@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { IUserProps } from "../spatie/User";
 
 export interface JwtPayload {
   user_id: string;
@@ -12,9 +13,13 @@ export interface IUser {
   phone?: string;
 }
 
-export interface IUserWithRelations extends IUser {
-  role_id?: { _id: Types.ObjectId; name: string } | { _id: Types.ObjectId; name: string }[];
-  permission_id?: { _id: Types.ObjectId; name: string } | { _id: Types.ObjectId; name: string }[];
+export interface IUserWithRelations extends IUserProps {
+  rolesAttached?: {
+    role_id: { _id: Types.ObjectId; name: string };
+  }[];
+  permissionsAttached?: {
+    permission_id: { _id: Types.ObjectId; name: string };
+  }[];
 }
 
 export interface IJwtPayload {
@@ -22,16 +27,6 @@ export interface IJwtPayload {
   name: string;
   email?: string;
   phone?: string;
-  roles: { _id: string; name: string }[];
-  permissions: { _id: string; name: string }[];
-}
-
-export interface IUserRegisteredData {
-  _id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  token: string;
   roles: { _id: string; name: string }[];
   permissions: { _id: string; name: string }[];
 }

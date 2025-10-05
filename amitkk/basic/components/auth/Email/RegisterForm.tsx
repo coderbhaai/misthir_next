@@ -77,7 +77,7 @@ export default function RegisterForm({ role="User", handleClose, attachUser= fal
       const res = await apiRequest("post", `basic/auth`, formData);      
       
       if( res?.data ){
-        login(res?.data?.token, res?.data);
+        login( res?.data );
         handleClose();
         hitToastr('success', res.message);
       }

@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, ReactNode, useEffect } from "react";
-import { AppBar, Toolbar, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse, IconButton, Box, Typography, ThemeProvider,
-  Grid } from "@mui/material";
-import { Home, Settings, ExpandLess, ExpandMore, Menu, Search } from "@mui/icons-material";
+import { AppBar, Toolbar, Drawer, IconButton, Box, ThemeProvider, Grid } from "@mui/material";
+import { Menu, Search } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import CssBaseline from '@mui/material/CssBaseline';
 import { Toaster } from "react-hot-toast";
 import Link from 'next/link';
-import Footer from "@amitkk/basic/static/Footer";
 import TopBar from "@amitkk/basic/static/TopBar";
-import { getLayoutLinks } from "@amitkk/basic/utils/utils";
 import { SettingsProvider } from "@amitkk/basic/utils/context/SettingsContext";
 import theme from "@amitkk/basic/utils/theme";
 import MenuLink from "@amitkk/basic/static/MenuLink";
@@ -53,19 +50,20 @@ interface SidebarLayoutProps {
   children: ReactNode;
 }
 
-export default function SidebarLayout({ children }: SidebarLayoutProps) {
-  useMiddleware([ "auth" ]);
-  
+export default function SidebarLayout({ children }: SidebarLayoutProps) {  
   const [open, setOpen] = useState(true);
   
   const handleSidebarToggle = () => {
     setOpen((prevOpen) => !prevOpen);
   };
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <SettingsProvider>
-        <Toaster position='top-center' />
+        {mounted && <Toaster position="top-center" />}
         <Box sx={{ display: 'flex' }}>
           <CssBaseline />
           <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: "white", boxShadow: "none", height: '95px'}}>

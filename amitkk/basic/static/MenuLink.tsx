@@ -2,8 +2,13 @@ import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { Collapse, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import { useState, useEffect } from "react";
 import { getLayoutLinks } from "../utils/utils";
+import { useAuth } from "contexts/AuthContext";
 
 export default function MenuLink() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const { onLogin, onLogout } = useAuth();
   const [open, setOpen] = useState(true);
   const [submenuOpen, setSubmenuOpen] = useState<{ [key: string]: boolean }>({});
   const [menu, setMenu] = useState<any[]>([]);
@@ -15,12 +20,30 @@ export default function MenuLink() {
       setMenu(data.adminLinks);
       setUserLinks(data.userSubmenus);
     }
+
     fetchMenu();
+
+    const unsubscribeLogin = onLogin(() => {
+      fetchMenu();
+    });
+    
+    const unsubscribeLogout = onLogout(() => {
+      setMenu([]);
+      setUserLinks([]);
+      setSubmenuOpen({});
+    });
+    
+    return () => {
+      unsubscribeLogin();
+      unsubscribeLogout();
+    };
   }, []);
 
   const handleSubmenuToggle = (name: string) => {
     setSubmenuOpen((prev) => ({ ...prev, [name]: !prev[name] }));
   };
+
+  if (!mounted) return null;
   
   return(
     <List>

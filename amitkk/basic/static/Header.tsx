@@ -13,20 +13,16 @@ import SearchBar from '@amitkk/basic/static/SearchBar';
 import ContactModal from '@amitkk/basic/components/contact/ContactModal';
 import { useEcom } from 'contexts/EcomContext';
 import { ShoppingCart } from '@mui/icons-material';
+import { Home as HomeIcon, Map as MapIcon, Diamond as DiamondIcon, Support as SupportIcon, Work as WorkIcon } from "@mui/icons-material";
 
-interface CurrentUser {
-  fullName: string;
-  email: string;
-  role: string;
-}
+
 
 const navItems = [
-  { label: 'Home', to: '/' },
-  { label: 'Blogs', to: '/blogs' },
-  { label: 'Shop', to: '/shop' },
-  { label: 'Contact Us', to: '/contact' },
+  { label: 'Home', to: '/', Icon: HomeIcon },
+  { label: 'Blogs', to: '/blogs', Icon: SupportIcon },
+  { label: 'Shop', to: '/shop', Icon: DiamondIcon },
+  { label: 'Contact Us', to: '/contact', Icon: MapIcon },
 ];
-
 
 export default function Header() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -63,32 +59,11 @@ export default function Header() {
     setActivePath(pathname);
   }, [pathname]);
 
-  const loadUser = useCallback(() => {
-    if ( getCookie("authToken") ) {
-      setLoggedIn(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadUser();
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === "currentUser") loadUser();
-    };
-    const handleAuthChange = () => loadUser();
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('authChange', handleAuthChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('authChange', handleAuthChange);
-    };
-  }, [pathname, loadUser]);
-
-  const commonNavLinks = navItems;
-    const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   return (
     <div className="relative border-b border-gray-200 text-[#1a1a1a] bg-white">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} navItems={commonNavLinks} loggedIn={loggedIn}/>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} navItems={navItems} loggedIn={loggedIn}/>
       <ContactModal isOpen={contactOpen} onClose={() => setContactOpen(false)}/>
 
       {sidebarOpen && (

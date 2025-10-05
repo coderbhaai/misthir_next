@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface UserRoleProps extends Document<Types.ObjectId> {
   user_id: Types.ObjectId;

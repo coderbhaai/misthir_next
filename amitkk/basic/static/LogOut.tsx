@@ -8,6 +8,9 @@ import router from "next/router";
 import EmailRegisterModal from "../components/auth/Email/EmailRegisterModal";
 
 export default function LogOut() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  
   const { logout, isLoggedIn } = useAuth();
   const handleLogout = () => {
     logout();
@@ -26,6 +29,8 @@ export default function LogOut() {
     }
   }, [isLoggedIn]); 
 
+  if (!mounted) return null;
+
   return(
     <>
       <Box sx={{ borderTop: "1px solid #e0e0e0", pt: 2 }}>
@@ -41,7 +46,7 @@ export default function LogOut() {
 
       <MobileRegisterModal open={authModal.open} title={authModal.type === 'Login' ? 'Login' : 'Sign Up'} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/>
 
-      <EmailRegisterModal module={authModal.type} open={authModal.open} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/>
+      {/* <EmailRegisterModal module={authModal.type} open={authModal.open} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/> */}
     </>
   );
 }

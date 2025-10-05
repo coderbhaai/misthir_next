@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
@@ -92,5 +94,4 @@ export function AdminUsers() {
   );
 }
 
-export default AdminUsers;
-// export default withAuth(AdminUsers);
+export default withAuth(AdminUsers);

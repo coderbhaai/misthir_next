@@ -111,32 +111,16 @@ export const hitToastr = ( type: string, message: string) => {
 
 export function withAuth(Component: any) {
   return function AuthenticatedComponent(props: any) {
-    const router = useRouter();
     const token = getCookie("authToken");
 
     useEffect(() => {
       if (!token) {
-        router.replace("/404");
+        const redirectUrl = process.env.MODE === "dev" ? process.env.DEV_URL : process.env.PROD_URL;
+        window.location.href = `${redirectUrl}/404`;
       }
     }, [token]);
 
     return token ? <Component {...props} /> : null;
-  };
-}
-
-export function withoutAuth(Component: any) {
-  return function AuthenticatedComponent(props: any) {
-    const router = useRouter();
-    const token = getAuthToken();
-
-    useEffect(() => {
-      if (token) {
-        router.replace("/");
-      }
-    }, [token, router]);
-    if (token) return null;
-
-    return <Component {...props} />;
   };
 }
 

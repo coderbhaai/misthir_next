@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Divider, Box } from "@mui/material";
-import { Home as HomeIcon, Hotel as HotelIcon, Flight as FlightIcon, Apartment as ApartmentIcon, Map as MapIcon, Diamond as DiamondIcon, Support as SupportIcon, Work as WorkIcon } from "@mui/icons-material";
 import MenuLink from "./MenuLink";
 import LogOut from "./LogOut";
+import { Work as WorkIcon } from "@mui/icons-material";
 
 interface NavItem {
   label: string;
   to: string;
-  icon?: React.ElementType;
+  Icon?: React.ElementType;
 }
 
 interface SidebarProps {
@@ -17,16 +17,6 @@ interface SidebarProps {
   loggedIn: boolean;
   navItems: NavItem[];
 }
-
-const iconMap: { [key: string]: React.ElementType } = {
-  Home: HomeIcon,
-  Hotels: HotelIcon,
-  Flights: FlightIcon,
-  Airbnb: ApartmentIcon,
-  "Tours & Cruises": MapIcon,
-  "Ultra Lux": DiamondIcon,
-  Inspiration: SupportIcon,
-};
 
 export function Sidebar({ isOpen, onClose, navItems, loggedIn }: SidebarProps) {
   const NavLink = ({ href, label, Icon, }: { href: string; label: string; Icon?: React.ElementType; }) => (
@@ -48,7 +38,12 @@ export function Sidebar({ isOpen, onClose, navItems, loggedIn }: SidebarProps) {
         </Box>
         
         <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-          <List>{navItems?.map((item) => ( <NavLink key={item.to} href={item.to} label={item.label} Icon={iconMap[item.label] || WorkIcon}/> ))}</List>
+          <List>
+            {navItems?.map((item) => {
+              const Icon = item.Icon;
+              return ( <NavLink key={item.to} href={item.to} label={item.label} Icon={Icon || WorkIcon}/>);
+            })}
+          </List>
           
           {loggedIn && (
             <>

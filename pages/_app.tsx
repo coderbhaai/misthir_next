@@ -24,12 +24,20 @@ export default function App({ Component, pageProps, emotionCache = clientSideEmo
     router.pathname.startsWith(prefix)
   );
 
+  const delayedRender = (Component as any).delayLayoutRender ?? false;
+
+  console.log("delayedRender", delayedRender)
+
   return (
     <Providers>
       {adminLayout ? (
-        <AdminLayout>
+        delayedRender ? (
+          <AdminLayout>
+            <Component {...pageProps} />
+          </AdminLayout>
+        ) : (
           <Component {...pageProps} />
-        </AdminLayout>
+        )
       ) : (
         <AppLayout meta={pageProps.meta}>
           <Component {...pageProps} />

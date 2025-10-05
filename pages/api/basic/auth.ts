@@ -13,7 +13,7 @@ import { createApiHandler } from "../apiHandler";
 import { APIHandlers } from "../middleware";
 import { UserOtpMail } from "@amitkk/basic/mails/UserOtpMail";
 import { Types } from "mongoose";
-import { IUserRegisteredData, IUserWithRelations } from "lib/models/types/User";
+import { IUserWithRelations } from "lib/models/types/User";
 import ResetPassword from "lib/models/spatie/ResetPassword";
 
 export async function login_via_email(req: NextApiRequest, res: NextApiResponse) {
@@ -29,7 +29,7 @@ export async function login_via_email(req: NextApiRequest, res: NextApiResponse)
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) { return res.status(401).json({ message: "Invalid credentials", data: null }); }
 
-    const data = generateAuthLoad(user._id);
+    const data = await generateAuthLoad(user._id);
 
     return res.status(200).json({ message: 'Welcome Aboard', data });
   } catch (error) { log(error); }
@@ -81,7 +81,7 @@ export async function register_or_login_via_mobile(req: NextApiRequest, res: Nex
     const existingUser = await User.findOne(existingUserQuery);
 
     if (existingUser) {
-      const user_data = generateAuthLoad(existingUser._id);
+      const user_data = await generateAuthLoad(existingUser._id);
       return res.status(200).json({ message: 'Welcome Aboard', data:user_data });
     }    
 
@@ -133,11 +133,11 @@ export async function register_via_email(req: NextApiRequest, res: NextApiRespon
     });
 
     await attachRoleAndPermissions(newUser._id, role);
-    const user_registered_data = generateAuthLoad(newUser._id);
+    const user_data = await generateAuthLoad(newUser._id);
 
     await Otp.deleteOne({ _id: otpEntry._id });
 
-    return res.status(201).json({ message: 'Registration successfully', data: user_registered_data });
+    return res.status(201).json({ message: 'Registration successfully', data: user_data });
   } catch (error) { log(error); }  
 }
 
@@ -171,33 +171,38 @@ export async function get_single_otp(req: NextApiRequest, res: NextApiResponse) 
   } catch (error) { log(error); }  
 }
 
-export async function generateAuthLoad( user_id: Types.ObjectId ): Promise<IUserRegisteredData | null> {
-  const user = await User.findById(user_id).populate("role_id", "_id name").populate("permission_id", "_id name").lean<IUserWithRelations>().exec();
+export async function generateAuthLoad(user_id: Types.ObjectId): Promise<string | null> {
+  const user = await User.findById(user_id)
+  .populate({
+    path: "rolesAttached",
+    populate: { path: "role_id", model: "SpatieRole", select: "_id name" }
+  })
+  .populate({
+    path: "permissionsAttached",
+    populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" }
+  })
+  .lean<IUserWithRelations>().exec();
+
   if (!user) return null;
+  
+  const roles =
+    user.rolesAttached?.map(r => ({
+      _id: r.role_id._id.toString(),
+      name: r.role_id.name,
+    })) || [];
 
-  const roles = Array.isArray(user.role_id)
-    ? user.role_id.map(r => ({ _id: r._id.toString(), name: r.name }))
-    : user.role_id
-    ? [{ _id: user.role_id._id.toString(), name: user.role_id.name }]
-    : [];
-
-  const permissions = Array.isArray(user.permission_id)
-    ? user.permission_id.map(p => ({ _id: p._id.toString(), name: p.name }))
-    : user.permission_id
-    ? [{ _id: user.permission_id._id.toString(), name: user.permission_id.name }]
-    : [];
+  const permissions =
+    user.permissionsAttached?.map(p => ({
+      _id: p.permission_id._id.toString(),
+      name: p.permission_id.name,
+    })) || [];
 
   const token = generateJWTToken(user, roles, permissions);
 
-  return {
-    _id: user._id.toString(),
-    name: user.name ?? "",
-    email: user.email,
-    phone: user.phone,
-    token,
-    roles,
-    permissions,
-  };
+
+  console.log("Token", token, user, roles, permissions )
+
+  return token;
 }
 
 export async function attachRoleAndPermissions( user_id: Types.ObjectId, role?: string): Promise<void>{

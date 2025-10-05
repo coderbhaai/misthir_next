@@ -2,22 +2,36 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import Cookies from "js-cookie";
 import { jwtDecode } from 'jwt-decode';
 
+interface Role {
+  _id: string;
+  name: string;
+}
+
+interface Permission {
+  _id: string;
+  name: string;
+}
+
 interface User {
   _id: string;
   name?: string;
   email?: string;
   phone?: string;
   token?: string;
+  roles?: Role[];
+  permissions?: Permission[];
 }
 
 interface AuthContextType {
   isLoggedIn: boolean;
   user: User | null;
-  login: (token: string, userData: User) => void;
+  login: (token: string) => void;
   logout: () => void;
   isLoading: boolean;
   onLogin: (callback: () => void) => () => void;
   onLogout: (callback: () => void) => () => void;
+  hasRole: (roleName: string) => boolean;
+  hasPermission: (permissionName: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,9 +42,11 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: false,
   onLogin: () => () => {},
   onLogout: () => () => {},
+  hasRole: () => false,
+  hasPermission: () => false,
 });
 
-export const getUserId = (): string | null => {
+export const useUserId = () => {
   const { user } = useAuth();
   return user?._id || null;
 };
@@ -47,24 +63,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const verifyToken = (token: string): User | null => {
-      try {
-        const decoded = jwtDecode<any>(token);
-        const user: User = {
-          _id: decoded?._id,
-          name: decoded?.name,
-          email: decoded?.email,
-          phone: decoded?.phone,
-          token,
-        };
-        return user;
-      } catch (error) { return null; }
-    };
+    try {
+      const decoded = jwtDecode<User>(token);
+      if (!decoded || !decoded._id) return null;
+      return {
+        _id: decoded._id,
+        name: decoded.name,
+        email: decoded.email,
+        phone: decoded.phone,
+        roles: decoded.roles || [],
+        permissions: decoded.permissions || [],
+        token,
+      };
+    } catch {
+      return null;
+    }
+  };
 
-  const login = (token: string, userData: User) => {
+  const login = (token: string) => {
     Cookies.set('authToken', token, { expires: 7, path: '/' });
-    setIsLoggedIn(true);
-    setUser(userData);
-    loginListeners.forEach(cb => cb());
+    const userData = verifyToken(token);
+    if (userData) {
+      setIsLoggedIn(true);
+      setUser(userData);
+      loginListeners.forEach(cb => cb());
+    } else {
+      Cookies.remove('authToken');
+    }
   };
 
   const [logoutListeners, setLogoutListeners] = useState<(() => void)[]>([]);
@@ -78,7 +103,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     Cookies.remove('authToken');
     setIsLoggedIn(false);
     setUser(null);
-    logoutListeners.forEach(cb => cb()); 
+    logoutListeners.forEach(cb => cb());
+  };
+
+  const hasRole = (roleName: string): boolean => {
+    if (!user?.roles) return false;
+    return user.roles.some(role => role.name.toLowerCase() === roleName.toLowerCase());
+  };
+
+  const hasPermission = (permissionName: string): boolean => {
+    if (!user?.permissions) return false;
+    return user.permissions.some(perm => perm.name.toLowerCase() === permissionName.toLowerCase());
   };
 
   useEffect(() => {
@@ -86,7 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const token = Cookies.get('authToken');
         if (token) {
-          const userData = await verifyToken(token);
+          const userData = verifyToken(token);
           if (userData) {
             setIsLoggedIn(true);
             setUser(userData);
@@ -104,7 +139,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, logout, isLoading, onLogin, onLogout }}>
+    <AuthContext.Provider
+      value={{
+        isLoggedIn,
+        user,
+        login,
+        logout,
+        isLoading,
+        onLogin,
+        onLogout,
+        hasRole,
+        hasPermission,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

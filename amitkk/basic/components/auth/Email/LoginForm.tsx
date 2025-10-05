@@ -27,8 +27,10 @@ export default function LoginForm({ role="User", handleClose, attachUser= false,
     try {
       const res = await apiRequest("post", `basic/auth`, formData);
 
+      console.log('res.data', res.data)
+
       if( res?.data ){
-        login(res?.data?.token, res?.data);
+        login(res?.data);
         handleClose();
         hitToastr('success', res.message);
       }
