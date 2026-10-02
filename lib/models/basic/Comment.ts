@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types, Model } from "mongoose";
 
-export interface ICommentModelProps extends Document<Types.ObjectId> {
+export interface ICommentModelDoc extends Document<Types.ObjectId> {
   module: "Blog" | "Product" | "Page";
   module_id: string | Types.ObjectId;
   user_id?: string | Types.ObjectId;
@@ -13,7 +13,7 @@ export interface ICommentModelProps extends Document<Types.ObjectId> {
   updatedAt?: Date;
 }
 
-const commentModelSchema = new Schema<ICommentModelProps>({
+const commentModelSchema = new Schema<ICommentModelDoc>({
     module: { type: String, enum: ["Blog", "Product", "Page"], required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -26,4 +26,4 @@ const commentModelSchema = new Schema<ICommentModelProps>({
   { timestamps: true, toObject: { virtuals: true }, toJSON: { virtuals: true } }
 );
 
-export default mongoose.models.CommentModel || mongoose.model<ICommentModelProps>("CommentModel", commentModelSchema);
+export default mongoose.models.CommentModel || mongoose.model<ICommentModelDoc>("CommentModel", commentModelSchema);

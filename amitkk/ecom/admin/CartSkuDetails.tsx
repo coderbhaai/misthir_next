@@ -1,6 +1,6 @@
 import React from "react";
-import { ProductProps, SkuProps } from "@amitkk/product/types/product";
-import { SkuItem } from "../types/ecom";
+import { SingleProductItemProps, SkuProps } from "@amitkk/product/types";
+import { SkuItem } from "../types";
 
 interface CartSkuDetailsProps {
   skus?: SkuItem[];
@@ -12,7 +12,7 @@ const CartSkuDetails: React.FC<CartSkuDetailsProps> = ({ skus }) => {
   return (
     <div>
       {skus.map((i) => {
-        const product = i.product_id as ProductProps;
+        const product = i.product_id as SingleProductItemProps;
         const sku = i.sku_id as SkuProps;
         const totalPrice = sku?.price ? i.quantity * Number(sku.price) : 0;
 

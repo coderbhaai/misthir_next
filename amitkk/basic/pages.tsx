@@ -1,46 +1,32 @@
-import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
+"use client"
+
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
-import { useRouter } from "next/router";
-import { useState, useEffect, useCallback } from "react";
-import { AdminDataTable, DataProps } from "@amitkk/basic/components/page/admin-page-table";
+import { AdminDataTable, DataProps } from "@amitkk/basic/admin/page/admin-page-table";
+import { useAdminPage } from "hooks/useAdminPage";
 
 export function AdminPages(){
-    const router = useRouter();
-    const showCheckBox = false;
-    const table = useTable();
-    const setOpen = () =>{ router.push('/admin/add-update-page'); }
-    const [data, setData] = useState<DataProps[]>([]);
-    const [filterData, setFilterData] = useState("");
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+    const admin = useAdminPage<DataProps>({ listEndpoint: "basic/page", listFunction: "get_filtered_pages", addRoute: "/admin/add-update-page" });
 
-    const fetchData = useCallback(async () => {
-        try {
-            const res = await apiRequest("get", "basic/page?function=get_all_pages");
-            setData(res?.data ?? []);
-        } catch (error) { clo( error ); }
-    }, []);
+    const FILTER_CONFIG = [
+        { name: "SearchFilter", grid: "col-span-6", },
+        { name: "ModuleFilter", grid: "col-span-3", },
+        { name: "StatusFilter", grid: "col-span-3", },
+    ] as const;
 
-    useEffect(() => { fetchData(); }, [fetchData]);
-    return(
-        <AdminTableLayout<DataProps>
-            title="Pages" addButtonLabel="New Page" onAddNew={setOpen} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
+    const head: { id: string; label: string }[] = [
+                    { id: "module", label: "Module" },
                     { id: "name", label: "Name" },
                     { id: "media", label: "Media" },
                     { id: "status", label: "SSS" },
                     { id: "meta", label: "Meta" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} showCheckBox={false}/>
-                ))}>
+                ];
+
+    return(
+        <AdminTableLayout admin={admin} title="Pages" addButtonLabel="New Page" filters={FILTER_CONFIG} head={head} 
+            rows={admin.data.map((i) => ( <AdminDataTable key={String(i._id)} row={i}/> ))}>
         </AdminTableLayout>
     )
 }
-export default withAuth(AdminPages);
+export default AdminPages;

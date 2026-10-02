@@ -1,19 +1,13 @@
 // _document.tsx
-import createEmotionServer from "@emotion/server/create-instance";
-import { AppType } from "next/app";
 import Document, { Html, Head, Main, NextScript } from "next/document";
-import createEmotionCache from "./createEmotionCache";
-
-import type { DocumentContext, DocumentInitialProps } from "next/document"
 
 export default class MyDocument extends Document {
   render() {
     return (
       <Html lang="en">
-        <Head>
-          {/* Emotion style tags injected here */}
-        </Head>
+        <Head />
         <body>
+          {/* <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5SJVF6S5" height="0" width="0" style={{ display: "none", visibility: "hidden" }}/></noscript> */}
           <Main />
           <NextScript />
         </body>
@@ -21,36 +15,3 @@ export default class MyDocument extends Document {
     );
   }
 }
-
-MyDocument.getInitialProps = async (ctx: DocumentContext): Promise<DocumentInitialProps> => {
-  const originalRenderPage = ctx.renderPage;
-  const cache = createEmotionCache();
-  const { extractCriticalToChunks } = createEmotionServer(cache);
-
-  ctx.renderPage = () =>
-    originalRenderPage({
-      enhanceApp: (App: any) =>
-        function EnhanceApp(props) {
-          return <App emotionCache={cache} {...props} />;
-        },
-    });
-
-  const initialProps = await Document.getInitialProps(ctx);
-  const emotionStyles = extractCriticalToChunks(initialProps.html);
-
-  const emotionStyleTags = emotionStyles.styles.map((style) => (
-    <style
-      data-emotion={`${style.key} ${style.ids.join(" ")}`}
-      key={style.key}
-      dangerouslySetInnerHTML={{ __html: style.css }}
-    />
-  ));
-
-  return {
-    ...initialProps,
-    styles: [
-      ...(initialProps.styles as React.ReactElement[]), // cast here
-      ...emotionStyleTags,
-    ],
-  };
-};

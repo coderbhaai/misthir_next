@@ -1,13 +1,15 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Grid, TextField, MenuItem, Button, Typography, Checkbox, FormControlLabel, Paper, Table, TableHead, TableRow, TableCell, TableBody, SelectChangeEvent, } from "@mui/material";
-import { SaleProps } from "@amitkk/ecom/types/ecom";
+
+import { SaleProps } from "@amitkk/ecom/types";
 import { useVendorId } from "hooks/useVendorId";
-import StatusSelect from "@amitkk/basic/components/static/status-input";
-import { SubmitButton } from "@amitkk/basic/static/LoadingSubmit";
-import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/utils";
+import StatusSelect from "@amitkk/components/admin/status-input";
+import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/my-utils/admin-utils";
 import { ProductRawDocument } from "lib/models/types";
 import router from "next/router";
+import { useFormHandler } from "hooks/useFormHandler";
+import { TextField } from "@amitkk/components/basic/TextField";
+import OpenSelect from "@amitkk/components/basic/OpenSelect";
 
 export interface DataProps extends SaleProps {
     _id: string;
@@ -18,7 +20,7 @@ interface DataFormProps {
 }  
 
 export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
-    const vendor_id = useVendorId();
+    const seller_id = useVendorId();
     const [formData, setFormData] = React.useState<DataProps>({
         _id: "",
         name: "",
@@ -38,16 +40,13 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
     const [selectedSkus, setSelectedSkus] = useState<any>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleChange = (e: SelectChangeEvent | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData((prevData) => ({ ...prevData, [name]: value === "true" ? true : value === "false" ? false : value }));
-    };
+    const handleChange = useFormHandler(setFormData);
 
     useEffect(() => {
-        if (!dataId && vendor_id) {
+        if (!dataId && seller_id) {
             const fetchProducts = async () => {
                 try {
-                    const res = await apiRequest("get", `ecom/sales?function=get_all_sales&vendor_id=${vendor_id}`);
+                    const res = await apiRequest("GET", `ecom/sales?function=get_all_sales&seller_id=${seller_id}`);
                     if (res?.data) {
                         const allProducts = res.data;
                         const skusMap: Record<string, any> = {};
@@ -74,7 +73,7 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
 
             fetchProducts();
         }
-    }, [dataId, vendor_id]);
+    }, [dataId, seller_id]);
     
     const initSkus = (saleSkus: any[] = []) => {
         const skusMap: Record<string, any> = {};
@@ -93,8 +92,8 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
                 sku_id: sku._id,
                 quantity: s.quantity ?? 1,
                 discount:
-                    s.discount && "$numberDecimal" in s.discount
-                    ? parseFloat(s.discount.$numberDecimal)
+                    s.discount 
+                    ? parseFloat(s.discount)
                     : s.discount ?? "",
                 price: sku?.price ?? 0,
             };
@@ -109,15 +108,15 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
     }, [data]);
     
     useEffect(() => { 
-        if (!dataId || !vendor_id) return;
+        if (!dataId || !seller_id) return;
 
         const fetchSingleEntry = async () => {
             try {
-                const res = await apiRequest("get", `ecom/sales?function=get_single_sale&id=${dataId}&vendor_id=${vendor_id}`);
+                const res = await apiRequest("GET", `ecom/sales?function=get_single_sale&id=${dataId}&seller_id=${seller_id}`);
 
                 if (res?.data) {
-                    const discount = res?.data.discount && "$numberDecimal" in res?.data.discount
-                    ? parseFloat(res?.data.discount.$numberDecimal)
+                    const discount = res?.data.discount 
+                    ? parseFloat(res?.data.discount)
                     : res?.data.discount || 0;
 
                     const formatDate = (d: string | Date) => { if (!d) return ""; const date = new Date(d); return date.toISOString().split("T")[0]; };
@@ -140,7 +139,7 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
         };
 
         fetchSingleEntry();
-    }, [dataId, vendor_id, data]);
+    }, [dataId, seller_id, data]);
 
     const handleAllProductsToggle = (checked: boolean) => {
         if ( !formData.type || !formData.discount) {
@@ -231,8 +230,8 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
         Object.entries(formData).forEach(([key, value]) => { formDataToSend.append(key, String(value)); });
         formDataToSend.append("function", "create_update_sale");
         formDataToSend.append("skus", JSON.stringify(Object.values(selectedSkus)));
-        formDataToSend.append("vendor_id", vendor_id as string);
-        const res = await apiRequest("post", "ecom/sales", formDataToSend);
+        formDataToSend.append("seller_id", seller_id as string);
+        const res = await apiRequest("POST", "ecom/sales", formDataToSend);
 
         if( res?.data){
             router.replace('/seller/sales');
@@ -242,27 +241,24 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
     const title = !dataId ? 'Add Sale' : 'Update Sale';
 
     return (
-        <Box p={4}>
-            <Typography variant="h5" mb={3}>Create Sale</Typography>
+        <div className="p-2">
+            <h3>Create Sale</h3>
             <form onSubmit={handleSubmit} style={{ padding: "10px" }}>
-                <Grid container spacing={3}>
-                    <Grid size={12}>
-                        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, width: "100%" }}>
-                            <TextField variant="outlined" type="text" label="Name" name="name" value={formData.name} onChange={handleChange} required/>
-                            <TextField variant="outlined" type="date" label="Valid From" name="valid_from" value={formData.valid_from} onChange={handleChange} slotProps={{ inputLabel: { shrink: true, }, }} fullWidth required/>
-                            <TextField variant="outlined" type="date" label="Valid To" name="valid_to" value={formData.valid_to} onChange={handleChange} slotProps={{ inputLabel: { shrink: true, }, }} fullWidth required/>
-                            <TextField select variant="outlined" label="Type" name="type" value={formData.type} onChange={handleChange} required>
-                                <MenuItem value="Amount Based">Amount Based</MenuItem>
-                                <MenuItem value="Percent Based">Percent Based</MenuItem>
-                            </TextField>
-                            <TextField variant="outlined" type="number" label={`Discount (${formData.type === "Amount Based" ? "₹" : "%"})`} name="discount" value={formData.discount} onChange={handleChange} required/>
-                            <StatusSelect value={formData.status} onChange={handleChange}/>
+                <div className="row">
+                    <div className="col-span-12">
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                            <TextField type="text" label="Name" name="name" value={formData.name} onChange={handleChange} required/>
+                            <TextField type="date" label="Valid From" name="valid_from" value={formData.valid_from} onChange={handleChange} required/>
+                            <TextField type="date" label="Valid To" name="valid_to" value={formData.valid_to} onChange={handleChange} required/>
+                            <OpenSelect name={String(formData.type)} label="Type" value={formData.type} onChange={(value) => setFormData((prev) => ({...prev, type: value}))} options={["Amount Based", "Percent Based"].map((mod) => ({ label: mod, value: mod }))}/>
+                            <TextField type="number" label={`Discount (${formData.type === "Amount Based" ? "₹" : "%"})`} name="discount" value={formData.discount} onChange={handleChange} required/>
+                            <StatusSelect value={formData.status} onChange={(value) => handleChange("status", value)}/>
                             <FormControlLabel control={ <Checkbox checked={allProducts} onChange={(e) => handleAllProductsToggle(e.target.checked)}/> } label="Apply on All Products"/>
-                        </Box>
-                    </Grid>
-                    <TextField fullWidth label="Search Products" value={search} onChange={(e) => setSearch(e.target.value)}/>
+                        </div>
+                    </div>
+                    <TextField label="Search Products" value={search} onChange={(e) => setSearch(e.target.value)}/>
 
-                    <Grid size={12}>
+                    <div className="col-span-12">
                         {Object.keys(selectedSkus).length > 0 && (
                             <Paper>
                                 <Table>
@@ -281,13 +277,13 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
                                             <TableCell>{i + 1}</TableCell>
                                             <TableCell>{s.product_name}</TableCell>
                                             <TableCell>{s.sku_name} - ₹{s.price}</TableCell>
-                                            <TableCell><TextField type="number" value={s.quantity} onChange={(e) => updateSkuQuantity(s.sku_id, Number(e.target.value)) } size="small" sx={{ width: 80 }} required/></TableCell>
+                                            <TableCell><TextField type="number" value={s.quantity} onChange={(e) => updateSkuQuantity(s.sku_id, Number(e.target.value)) } sx={{ width: 80 }} required/></TableCell>
                                             <TableCell>
                                                 <TextField value={s.discount === "" ? "" : s.discount}
                                                     onChange={(e) => { 
                                                         const value = e.target.value;
                                                         updateSkuDiscount(s.sku_id, value === "" ? "" : Number(value));
-                                                    }} size="small" sx={{ width: 80 }} required/>
+                                                    }} sx={{ width: 80 }} required/>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -295,12 +291,12 @@ export const SellerSalesForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
                                 </Table>
                             </Paper>
                         )}
-                    </Grid>
+                    </div>
 
-                    <Button type="submit" variant="contained" color="primary">{title}</Button>
-                </Grid>
+                    <Button type="submit" color="primary">{title}</Button>
+                </div>
             </form>
-        </Box>
+        </div>
     );
 }
 

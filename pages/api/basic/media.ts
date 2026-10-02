@@ -1,17 +1,18 @@
 import path from 'path';
-import fs from 'fs';
+import fs from "fs";
 import sharp from 'sharp';
 import Media from 'lib/models/basic/Media';
 import { v4 as uuidv4 } from 'uuid';
 import { type File } from 'formidable';
-import mongoose, { isValidObjectId, Model, Types } from 'mongoose';
-import { log } from '../utils';
+import mongoose, { isValidObjectId, Types } from 'mongoose';
+import { logError, sanitizeText } from '../utils';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { sanitizeText } from '@amitkk/basic/utils/utils';
-import { uploadMediaToS3 } from 'services/uploadMediaToS3';
-import MediaHub from 'lib/models/basic/MediaHub';
+import MediaHub, { MediaHubProps } from 'lib/models/basic/MediaHub';
 import { createApiHandler } from '../apiHandler';
-import { APIHandlers } from '../middleware';
+import { APIHandlers } from '../../../lib/server/middleware';
+import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
+import type { File as FormidableFile } from "formidable";
+import { AnyModel } from 'lib/models';
 
 const MEDIA_PATH = path.join(process.cwd(), 'public', 'storage');
 
@@ -32,6 +33,13 @@ export const getPaths = (type: string) => {
     blog: { folder: 'blog', small: [150, 150], thumbnail: [300, 200] },
     author: { folder: 'author', small: [100, 100], thumbnail: [200, 150] },
     banner: { folder: 'banner', small: [1920, 500], thumbnail: [1920, 500] },
+    blocks: { folder: 'blocks', small: [], thumbnail: [] },
+    service: { folder: 'service', small: [], thumbnail: [] },
+    technology: { folder: 'technology', small: [], thumbnail: [] },
+    website: { folder: 'portfolio/website', small: [], thumbnail: [] },
+    graphics: { folder: 'portfolio/graphics', small: [], thumbnail: [] },
+    logo: { folder: 'portfolio/logo', small: [], thumbnail: [] },
+    catalogue: { folder: 'portfolio/catalogue', small: [], thumbnail: [] },
     uploads: { folder: 'uploads', small: [], thumbnail: [] },
   };
   return paths[type as keyof typeof paths] ?? paths.uploads;
@@ -56,32 +64,61 @@ interface UploadMediaParams {
   user_id?: string | null;
 }
 
-export const deleteOldImage = async ( mediaModel: Model<any>, media_id: string | mongoose.Types.ObjectId ) => {
+export const deleteOldImage = async ( mediaModel: AnyModel, media_id: string | mongoose.Types.ObjectId ) => {
   if (!media_id) return;
 
   try {
     const media = await mediaModel.findById(media_id);
-    if (!media || !media.path || !media.media) return;
+    if (!media) return;
 
-    let cleanedPath = media.path.replace(/^[/\\]*storage[/\\]*/, '');
+    // ============ 🧩 CASE 1: Cloudflare ==============
+    if (media.cloudflare?.id) {
+      try {
+        // You can integrate your Cloudflare delete logic here.
+        // For example:
+        //
+        // await deleteFromCloudflare(media.cloudflare.id);
+        //
+        // (You’d define deleteFromCloudflare to call Cloudflare’s Images API)
+      } catch (cloudErr) {
+        console.error(`⚠️ Cloudflare deletion failed:`, cloudErr);
+      }
+
+      return; // Exit early — nothing to delete locally.
+    }
+
+    // ============ 💾 CASE 2: Local File System ==========
+    const filename = media.cloudflare?.filename || path.basename(media.path || "");
+
+    if (!filename) { console.warn("⚠️ No filename found for media_id:", media_id); return; }
+
+    let cleanedPath = media.path?.replace(/^[/\\]*storage[/\\]*/, "") || "";
     const relativeDir = path.dirname(cleanedPath);
+
     const variants = [
-      path.join(MEDIA_PATH, relativeDir, media.media),
-      path.join(MEDIA_PATH, relativeDir, 'small', media.media),
-      path.join(MEDIA_PATH, relativeDir, 'thumbnail', media.media),
+      path.join(MEDIA_PATH, relativeDir, filename),
+      path.join(MEDIA_PATH, relativeDir, "small", filename),
+      path.join(MEDIA_PATH, relativeDir, "thumbnail", filename),
     ];
 
     for (const filePath of variants) {
-      fs.unlink(filePath, (error) => { if (error) { log(error); } });
+      fs.unlink(filePath, (error) => {
+        if (error && error.code !== "ENOENT") {
+          console.error("❌ File delete error:", error);
+        }
+      });
     }
-  } catch (error) { log(error); }
+
+  } catch (error) {
+    console.error("deleteOldImage error:", error);
+  }
 };
 
 export const uploadMedia = async ({ file, name, pathType, media_id = null, user_id = null }: UploadMediaParams): Promise<string | null> => {
   try {
     // return await uploadMediaToS3({ file, name, pathType, media_id, user_id });
     return uploadMediaToLocal({ file, name, pathType, media_id, user_id });
-  } catch (error) { log(error); return null; } 
+  } catch (error) { await logError(error, { function: "uploadMedia", payload: { name, pathType, media_id, user_id } }); return null; } 
 };
 
 export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null, user_id = null }: UploadMediaParams) => {  
@@ -110,6 +147,7 @@ export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null
 
     let entry;
     const storagePath = `/storage/${folder}/${filename}`;  
+    const resolvedName = name ? name : "AMITKKAE";
 
     if (file && media_id && isValidObjectId(media_id)) {
       entry = await Media.findByIdAndUpdate(
@@ -118,11 +156,11 @@ export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null
         { new: true }
       );
     } else {
-      entry = await Media.create({ media: filename, alt: name, path: storagePath, user_id : user_id });
+      entry = await Media.create({ media: filename, alt: resolvedName, path: storagePath, user_id : user_id });
     }
 
     return entry._id.toString(); 
-  } catch (error) { log(error); } 
+  } catch (error) { await logError(error, { function: "uploadMediaToLocal", payload: { name, pathType, media_id, user_id } }); } 
 };
 
 type HandlerMap = {
@@ -134,41 +172,47 @@ interface ExtendedRequest extends NextApiRequest {
   files?: { [key: string]: File | File[] };
 }
 
+export async function get_filtered_media(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { filters = {}, page = 0, limit = 10 } = req.body || {};
+    const { matchQuery, skip, limit: safeLimit } = buildFilterQuery(filters, { page, limit, defaultLimit: 10, maxLimit: 100, searchableFields: ["path"] });
+    const total = await Media.countDocuments(matchQuery);
+
+    const data = await Media.find(matchQuery).populate('user_id').skip(skip).limit(safeLimit).sort({ createdAt: -1 });
+    return res.status(200).json({ message: 'Fetched all Media', data, pagination: { total, page, limit: safeLimit, pages: Math.ceil(total / safeLimit) } })
+
+  } catch (error) { await logError(error, { function: "get_filtered_media", payload: req.body }); }
+}
+
 export async function get_all_media(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { vendor_id, limit } = req.query;
+    const { seller_id, limit } = req.query;
     const filter: any = {};
-    if (vendor_id && vendor_id !== "null" && mongoose.isValidObjectId(vendor_id)) {
-      filter.user_id = new mongoose.Types.ObjectId(vendor_id as string);
+    if (seller_id && seller_id !== "null" && mongoose.isValidObjectId(seller_id)) {
+      filter.user_id = new mongoose.Types.ObjectId(seller_id as string);
     }
     const parsedLimit = typeof limit === "string" && !isNaN(Number(limit)) ? Math.min(Number(limit), 200) : 50;
 
     const data = await Media.find(filter).populate('user_id').limit(parsedLimit).exec();
     return res.status(200).json({ message: 'Fetched all Media', data })
 
-  } catch (error) { return log(error); }
+  } catch (error) { await logError(error, { function: "get_all_media", payload: req.body }); }
 }
 
 export async function get_single_media(req: NextApiRequest, res: NextApiResponse){
   try{
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-  
-    if (!id || !Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid or missing ID' });
-    }
+    const id = (req.method === "GET" ? req.query.id : req.body.id) as string;
+    if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
     
     const data = await Media.findById(id).populate('user_id').exec();
     if(!data) { return res.status(404).json({message:`Media meta with ID ${id} not found`}); }
     
     return res.status(200).json({ message: '✅ Single Entry Fetched', data });
-    return;
-  }catch (error) { return log(error); }
+  }catch (error) { await logError(error, { function: "get_single_media", payload: req.body }); }
 };
 
 export async function create_update_media(req: ExtendedRequest, res: NextApiResponse) { 
   try {
-    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
     const data = req.body;  
     if (!data?.alt) { return res.status(400).json({ message: 'Required fields missing' }); }
 
@@ -191,13 +235,11 @@ export async function create_update_media(req: ExtendedRequest, res: NextApiResp
     const entry = await Media.findById(media_id).exec();
     
     return res.status(201).json({ message: '✅ Entry created successfully', data: entry });
-  } catch (error) { return log(error); }
+  } catch (error) { await logError(error, { function: "create_update_media", payload: req.body }); }
 }
 
 export async function create_update_media_library(req: ExtendedRequest, res: NextApiResponse) { 
   try {
-    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
-
     const data = req.body;
     const files = Array.isArray(req.files?.["images[]"]) ? req.files?.["images[]"] : req.files?.image ? [req.files.image] : [];
     if (!files.length) { return res.status(400).json({ message: "No files uploaded" }); }
@@ -211,30 +253,22 @@ export async function create_update_media_library(req: ExtendedRequest, res: Nex
     }
 
     return res.status(201).json({ message: "✅ Files uploaded successfully", data: results });
-  } catch (error) { log(error); return res.status(500).json({ message: "Server error", error });}
+  } catch (error) { await logError(error, { function: "create_update_media_library", payload: req.body }); return res.status(500).json({ message: "Server error", error });}
 }
 
 export async function get_selected_media(req: ExtendedRequest, res: NextApiResponse) { 
   try {
-    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
-    let { ids } = req.body;
-    
-    if (typeof ids === 'string') {
-      ids = [ids];
-    }
+    let { module, module_id } = req.body;
+    if( !module || !module_id ){ return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); }
 
-    if (!Array.isArray(ids)) { return res.status(400).json({ message: "IDs must be provided as an array" }); }
-
-    const data = await Media.find({ _id: { $in: ids } }).populate('user_id').exec();
-
-    if(!data) { return res.status(404).json({message:`Media meta with ID ${ids} not found`}); }
-
-    return res.status(201).json({ message: "✅ Files uploaded successfully", data });
-  } catch (error) { log(error); return res.status(500).json({ message: "Server error", error });}
+    const hubData = await MediaHub.find({ module, module_id, status: true }).populate({ path: "media_id", model: "Media" }).sort({ displayOrder: 1, createdAt: -1 }).lean<MediaHubProps[]>().exec();
+    const media = hubData.map((item: { media_id?: any }) => item.media_id).filter(Boolean);
+    return res.status(200).json({ message: "Media fetched successfully", data: media });    
+  } catch (error) { await logError(error, { function: "get_selected_media", payload: req.body }); return res.status(500).json({ message: "Server error", error });}
 }
 
 interface SyncMediaHubOptions {
-  module: "Product" | "Blog" | "Review" | "Page";
+  module: string;
   module_id: string | Types.ObjectId;
   mediaArray: string[];
 }
@@ -252,21 +286,98 @@ export async function syncMediaHub({ module, module_id, mediaArray }: SyncMediaH
   await MediaHub.deleteMany({ module, module_id, media_id: { $nin: mediaArray } });
 }
 
+export async function uploadFileLocal( file: FormidableFile, folder: string, oldFilePath?: string ) {
+  const uploadDir = path.join(process.cwd(), "private", folder);
+
+  await new Promise<void>((resolve, reject) => {
+    fs.mkdir(uploadDir, { recursive: true }, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+
+  if (oldFilePath) {
+    const oldPath = path.isAbsolute(oldFilePath) ? oldFilePath : path.join(uploadDir, oldFilePath);
+
+    fs.access(oldPath, fs.constants.F_OK, (err) => {
+      if (!err) {
+        fs.unlink(oldPath, (unlinkErr) => {
+          if (unlinkErr) console.error("❌ Failed to delete old file:", unlinkErr);
+        });
+      }
+    });
+  }
+
+  const ext = path.extname(file.originalFilename || "");
+  const filename = `${uuidv4()}${ext}`;
+  const newPath = path.join(uploadDir, filename);
+
+  await new Promise<void>((resolve, reject) => {
+    fs.copyFile(file.filepath, newPath, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+
+  return { path: newPath, filename, mimetype: file.mimetype, size: file.size };
+}
+
+export async function downloadFile(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    let { filePath } = req.body;
+
+    if (!filePath || Array.isArray(filePath)) {
+      return res.status(400).json({ message: "Invalid file path" });
+    }
+
+    // 🧹 Clean filePath — remove leading slashes or backslashes
+    filePath = filePath.replace(/^[/\\]+/, "");
+
+    const baseDir = path.join(process.cwd(), "private");
+    const resolvedPath = path.join(baseDir, filePath);
+
+    if (!resolvedPath.startsWith(baseDir)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const fileBuffer = fs.readFileSync(resolvedPath);
+    const base64 = Buffer.from(fileBuffer).toString("base64");
+    const filename = path.basename(resolvedPath);
+    const mimetype = "application/octet-stream";
+
+    return res.status(200).json({
+      message: "File ready for download",
+      data: { base64, filename, mimetype },
+    });
+  } catch (error) {
+    console.error("❌ Download error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 export const functions: APIHandlers = {
-  get_all_media : { middlewares: [] },
-  get_single_media : { middlewares: [] },
-  create_update_media : { middlewares: [] },
-  create_update_media_library : { middlewares: [] },
-  get_selected_media : { middlewares: [] },
+  get_all_media : { middlewares: [ "checkUserId" ] },
+  get_filtered_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  get_single_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  create_update_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  create_update_media_library : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  get_selected_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  downloadFile : { middlewares: [ "checkPostMethod" ] },
 }
 
 export const mediaHandlers = {
   get_all_media,
+  get_filtered_media,
   get_single_media,
   create_update_media,
   create_update_media_library,
   get_selected_media,
+  downloadFile,
 };
 
 export const config = { api: { bodyParser: false } };
-export default createApiHandler(functions);
+export default createApiHandler(functions, mediaHandlers);

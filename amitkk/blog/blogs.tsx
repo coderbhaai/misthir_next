@@ -1,51 +1,35 @@
-import { useState, useEffect, useCallback } from "react";
-import { useTable, AdminTableHead, emptyRows } from "@amitkk/basic/utils/AdminUtils";
-import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
-import { AdminDataTable, DataProps } from "@amitkk/blog/components/admin-blog-table";
+"use client";
+
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useRouter } from "next/router";
+import { useAdminPage } from "hooks/useAdminPage";
+import { AdminDataTable, DataProps } from "@amitkk/blog/admin/admin-blog-table";
+import { useAdminModal } from "hooks/useAdminModal";
+import KeywordManager from "@amitkk/seo/admin/keyword/KeywordManager";
 
-export function AdminBlog(){
-    const router = useRouter();
-    const showCheckBox = false;
-    const table = useTable();
-    const setOpen = () =>{
-        router.push('/admin/add-update-blog');
-    }
-    const [data, setData] = useState<DataProps[]>([]);
-    const [filterData, setFilterData] = useState("");
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+export function AdminBlog() {
+    const admin = useAdminPage<DataProps>({ listEndpoint: "blog/blogs", listFunction: "get_filtered_blogs", addRoute: "/admin/add-update-blog" });    
+    const keywordModal = useAdminModal({ onUpdate: admin.refreshSingle });
 
-    const fetchData = useCallback(async () => {
-        try {
-            const res = await apiRequest("get", "blog/blogs?function=get_all_blogs");
-            setData(res?.data ?? []);
-        } catch (error) { clo( error ); }
-    }, []);
+    const FILTER_CONFIG = [
+        { name: "SearchFilter", grid: "col-span-9", },
+        { name: "StatusFilter", grid: "col-span-3", },
+    ] as const;
 
-    useEffect(() => { fetchData(); }, [fetchData]);
-    
-    return(
-        <AdminTableLayout<DataProps>
-            title="Blogs" addButtonLabel="New Blog" onAddNew={setOpen} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
+    const head: { id: string; label: string }[] = [
                     { id: "name", label: "Name" },
                     { id: "media", label: "Media" },
                     { id: "tags", label: "Tags" },
                     { id: "author", label: "Author" },
                     { id: "meta", label: "Meta" },
-                    { id: "date", label: "Date" },
                     { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} showCheckBox={false}/>
-                ))}>
+                ];
+
+    return (
+        <AdminTableLayout admin={admin} title="Blogs" addButtonLabel="New Blog" filters={FILTER_CONFIG} head={head} 
+            rows={admin.data.map((i: DataProps) => ( <AdminDataTable key={String(i._id)} row={i}/> ))}>
+            <KeywordManager module="Blog" modal={keywordModal}/>
         </AdminTableLayout>
-    )
+    );
 }
 
-export default withAuth(AdminBlog);
+export default AdminBlog;

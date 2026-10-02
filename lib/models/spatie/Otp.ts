@@ -14,7 +14,7 @@ export interface IOtp extends Document<Types.ObjectId> {
 }
 
 const OtpSchema = new Schema<IOtp>({
-  type: {  type: String, enum: ['email', 'phone', 'both'], required: true },
+  type: {  type: String, required: true },
   email: { type: String, required: function() { return this.type === 'email' || this.type === 'both'; }, match: [/.+\@.+\..+/, 'Please enter a valid email'] },
   phone: { type: String, required: function() { return this.type === 'phone' || this.type === 'both'; }, match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'] },
   otp: { type: String, required: true, minlength: 4, maxlength: 8 },
@@ -25,5 +25,5 @@ const OtpSchema = new Schema<IOtp>({
 OtpSchema.index({ email: 1, otp: 1 });
 OtpSchema.index({ phone: 1, otp: 1 });
 
-const Otp: Model<IOtp> = mongoose.models.Otp || mongoose.model<IOtp>('Otp', OtpSchema);
+const Otp: Model<IOtp> = mongoose.models?.Otp || mongoose.model<IOtp>('Otp', OtpSchema);
 export default Otp;

@@ -4,7 +4,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 // import path from 'path';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-//   if (req.method === 'POST') {
+//   if (req.method === "POST") {
 //     const error = req.body.error;
 //     const logPath = path.join(process.cwd(), 'logs/errors.log');
     

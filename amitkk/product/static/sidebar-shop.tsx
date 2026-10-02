@@ -1,81 +1,148 @@
-// sidebar-shop.tsx
-import { Typography, Box, Grid } from "@mui/material";
-import { ArrayProps } from "lib/models/types";
-import { FilterCheck } from "./filter-checkboz";
+import { FilterTree } from "@amitkk/product/static/FilterTree";
+import { useMemo } from "react";
+import { TextField } from "@amitkk/components/basic/TextField";
 
-interface SidebarShopProps {
-  category?: ArrayProps[];
-  tag?: ArrayProps[];
-  productTypes?: ArrayProps[];
-  productBrand?: ArrayProps[];
-  ingridient?: ArrayProps[];
-  flavors?: ArrayProps[];
-  colors?: ArrayProps[];
-  eggless?: ArrayProps[];
-  glutten?: ArrayProps[];
-  sugar?: ArrayProps[];
-  storage?: ArrayProps[];
-
+interface Props {
+  category?: any[];
+  tag?: any[];
+  productTypes?: any[];
+  productBrand?: any[];
+  ingridient?: any[];
+  flavors?: any[];
+  colors?: any[];
+  eggless?: any[];
+  glutten?: any[];
+  sugar?: any[];
+  storage?: any[];
+  tax?: any[];
   selected: Record<string, string[]>;
-  onChange: (key: string, values: string[]) => void;
+  onChange: (payload: {
+    key: string;
+    values: string[];
+    lastSelected?: string;
+    parentPath?: string[];
+  }) => void;
+  search: string;
+  onSearchChange: (val: string) => void;
 }
 
-export function SidebarShop({
-  category = [],
-  tag = [],
-  productTypes = [],
-  productBrand = [],
-  ingridient = [],
-  flavors = [],
-  colors = [],
-  eggless = [],
-  glutten = [],
-  sugar = [],
-  storage = [],
-  selected,
-  onChange,
-}: SidebarShopProps) {
+const buildTree = (flat: any[]) => {
+  const map = new Map<string, any>();
+
+  flat.forEach((item) => {
+    map.set(String(item._id), {
+      _id: String(item._id),
+      name: item.name,
+      parent_id: item.parent_id ? String(item.parent_id) : null,
+      children: [],
+    });
+  });
+
+  const tree: any[] = [];
+
+  map.forEach((node) => {
+    if (node.parent_id && map.has(node.parent_id)) {
+      map.get(node.parent_id).children.push(node);
+    } else {
+      tree.push(node);
+    }
+  });
+
+  return tree;
+};
+
+// Helper to convert flat list to item format required by FilterTree
+const mapToTreeItems = (list: any[]) => 
+  (list || []).map((item) => ({ _id: String(item._id), name: item.name, children: [] }));
+
+export function SidebarShop({ 
+  category = [], 
+  tag = [], 
+  productTypes = [], 
+  productBrand = [], 
+  ingridient = [], 
+  flavors = [], 
+  colors = [], 
+  eggless = [], 
+  glutten = [], 
+  sugar = [], 
+  storage = [], 
+  selected, 
+  onChange, 
+  search, 
+  onSearchChange 
+}: Props) {
+  // Trees or flat options
+  const categoryTreeData = useMemo(() => buildTree(category || []), [category]);
+  const typeTreeData = useMemo(() => buildTree(productTypes || []), [productTypes]);
+  
+  const brandOptions = useMemo(() => mapToTreeItems(productBrand), [productBrand]);
+  const tagOptions = useMemo(() => mapToTreeItems(tag), [tag]);
+  const ingredientOptions = useMemo(() => mapToTreeItems(ingridient), [ingridient]);
+  const flavorOptions = useMemo(() => mapToTreeItems(flavors), [flavors]);
+  const colorOptions = useMemo(() => mapToTreeItems(colors), [colors]);
+  const egglessOptions = useMemo(() => mapToTreeItems(eggless), [eggless]);
+  const glutenOptions = useMemo(() => mapToTreeItems(glutten), [glutten]);
+  const sugarOptions = useMemo(() => mapToTreeItems(sugar), [sugar]);
+  const storageOptions = useMemo(() => mapToTreeItems(storage), [storage]);
+
+  const stockOptions = useMemo(() => [
+    { _id: "true", name: "In Stock", children: [] },
+  ], []);
+
   return (
-    <Grid size={3}>
-      <Typography variant="h5" gutterBottom>Product Types</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={productTypes} selected={selected.productTypes ?? []} onChange={(vals) => onChange("productTypes", vals)}/>
+    <div className="col-span-12 md:col-span-3">
+      <div className="sticky top-20">
+        <div className="shadow-lg rounded-xl p-3 md:p-5 max-h-[calc(100vh-5rem)] overflow-y-auto hide-scrollbar" style={{ background: "#dfdfdf" }}>
+          <TextField placeholder="Search Products..." value={search} onChange={(e) => onSearchChange(e.target.value)}/>
+          
+          <FilterTree label="Availability" items={stockOptions} selected={selected.in_stock ?? []} onChange={(vals, last) => { onChange({ key: "in_stock", values: vals, lastSelected: last }); }} className="mobile"/>
+          
+          {categoryTreeData.length > 0 && (
+            <FilterTree label="Categories" items={categoryTreeData} selected={selected.category ?? []} onChange={(vals, last) => { onChange({ key: "category", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Brands</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={productBrand} selected={selected.productBrand ?? []} onChange={(vals) => onChange("productBrand", vals)}/>
+          {typeTreeData.length > 0 && (
+            <FilterTree label="Types" items={typeTreeData} selected={selected.type ?? []} onChange={(vals, last) => { onChange({ key: "type", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Categories</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={category} selected={selected.category ?? []} onChange={(vals) => onChange("category", vals)}/>
+          {brandOptions.length > 0 && (
+            <FilterTree label="Brands" items={brandOptions} selected={selected.brand ?? []} onChange={(vals, last) => { onChange({ key: "brand", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Tags</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={tag} selected={selected.tag ?? []} onChange={(vals) => onChange("tag", vals)}/>
+          {tagOptions.length > 0 && (
+            <FilterTree label="Tags" items={tagOptions} selected={selected.tag ?? []} onChange={(vals, last) => { onChange({ key: "tag", values: vals, lastSelected: last }); }}/>
+          )}
 
-        <Typography variant="h5" gutterBottom>Flavors</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={flavors} selected={selected.flavors ?? []} onChange={(vals) => onChange("flavors", vals)}/>
+          {ingredientOptions.length > 0 && (
+            <FilterTree label="Ingredients" items={ingredientOptions} selected={selected.ingridient ?? []} onChange={(vals, last) => { onChange({ key: "ingridient", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Colors</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={colors} selected={selected.colors ?? []} onChange={(vals) => onChange("colors", vals)}/>
+          {flavorOptions.length > 0 && (
+            <FilterTree label="Flavors" items={flavorOptions} selected={selected.flavors ?? []} onChange={(vals, last) => { onChange({ key: "flavors", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Eggless</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={eggless} selected={selected.eggless ?? []} onChange={(vals) => onChange("eggless", vals)}/>
+          {colorOptions.length > 0 && (
+            <FilterTree label="Colors" items={colorOptions} selected={selected.colors ?? []} onChange={(vals, last) => { onChange({ key: "colors", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Sugar</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={sugar} selected={selected.sugar ?? []} onChange={(vals) => onChange("sugar", vals)}/>
+          {egglessOptions.length > 0 && (
+            <FilterTree label="Eggless" items={egglessOptions} selected={selected.eggless ?? []} onChange={(vals, last) => { onChange({ key: "eggless", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Glutten</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={glutten} selected={selected.glutten ?? []} onChange={(vals) => onChange("glutten", vals)}/>
+          {glutenOptions.length > 0 && (
+            <FilterTree label="Gluten Free" items={glutenOptions} selected={selected.glutten ?? []} onChange={(vals, last) => { onChange({ key: "glutten", values: vals, lastSelected: last }); }}/>
+          )}
 
-      <Typography variant="h5" gutterBottom>Storage</Typography>
-      <Box sx={{ borderBottom: "2px solid #ccc", mb: 2 }} />
-      <FilterCheck items={storage} selected={selected.storage ?? []} onChange={(vals) => onChange("storage", vals)}/>
-    </Grid>
+          {sugarOptions.length > 0 && (
+            <FilterTree label="Sugar Free" items={sugarOptions} selected={selected.sugar ?? []} onChange={(vals, last) => { onChange({ key: "sugar", values: vals, lastSelected: last }); }}/>
+          )}
+
+          {storageOptions.length > 0 && (
+            <FilterTree label="Storage" items={storageOptions} selected={selected.storage ?? []} onChange={(vals, last) => { onChange({ key: "storage", values: vals, lastSelected: last }); }}/>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

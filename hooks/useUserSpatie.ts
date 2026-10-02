@@ -1,4 +1,4 @@
-import { apiRequest, clo } from "@amitkk/basic/utils/utils";
+import { apiRequest, clo } from "@amitkk/basic/utils/my-utils/admin-utils";
 import { useEffect, useState } from "react";
 
 interface UserAccess {
@@ -17,7 +17,7 @@ export const useUserAccess = (): UserAccess => {
 
     const fetchAccess = async () => {
       try {
-        const res = await apiRequest("post", "basic/auth", { function: "check_user_access" });
+        const res = await apiRequest("POST", "basic/auth", { function: "check_user_access" });
         if (isMounted) {
           setRoles(res?.data?.roles ?? []);
           setPermissions(res?.data?.permissions ?? []);

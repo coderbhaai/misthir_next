@@ -1,7 +1,7 @@
+import { auditLoggerPlugin } from "lib/server/plugins/auditLogger";
 import mongoose, { Document, Schema, Types } from "mongoose";
-import { auditLoggerPlugin } from "pages/lib/auditLogger";
 
-export interface IFaqProps extends Document<Types.ObjectId> {
+export interface IFaqDoc extends Document<Types.ObjectId> {
   module: string;
   module_id: string | Types.ObjectId;
   question: string;
@@ -12,8 +12,8 @@ export interface IFaqProps extends Document<Types.ObjectId> {
   updatedAt?: Date;
 }
 
-const faqSchema = new Schema<IFaqProps>({
-    module: { type: String, enum: ["Blog", "Destination", "Product", "Page"], required: true },
+const faqSchema = new Schema<IFaqDoc>({
+    module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     question: { type: String, required: true, },
     answer: { type: String, required: true, },
@@ -24,4 +24,4 @@ const faqSchema = new Schema<IFaqProps>({
 
 faqSchema.plugin(auditLoggerPlugin);
 
-export default mongoose.models.Faq || mongoose.model<IFaqProps>("Faq", faqSchema);
+export default mongoose.models.Faq || mongoose.model<IFaqDoc>("Faq", faqSchema);

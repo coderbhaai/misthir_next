@@ -1,11 +1,9 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-export interface ITestimonialProps extends Document<Types.ObjectId> {
-  module: "Blog" | "Destination" | "Page" | "Product";
-  module_id: string | Types.ObjectId;
-  media_id?: Types.ObjectId;
-  name: string;
-  role: string;
+export interface ITestimonialDoc extends Document<Types.ObjectId> {
+  module: string;
+  module_id: mongoose.Types.ObjectId;
+  user_id: Types.ObjectId;
   content: string;
   status: boolean;
   displayOrder?: number;
@@ -13,16 +11,14 @@ export interface ITestimonialProps extends Document<Types.ObjectId> {
   updatedAt?: Date;
 }
 
-const testimonialModelSchema = new Schema<ITestimonialProps>({
-    module: { type: String, enum: ["Blog", "Destination", "Page", "Product"], required: true },
+const testimonialModelSchema = new Schema<ITestimonialDoc>({
+    module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
-    media_id: { type: Schema.Types.ObjectId, ref: 'Media' },
-    name: { type: String, required: true, },
-    role: { type: String, required: true, },
-    content: { type: String, required: true, },
+    user_id: { type: Schema.Types.ObjectId, ref: 'User' },
+    content: { type: String, required: true, translatable: true },
     status: { type: Boolean, required: true, default: true },
     displayOrder: { type: Number, required: false, },
   }, { timestamps: true, toObject: { virtuals: true }, toJSON: { virtuals: true } }
 );
 
-export default mongoose.models.Testimonial || mongoose.model<ITestimonialProps>("Testimonial", testimonialModelSchema);
+export default mongoose.models?.Testimonial || mongoose.model<ITestimonialDoc>("Testimonial", testimonialModelSchema);

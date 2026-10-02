@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface ISubmenuProps extends Document<Types.ObjectId> {
+export interface ISubmenuDoc extends Document<Types.ObjectId> {
   name: string;
   url: string;
   status: boolean;
@@ -11,7 +11,7 @@ export interface ISubmenuProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const spatieSubmenuSchema = new Schema<ISubmenuProps>({
+const spatieSubmenuSchema = new Schema<ISubmenuDoc>({
   name: { type: String, required: true, trim: true },
   url: { type: String, required: true, trim: true },
   status: { type: Boolean, required: true },
@@ -26,4 +26,4 @@ spatieSubmenuSchema.virtual("menusAttached", { ref: "MenuSubmenu", localField: "
 spatieSubmenuSchema.set("toObject", { virtuals: true });
 spatieSubmenuSchema.set("toJSON", { virtuals: true });
 
-export default mongoose.models.SpatieSubmenu || mongoose.model<ISubmenuProps>("SpatieSubmenu", spatieSubmenuSchema);
+export default mongoose.models.SpatieSubmenu || mongoose.model<ISubmenuDoc>("SpatieSubmenu", spatieSubmenuSchema);

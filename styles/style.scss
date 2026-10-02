@@ -1,0 +1,11 @@
+.card {
+    box-shadow: 1px 1px 5px #aaa;
+    transition: .5s all;
+    &:hover{
+        box-shadow: 0 14px 28px #bfbfbf40, 0 10px 10px #84848438;
+    }
+}
+
+button{
+    cursor: pointer
+}

@@ -1,88 +1,35 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
+"use client"
+
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
-import DataModal from "@amitkk/basic/components/comment/comment-modal";
-import { AdminDataTable, DataProps } from "@amitkk/basic/components/comment/admin-comment-table";
+import DataModal from "@amitkk/basic/admin/comment/comment-modal";
+import { AdminDataTable } from "@amitkk/basic/admin/comment/admin-comment-table";
+import { useAdminPage } from "hooks/useAdminPage";
+import { SingleCommentProps } from "@amitkk/basic/types/shared";
 
 export  function AdminComment(){
-    const showCheckBox = false;
-    const table = useTable();
-    const [open, setOpen] = useState(false);
-
-    const handleClose = () => {
-        setOpen(false);
-        setSelectedDataId(null);
-        setUpdatedDataId(null);
-    }
-    const [data, setData] = useState<DataProps[]>([]);
-    const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
-    const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
-    const [filterData, setFilterData] = useState("");
-    const [permissions, setPermissions] = useState<{_id: string; name: string}[]>([]);
-
-    const updateData = async (i: DataProps) => { setUpdatedDataId(i?._id?.toString()); };
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, permissions };
-    const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
-
-    const fetchData = useCallback(async () => {
-        try {
-            const res = await apiRequest("get", `basic/comment?function=get_all_comments`);
-            setData(res?.data ?? []);
-        } catch (error) { clo( error ); }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
-
-    useEffect(() => {
-        if (updatedDataId) {
-            const fetchData = async () => {
-                try {
-                    const res = await apiRequest("get", `/page/get_single_comment?id=${updatedDataId}`);
-                    const data = res?.data;
-                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
+    const admin = useAdminPage<SingleCommentProps>({ listEndpoint: "basic/comment", listFunction: "get_filtered_comments", singleFunction: "get_single_comment" });
     
-                    setData((prevData = []) => {
-                        const exists = prevData.some(i => String(i._id) === String(data._id));
-    
-                        return exists 
-                            ? prevData?.map((i) => 
-                                String(i._id) === String(data._id) ? { ...i, ...data } : i
-                            )
-                            : [...prevData, data];
-                    });
+    const FILTER_CONFIG = [
+        { name: "SearchFilter", grid: "col-span-5", },
+        { name: "ModuleFilter", grid: "col-span-2", },
+        { name: "ModuleIdFilter", grid: "col-span-3", },
+        { name: "StatusFilter", grid: "col-span-2", },
+    ] as const;
 
-                    handleClose();
-
-                } catch (error) { clo( error ); }
-            };
-            fetchData();
-        }
-    }, [updatedDataId]);
-    
-    return(
-        <AdminTableLayout<DataProps>
-            title="Comments" addButtonLabel="New Comment" onAddNew={() => {}} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
+    const head: { id: string; label: string }[] = [
                     { id: "model", label: "Module" },
                     { id: "model_id", label: "Model" },
                     { id: "user", label: "User" },
                     { id: "comment", label: "Comment" },
-                    { id: "status", label: "Status" },
-                    { id: "date", label: "Date" },
                     { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
-                ))}>
-            <DataModal {...modalProps} />
+                ];
+    
+    return(
+        <AdminTableLayout admin={admin} title="Blogs" addButtonLabel="New Blog" filters={FILTER_CONFIG} head={head} 
+            rows={admin.data.map((i) => ( <AdminDataTable key={String(i._id)} row={i} onEdit={(row) => admin.handleEdit(row?._id?.toString())}/> ))}>
+            <DataModal {...admin.modal}/>
         </AdminTableLayout>
     )
 }
 
-export default withAuth(AdminComment);
+export default AdminComment;

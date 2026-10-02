@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Box, Button, MenuItem, TextField } from "@mui/material";
-import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/utils";
 import CustomModal from "@amitkk/basic/static/CustomModal";
+import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { TextField } from "@amitkk/components/basic/TextField";
+import { Button } from "@amitkk/components/button/button";
 
 type AdminAdditionalDiscountModalProps = {
   open: boolean;
@@ -70,7 +71,7 @@ export default function AdminAdditionalDiscountModal({ open, handleClose, cart_i
         }
       };
 
-      const res = await apiRequest("post", "ecom/ecom", payload);
+      const res = await apiRequest("POST", "ecom/ecom", payload);
       if( res?.status){
         handleClose();
       }
@@ -79,19 +80,17 @@ export default function AdminAdditionalDiscountModal({ open, handleClose, cart_i
 
   return (
     <CustomModal open={open} handleClose={handleClose} title="Give Additional Discount">
-      <form onSubmit={handleSubmit}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <TextField label={`Discount (Limit - ${limit})`} type="number" variant="outlined" value={formData.additional_discount} name="additional_discount" fullWidth onChange={handleChange} required slotProps={{ input: { inputProps: { min: 1 } } }}/>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <TextField label="Validity" type="number" variant="outlined" value={formData.admin_discount_validity_value} name="admin_discount_validity_value" onChange={handleChange} fullWidth required slotProps={{ input: { inputProps: { min: 1 } } }}/>
-            <TextField select label="Unit" variant="outlined" value={formData.admin_discount_unit} name="admin_discount_unit" onChange={handleChange}
-              fullWidth required>
+      <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField label={`Discount (Limit - ${limit})`} type="number" value={formData.additional_discount} name="additional_discount" onChange={handleChange} required/>
+          <div className="flex gap-2">
+            <TextField label="Validity" type="number" value={formData.admin_discount_validity_value} name="admin_discount_validity_value" onChange={handleChange} required/>
+            {/* <TextField select label="Unit" value={formData.admin_discount_unit} name="admin_discount_unit" onChange={handleChange}
+              required>
               <MenuItem value="hours">Hours</MenuItem>
               <MenuItem value="days">Days</MenuItem>
-            </TextField>
-          </Box>
-          <Button type="submit" variant="contained" color="primary">Save Discount</Button>
-        </Box>
+            </TextField> */}
+          </div>
+          <Button type="submit" color="primary">Save Discount</Button>
       </form>
     </CustomModal>
   );

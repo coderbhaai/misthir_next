@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { IUserProps } from "../spatie/User";
+import { IUserDoc } from "../spatie/User";
 
 export interface JwtPayload {
   user_id: string;
@@ -13,7 +13,7 @@ export interface IUser {
   phone?: string;
 }
 
-export interface IUserWithRelations extends IUserProps {
+export interface IUserWithRelations extends IUserDoc {
   rolesAttached?: {
     role_id: { _id: Types.ObjectId; name: string };
   }[];

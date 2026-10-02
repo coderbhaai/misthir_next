@@ -1,42 +1,21 @@
-import Grid from '@mui/material/Grid';
-import { Card, Typography, Box, IconButton, Chip, Button } from "@mui/material";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
-import Image from 'next/image';
-import Link from 'next/link';
-import { SingleBlogProps } from '@amitkk/blog/types/blog';
-import { MediaProps } from '@amitkk/basic/types/page';
+import Link from "next/link";
+import type { SingleBlogProps } from "@amitkk/basic/types/shared";
+import type { MediaProps } from "@amitkk/basic/types/media";
+import CardImage from "@amitkk/components/basic/CardImage";
 
-export function SingleBlogItem({ row }: { row: Partial<SingleBlogProps & { media_id?: string | MediaProps }> }) {
-  const imagePath = typeof row.media_id === "string"
-    ? "/default.jpg"
-    : (row.media_id as any)?.path || "/default.jpg";
-    
-  const imageAlt = typeof row.media_id === "string"
-    ? row.name || "Inspiration Image"
-    : (row.media_id as any)?.alt || "Inspiration Image";
-
+export default function SingleBlogItem({row}: {row: Partial<SingleBlogProps & { media_id?: string | MediaProps }>;}) {
   return (
-    <Grid size={4}>
-        <Card sx={{ mb: 2, boxShadow: 3, position: "relative", width: '100%', height: '300px', overflow: "hidden" }}>
-            <Link href={`/${row.url}`} passHref>
-                <Image src={imagePath} alt={imageAlt} fill style={{ objectFit: 'cover' }}/>
-            </Link>
-            {/* <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", alignItems: "center", display: "flex", flexDirection: "row", justifyContent: "space-between", color: "#fff", p: 2, backgroundImage: "linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent)" }}>
-                <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                    <IconButton sx={{ color: "white" }}><BookmarkBorderIcon /></IconButton>
-                    <IconButton sx={{ color: "white" }}><FavoriteBorderIcon /></IconButton>
-                    <IconButton sx={{ color: "white" }}><ChatBubbleOutlineIcon /></IconButton>
-                </Box>
-            </Box> */}
+    <article className="group h-full overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-300 hover:shadow-2xl mb-3 md: mb-5">
+      <CardImage media={(row as any).media_id} url={row.url ?? ""} badge={row.metas?.[0]?.blogmeta_id}/>
 
-            <Box sx={{ position: "absolute", top: 0, bottom: 0, width: "100%", display: "flex", flexDirection: "column", justifyContent: "end", color: "#fff", p: 2, backgroundImage: "linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent)" }}>
-                <Typography variant="h6" fontWeight="thin">
-                    <Link href={`/${row.url}`} passHref>{row.name}</Link>
-                </Typography>
-            </Box>
-        </Card>
-    </Grid>
+      <div className="flex flex-col gap-2  p-2 md:p-6">
+        <Link href={`/${row.url}`}>
+          <h3 className="line-clamp-2">{row.name}</h3>
+        </Link>
+        <span className="text-xs">10 min read</span>
+
+        <p className="line-clamp-3 text-sm">{row.excerpt}</p>
+      </div>
+    </article>
   );
 }

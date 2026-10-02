@@ -1,7 +1,7 @@
-import SellerCouponForm from '@amitkk/seller/admin/add-update-seller-coupon-form';
+import AddUpdateCouponForm from '@amitkk/coupon/admin/add-update-coupon-form';
 
 const AddAdminCoupon = () => {
-  return <SellerCouponForm dataId={''} />;
+  return <AddUpdateCouponForm dataId={''} />;
 };
 
 export default AddAdminCoupon;

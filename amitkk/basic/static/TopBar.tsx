@@ -1,31 +1,24 @@
-import { Phone, KeyboardArrowDown } from '@mui/icons-material';
-import { Box, Typography, Divider, Stack } from '@mui/material';
+// TopBar.tsx
 
-export default function TopBar() {
+import SocialMedia from "./SocialMedia";
+import { Phone } from "lucide-react";
+
+interface TopBarProps {
+  bg?: string;
+}
+
+export default function TopBar({ bg = "#f5f5f5"}: TopBarProps) {
+  const isDarkBg = bg === "#061b5a";
+  const iconColor = isDarkBg ? "#ffffff" : "#14213d";
+  const hoverColor = isDarkBg ? "#ffb703" : "#ff4081";
+
   return (
-    <Box 
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        fontSize: '0.875rem', // text-sm
-        px: 2,
-        py: 0.5,
-        color: '#555'
-      }}
-    >
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Typography variant="body2">Google 4.7/5</Typography>
-        <Divider orientation="vertical" flexItem sx={{ bgcolor: '#555', height: 14 }} />
-        <Typography variant="body2">Trustpilot 4.8/5</Typography>
-      </Stack>
-
-      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ cursor: 'pointer' }}>
-        <Typography variant="body2">Contact us 7 days</Typography>
-        <Phone fontSize="small" sx={{ fontSize: '0.75rem' }} />
-        <Typography variant="body2" fontWeight="medium">+91 803 783 5334</Typography>
-        <KeyboardArrowDown fontSize="small" />
-      </Stack>
-    </Box>
+    <div className="flex items-center justify-end px-3 py-2">
+      <a href="tel:+919311924733" className="flex items-center gap-1 text-sm font-medium mr-5">
+        <Phone className="h-3.5 w-3.5 text-black" />
+        <span style={{ color: "#000" }}>+91 93119 24733</span>
+      </a>
+      <SocialMedia/>
+    </div>
   );
 }

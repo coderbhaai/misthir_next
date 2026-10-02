@@ -1,88 +1,50 @@
-import { useState, useEffect, useCallback } from "react";
-import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
-import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
-import { AdminDataTable, DataProps } from "@amitkk/basic/components/spatie/admin-menu-table";
-import DataModal from "@amitkk/basic/components/spatie/menu-modal";
-import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
+"use client"
 
-export  function AdminMenu(){
-    const table = useTable();
-    const [open, setOpen] = useState(false);
-    const handleClose = () => {
-        setOpen(false);
-        setSelectedDataId(null);
-        setUpdatedDataId(null);
+import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
+import { AdminDataTable, DataProps, } from "@amitkk/basic/admin/spatie/admin-menu-table";
+import DataModal from "@amitkk/basic/admin/spatie/menu-modal";
+import { useAdminPage } from "hooks/useAdminPage";
+
+export function AdminMenu() {
+    const admin = useAdminPage<DataProps>({
+        listEndpoint: "basic/menu",
+        listFunction: "get_filtered_menus",
+    });
+    
+    function flattenMenus(menus: DataProps[]): DataProps[] {
+        let rows: DataProps[] = [];
+        menus.forEach((menu) => {
+            rows.push(menu);
+            if (menu.children?.length) {
+                rows = rows.concat(flattenMenus(menu.children));
+            }
+        });
+        return rows;
     }
 
-    const [data, setData] = useState<DataProps[]>([]);
-    const [selectedDataId, setSelectedDataId] = useState<string | number | null>(null);
-    const [updatedDataId, setUpdatedDataId] = useState<string | number | null>(null);
-    const [filterData, setFilterData] = useState("");
-    const [submenu, setSubmenu] = useState<{_id: string; name: string}[]>([]);
+    const FILTER_CONFIG = [
+        { name: "SearchFilter", grid: "col-span-9", },
+        { name: "StatusFilter", grid: "col-span-3", },
+    ] as const;
 
-    const updateData = async (i: DataProps) => { setUpdatedDataId(i._id.toString()); };
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
-    const modalProps = { open, handleClose, selectedDataId, onUpdate: updateData, submenuOptions: submenu };
-    const handleEdit = (row: DataProps) => { setSelectedDataId(row._id.toString()); setOpen(true); };
+    const head = [
+        { id: "name", label: "Name" },
+        { id: "URL", label: "URL" },
+        { id: "media", label: "Media" },
+        { id: "Permission", label: "Permission" },
+        { id: "", label: "" },
+    ];
 
-    const fetchData = useCallback(async () => {
-        try {
-            const res_1 = await apiRequest("get", `basic/spatie?function=get_all_menus`);
-            setData(res_1?.data ?? []);
-            
-            const res_2 = await apiRequest("get", `basic/spatie?function=get_all_submenus`);
-            setSubmenu(res_2?.data ?? []);
-        } catch (error) { clo( error ); }
-    }, []);
+    const flatRows = flattenMenus(admin.data);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
-
-    useEffect(() => {
-        if (updatedDataId) {
-            const fetchData = async () => {
-                try {
-                    const res = await apiRequest("get", `basic/spatie?function=get_single_menu&id=${updatedDataId}`);
-                    const data = res?.data;
-                    if (!data || !data._id) { clo("Invalid data received:", data); await fetchData(); return; }
-    
-                    setData((prevData = []) => {
-                        const exists = prevData.some(i => String(i._id) === String(data._id));
-    
-                        return exists 
-                            ? prevData?.map((i) => 
-                                String(i._id) === String(data._id) ? { ...i, ...data } : i
-                            )
-                            : [...prevData, data];
-                    });
-                    handleClose();
-    
-                } catch (error) { clo( error ); }
-            };
-            fetchData();
-        }
-    }, [updatedDataId]);
-
-    return(
-        <AdminTableLayout<DataProps>
-            title="Menus" addButtonLabel="New Menu" onAddNew={() => setOpen(true)} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
-                    { id: "name", label: "Name" },
-                    { id: "media", label: "Media" },
-                    { id: "status", label: "Status" },
-                    { id: "Sub Menu", label: "Sub Menu" },
-                    { id: "date", label: "Date" },
-                    { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
-                ))}>
-            <DataModal {...modalProps} />
+    return (
+        <AdminTableLayout admin={admin} title="Menus" addButtonLabel="New Menu" filters={FILTER_CONFIG} head={head} 
+            rows={flatRows.map((i) => (
+                <AdminDataTable key={String(i._id)} row={i} onEdit={(row) => admin.handleEdit(row?._id?.toString())}/>
+            ))}>
+            <DataModal {...admin.modal}/>
         </AdminTableLayout>
-    )
+    );
 }
 
-export default withAuth(AdminMenu);
+export default AdminMenu;

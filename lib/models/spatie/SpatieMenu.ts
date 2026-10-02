@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface IMenuProps extends Document<Types.ObjectId> {
+export interface IMenuDoc extends Document<Types.ObjectId> {
   name: string;
   status: boolean;
   displayOrder?: number;
@@ -9,7 +9,7 @@ export interface IMenuProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const spatieMenuSchema = new Schema<IMenuProps>({
+const spatieMenuSchema = new Schema<IMenuDoc>({
   name: { type: String, required: true, trim: true },
   status: { type: Boolean, required: true },
   displayOrder: { type: Number, required: false },
@@ -21,4 +21,4 @@ spatieMenuSchema.virtual("submenusAttached", { ref: "MenuSubmenu", localField: "
 spatieMenuSchema.set("toObject", { virtuals: true });
 spatieMenuSchema.set("toJSON", { virtuals: true });
 
-export default mongoose.models.SpatieMenu || mongoose.model<IMenuProps>("SpatieMenu", spatieMenuSchema);
+export default mongoose.models.SpatieMenu || mongoose.model<IMenuDoc>("SpatieMenu", spatieMenuSchema);

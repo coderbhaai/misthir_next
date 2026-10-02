@@ -1,30 +1,9 @@
-// components/Loader.tsx
-"use client";
+import Image from "next/image";
 
-import { Box, CircularProgress, Typography } from "@mui/material";
-import React from "react";
-
-interface LoaderProps {
-  message?: string;
-  height?: string | number;
-}
-
-const Loader: React.FC<LoaderProps> = ({ message = "Loading...", height = "70vh" }) => {
+export default function Loader() {
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      height={height}
-      width="100%"
-    >
-      <CircularProgress color="primary" size={60} />
-      <Typography variant="body1" sx={{ mt: 2, color: "text.secondary" }}>
-        {message}
-      </Typography>
-    </Box>
+    <div className="fixed inset-0 z-[2000] flex h-screen w-screen items-center justify-center bg-white">
+      <Image src="/images/logo.svg" alt="Loading..." width={160} height={160} priority className="animate-pulse"/>
+    </div>
   );
-};
-
-export default Loader;
+}

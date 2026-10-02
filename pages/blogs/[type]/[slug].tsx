@@ -1,74 +1,116 @@
+import React from "react";
 import { GetServerSideProps } from "next";
-import { apiRequest, get404Url } from "@amitkk/basic/utils/utils";
-import { SingleBlogItem } from "@amitkk/blog/static/single-blog-item";
-import { SingleBlogProps } from "@amitkk/blog/types/blog";
-import { Box, Container, Typography, Grid } from "@mui/material";
-
-interface BlogMeta {
-  _id: string;
-  type: string;
-  name: string;
-  url: string;
-}
+import { apiRequest } from "@amitkk/basic/utils/my-utils/admin-utils";
+import SingleBlogItem from "@amitkk/blog/static/single-blog-item";
+import { usePaginatedData } from "hooks/usePaginatedData";
+import { useSearchFilter } from "hooks/useSearchFilter";
+import SearchInput from "@amitkk/basic/utils/filters/SearchInput";
+import { serverApiRequest, resolveMeta } from "@amitkk/basic/utils/my-utils/client-utils";
+import { MetaProps, SingleBlogProps } from "@amitkk/basic/types/shared";
 
 interface BlogListingProps {
   blogs: SingleBlogProps[];
   type: string;
   slug: string;
   heading: string;
-  blogmeta?: BlogMeta | null;
+  blogmeta?: any;
+  fetchConfig: {
+    basePath: string;
+    functionName: string;
+    limit: number;
+    params: Record<string, string>;
+  };
+  meta: MetaProps;
 }
 
-export default function BlogListingPage({ blogs, type, slug, blogmeta, heading }: BlogListingProps) {
+export default function BlogListingPage({
+  blogs: initialData,
+  type,
+  heading,
+  fetchConfig,
+}: BlogListingProps) {
+
+  const fetchMore = async (page: number) => {
+    const query = new URLSearchParams({
+      function: fetchConfig.functionName,
+      page: String(page),
+      limit: String(fetchConfig.limit),
+      ...fetchConfig.params,
+    });
+
+    return await apiRequest("GET", `${fetchConfig.basePath}?${query.toString()}`);
+  };
+
+  const { data } = usePaginatedData({ initialData, fetchMore });
+
   const isCategory = type === "category";
   const titlePrefix = isCategory ? "Category" : "Tag";
-  const displayName = blogmeta?.name || slug.replace(/-/g, " ");
+
+  const { searchQuery, setSearchQuery, filteredData } = useSearchFilter(data);
 
   return (
-    <>
-      <Box sx={{ py: 5 }}>
-        <Typography variant="h1" sx={{ textAlign: "center" }}>{heading}</Typography>
-      </Box>
-
-      <Container sx={{ py: 5 }}>
-        <Grid container spacing={3}>
-          {blogs?.length ? (
-            blogs.map((i) => (
-              <SingleBlogItem key={i._id.toString()} row={i}/>
-            ))
-          ) : (
-            <Typography variant="h2" sx={{ textAlign: "center", width: "100%", py: 5 }}>No blogs found for this {titlePrefix.toLowerCase()}.</Typography>
-          )}
-        </Grid>
-      </Container>
-    </>
+    <div className="container py-5 md:py-12">
+      <h1 className="heading">{heading}</h1>
+      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search Blogs..."/>
+      
+      <div className="row">
+        {filteredData?.length ? (
+          filteredData.map((i: SingleBlogProps) => (
+            <div key={i._id} className="col-span-12 md:col-span-3">
+              <SingleBlogItem row={i} />
+            </div>
+          ))
+        ) : (
+          <h2 className="py-5 text-center">No blogs found for this {titlePrefix.toLowerCase()}.</h2>
+        )}
+      </div>
+    </div>
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({ params, req }) => {
   const type = params?.type as string;
   const slug = params?.slug as string;
-  const redirectUrl =  get404Url();
 
-  if (type !== "category" && type !== "tag") { return { redirect: { destination: redirectUrl, permanent: false } }; }
+  if (type !== "category" && type !== "tag") {
+    return {
+     notFound: true,
+    };
+  }
+
+  const limit = 10;
 
   try {
-    const res = await apiRequest("post", "blog/blogs", { function: "get_blogs_by_meta", meta_type: type, meta_url: slug });
+    const apiRes = await serverApiRequest( req, "GET", `blog/blogs?function=get_blogs_by_meta&meta_type=${type}&meta_url=${slug}&page=1&limit=${limit}` );
+    if (!apiRes) return { notFound: true };
 
-    const blogs = res?.data || [];
-    const blogmeta = res?.blogmeta || null;
+    const blogs = apiRes?.data || [];
+    const blogmeta = apiRes?.blogmeta || null;
 
-    if (!blogmeta) {
-      return { redirect: { destination: redirectUrl, permanent: false } };
-    }
+    const heading = blogmeta ? `Blogs of ${blogmeta.type} ${blogmeta.name}` : `Blogs`;
 
-    const heading = `Blogs of ${blogmeta.type} ${blogmeta.name}`;
+    const meta = resolveMeta(blogmeta.meta_id);
 
-    return { props: { blogs, type, slug, blogmeta, heading } };
+    return {
+      props: {
+        blogs,
+        type,
+        slug,
+        blogmeta,
+        heading,
+        meta,
+        fetchConfig: {
+          basePath: "blog/blogs",
+          functionName: "get_blogs_by_meta",
+          limit,
+          params: {
+            meta_type: type,
+            meta_url: slug,
+          },
+        },
+      },
+    };
   } catch (error) {
-    console.error("Error fetching blogs:", error);
     return { notFound: true };
-
-    // return { redirect: { destination: redirectUrl, permanent: false } };
   }
 };

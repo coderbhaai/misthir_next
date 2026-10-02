@@ -1,124 +1,145 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
-import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
 import router from "next/router";
-import DataModal from "@amitkk/product/admin/commission-modal";
-import { AdminDataTable } from "@amitkk/product/admin/admin-commission-table";
-import { OptionProps } from "@amitkk/basic/types/page";
-import { Button, Grid, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
-import { Types } from "mongoose";
-
-interface DataProps {
-  _id: string;
-  productmeta_id: string | OptionProps;
-  vendor_id: string | OptionProps;
-  name?: string;
-  percentage: number | string;
-}
+import { apiRequest, clo } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { Button } from "@amitkk/components/button/button";
+import { TextField } from "@amitkk/components/basic/TextField";
 
 interface AdminCommissionProps {
-  vendor_id: string;
+    seller_id: string;
 }
 
-interface PercentageEntry {
-  productmeta_id: string;
-  name: string;
-  percentage: number | "";
+interface CommissionEntry {
+    _id?: string | null;
+    module: string;
+    module_id: string;
+    name: string;
+    percentage: number | "";
 }
 
-export default function AdminVendorCommission({ vendor_id }: AdminCommissionProps) {
-    const [data, setData] = useState<DataProps[]>([]);
-    const [productmetaOptions, setProductmetaOptions] = useState<OptionProps[]>([]);
-    const [percentages, setPercentages] = useState<PercentageEntry[]>([]);
+export default function AdminSellerCommission({ seller_id }: AdminCommissionProps) {
+    const [commissions, setCommissions] = useState<CommissionEntry[]>([]);
     const [title, setTitle] = useState<string>("All Commissions");
-    const [vendor, setVendor] = useState("");
+    const [seller, setSeller] = useState<any>(null);
 
     const fetchData = useCallback(async () => {
         try {
-            const res_1 = await apiRequest("get", `product/basic?function=get_all_commissions&vendor_id=${encodeURIComponent(vendor_id)}`);
-            const commissionData: DataProps[] = res_1?.data ?? [];
-            setData(commissionData);
-
-            const res_2 = await apiRequest("get", `product/basic?function=get_product_meta_by_module&module=Type`);
-            const productmetaData: OptionProps[] = res_2?.data ?? [];
-            setProductmetaOptions(productmetaData);
-
-            const merged = productmetaData.map((pm) => {
-            const existing = commissionData.find((c) => {
-                const pmId = typeof c.productmeta_id === "object" ? c.productmeta_id._id : c.productmeta_id;
-                const vId  = typeof c.vendor_id === "object" ? c.vendor_id._id : c.vendor_id;
-
-                return (
-                    pmId?.toString() === pm._id.toString() &&
-                    vId?.toString() === vendor_id?.toString()
-                );
+            const resModules = await apiRequest("POST", `ecom/commission`, {
+                function: "get_all_commission_modules",
+                seller_id            
             });
+            
+            const rawData: Array<{
+                _id?: string | null;
+                module: string;
+                module_id: string;
+                name: string;
+                percentage: number | null;
+            }> = resModules?.data ?? [];
 
-            return {
-                productmeta_id: pm._id,
-                name: pm.name,
-                vendor_id,
-                percentage: existing ? Number(existing.percentage) : 0,
-                _id: existing ? existing._id : "",
-            };
-            });
-            setPercentages(merged);
+            const formattedCommissions: CommissionEntry[] = rawData.map((item) => ({
+                _id: item._id,
+                module: item.module,
+                module_id: item.module_id,
+                name: item.name,
+                percentage: item.percentage !== null && item.percentage !== undefined ? Number(item.percentage) : "",
+            }));
 
-            const res_3 = await apiRequest("get", `basic/spatie?function=get_single_user&id=${encodeURIComponent(vendor_id)}`);
-            setVendor(res_3?.data);
+            setCommissions(formattedCommissions);
+            const resSeller = await apiRequest("GET", `basic/spatie?function=get_single_user&id=${encodeURIComponent(seller_id)}`);
+            setSeller(resSeller?.data);
 
-            if( res_2?.data ){ setTitle(`Commission For ${res_3?.data?.name}`); }else{
+            if (resSeller?.data) {
+                setTitle(`Commission For ${resSeller.data.name}`);
+            } else {
                 router.push('/404');
             }
-        } catch (error) { clo( error ); }
-    }, []);
+        } catch (error) { clo(error); }
+    }, [seller_id]);
 
     useEffect(() => {
-        if (vendor_id && vendor_id.trim().length > 0) {
+        if (seller_id && seller_id.trim().length > 0) {
             fetchData();
         }
-    }, [vendor_id]);
+    }, [seller_id, fetchData]);
 
-    const handlePercentageChange = (id: string, value: string) => {
-        setPercentages((prev) =>
-            prev.map((entry) => entry.productmeta_id === id ? { ...entry, percentage: value === "" ? "" : Number(value) } : entry )
+    const handlePercentageChange = (module_id: string, value: string) => {
+        setCommissions((prev) =>
+            prev.map((entry) => 
+                entry.module_id === module_id 
+                    ? { ...entry, percentage: value === "" ? "" : Number(value) } 
+                    : entry 
+            )
         );
     };
     
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const payload = percentages.filter((p) => p.percentage !== "");
-        const updatedData = {
-            function: "create_update_vendor_commission",
+        const payload = commissions.filter((p) => p.percentage !== "").map((p) => ({
+                module: p.module,
+                module_id: p.module_id,
+                user_id: seller_id,
+                percentage: p.percentage,
+                ...(p._id ? { _id: p._id } : {})
+            }));
+
+        await apiRequest("POST", `ecom/commission`, {
+            function: "create_update_seller_commission",
             data: payload,
-        };
-        try {
-          const res = await apiRequest("post", `product/basic`, updatedData);
-          
-        }catch (error) { clo( error ); }
-    }
+            user_id: seller_id
+        });
+    };
     
-    return(       
+    return (       
        <>
-            <Typography variant="h4" flexGrow={1}>{title}</Typography>
+            <h4 className="mb-4">{title}</h4>
             
             <form onSubmit={handleSubmit}>
-                <Grid container spacing={3} mt={5}>
-                    {percentages.map((item) => (
-                        <Grid size={4} key={item.productmeta_id}>
-                            <Typography variant="body1" gutterBottom>{item.name}</Typography>
-                            <TextField type="number" fullWidth placeholder="Enter percentage" value={item.percentage} 
-                                onChange={(e) => handlePercentageChange(item.productmeta_id, e.target.value) }
-                                slotProps={{ input: { inputProps: { min: 0, max: 100 } } }}/>
-                        </Grid>
-                    ))}
-                </Grid>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="border-b bg-gray-50">
+                                <th className="p-3">Module Type</th>
+                                <th className="p-3">Name</th>
+                                <th className="p-3 w-1/3">Commission Percentage (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {commissions.length > 0 ? (
+                                commissions.map((item) => (
+                                    <tr className="border-b hover:bg-gray-50" key={`${item.module}-${item.module_id}`}>
+                                        <td className="p-3">
+                                            <span className="px-2 py-1 text-xs font-semibold bg-gray-100 rounded text-gray-700">
+                                                {item.module}
+                                            </span>
+                                        </td>
+                                        <td className="p-3 font-medium">{item.name}</td>
+                                        <td className="p-3">
+                                            <TextField 
+                                                type="number" 
+                                                placeholder="Enter percentage" 
+                                                value={item.percentage} 
+                                                onChange={(e) => handlePercentageChange(item.module_id, e.target.value)} 
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={3} className="text-center p-4 text-gray-500">
+                                        No modules found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
-                <Button type="submit" variant="contained" sx={{ mt: 2 }}>Save</Button>
+                <div className="mt-4">
+                    <Button type="submit">Save All Commissions</Button>
+                </div>
             </form>
-        </>
-    )
+       </>
+    );
 }

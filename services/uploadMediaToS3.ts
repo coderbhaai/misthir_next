@@ -3,8 +3,8 @@ import fs from "fs";
 import FormData from "form-data";
 import fetch from "node-fetch";
 import Media from "lib/models/basic/Media";
-import { isValidObjectId } from "@amitkk/basic/utils/utils";
-import { log } from "pages/api/utils";
+import { logError } from "pages/api/utils";
+import { isValidObjectId } from "mongoose";
 
 interface UploadMediaParams {
   file: any;
@@ -21,13 +21,8 @@ const CLOUDFLARE_AUTH_HEADER = {
 export const uploadMediaToS3 = async ({ file, name, pathType, media_id = null }: UploadMediaParams): Promise<string | null> => {
   try {
     if (!file) return media_id ?? null;
+    if (media_id && isValidObjectId(media_id)) { await deleteMediaFromCloudflareImages(media_id); }
 
-    // 🔹 If updating, delete the old one first
-    if (media_id && isValidObjectId(media_id)) {
-      await deleteMediaFromCloudflareImages(media_id);
-    }
-
-    // 🔹 Prepare form data
     const form = new FormData();
     form.append("file", fs.createReadStream(file.filepath), {
       filename: file.originalFilename,
@@ -35,7 +30,6 @@ export const uploadMediaToS3 = async ({ file, name, pathType, media_id = null }:
     });
     form.append("metadata", JSON.stringify({ name, alt: name }));
 
-    // 🔹 Upload to Cloudflare
     const response = await fetch(CLOUDFLARE_IMAGES_URL, {
       method: "POST",
       headers: CLOUDFLARE_AUTH_HEADER,
@@ -56,17 +50,12 @@ export const uploadMediaToS3 = async ({ file, name, pathType, media_id = null }:
     };
 
     const result: CloudflareResponse = (await response.json()) as CloudflareResponse;
-
-    if (!result.success) { log(result.errors); return null; }
+    if (!result.success) { return null; }
 
     const image = result.result;
     const publicUrl = image.variants[0];
-
     
-    const entry = media_id
-      ? await Media.findByIdAndUpdate(
-          media_id,
-          {
+    const entry = media_id ? await Media.findByIdAndUpdate(media_id, {
             alt: name,
             path: publicUrl,
             cloudflare: {
@@ -76,9 +65,7 @@ export const uploadMediaToS3 = async ({ file, name, pathType, media_id = null }:
               variants: image.variants,
               metadata: image.metadata ?? {},
             },
-          },
-          { new: true }
-        )
+          }, { new: true })
       : await Media.create({
           alt: name,
           path: publicUrl,
@@ -92,7 +79,7 @@ export const uploadMediaToS3 = async ({ file, name, pathType, media_id = null }:
         });
 
     return entry._id.toString();
-  } catch (err) { log(err); return null; }
+  } catch (error) { await logError(error, { function: "uploadMediaToS3", payload: {} }); return null; }
 };
 
 export const deleteMediaFromCloudflareImages = async ( media_id: string ): Promise<boolean> => {
@@ -108,7 +95,7 @@ export const deleteMediaFromCloudflareImages = async ( media_id: string ): Promi
     });
 
     return true;
-  } catch (err) { log(err); return false; }
+  } catch (error) { await logError(error, { function: "deleteMediaFromCloudflareImages", payload: {media_id} }); return false; }
 };
 
 export const getImageVariantUrl = ( imageId: string, variant: string ): string => {

@@ -1,46 +1,45 @@
-import { MUICarousel } from "@amitkk/basic/static/MUICarousel";
-import { Container, Typography } from "@mui/material";
-import { useState } from "react";
-import Grid from '@mui/material/Grid';
+import HeaderCrumbOne from "@amitkk/components/ui/HeaderCrumbOne";
 import { SingleProductItem } from "./single-product-item";
-import { ProductRawDocument } from "lib/models/types";
+import SwiperJS from "@amitkk/basic/static/Swiper";
+import { SingleProductItemProps } from "../types";
+import { UI_STRINGS } from "@amitkk/basic/utils/config";
+import { PageDetailProps } from "@amitkk/basic/types/page";
 
-export interface ProductFinalProps {
-  products: ProductRawDocument[];
+export interface Props {
+  data: SingleProductItemProps[];
+  details?: PageDetailProps;
 }
 
-export default function SuggestProducts({ products = [] }: ProductFinalProps) {
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    cssEase: "linear",
-    arrows: true,
-    responsive: [
-      { breakpoint: 768, settings: { slidesToShow: 1, slidesToScroll: 1, centerMode: true, centerPadding: '60px', } },
-      { breakpoint: 1024, settings: { slidesToShow: 3, slidesToScroll: 1, } }, 
-      { breakpoint: 1200, settings: { slidesToShow: 3, slidesToScroll: 1, } },
-    ]
-  };
+export default function SuggestProducts({ data = [], details }: Props) {
+  if (!data || data.length === 0) return null;
 
-  if (!products || products.length === 0) return null;
+  const heading = details?.product_title?.trim() || UI_STRINGS.product_title;
+  const text = details?.product_text?.trim() || UI_STRINGS.product_text;
+  const shouldUseCarousel = data.length >= 4;
 
-  return (
-    <Grid size={12} sx={{ py: 5 }}>
-      <Typography variant="h3" gutterBottom>Our Products</Typography>
-      {products.length < 4 ? (
-        <Grid container spacing={3}>
-          {products.map((i) => ( <SingleProductItem key={i._id.toString()} row={i}/>))}
-        </Grid>
-      ) : (
-        <MUICarousel settings={settings}>
-          {products.map((i) => ( <SingleProductItem key={i._id.toString()} row={i}/>))}
-        </MUICarousel>
+return (
+    <section className="container py-12">
+      <HeaderCrumbOne heading={heading} text={text} url="/shop" url_text="All Products"/>
+
+      {!shouldUseCarousel && (
+        <div className="row">
+          {data.map((i, index) => ( <div className="col-span-12 md:col-span-3" key={`${i._id ? String(i._id) : "blog"}-${index}`}><SingleProductItem row={i}/></div> ))}
+        </div>
       )}
-    </Grid>
-  );
+
+      {shouldUseCarousel && (
+        <SwiperJS<SingleProductItemProps>
+          items={data}
+          getItemKey={(item, index) => `${item._id ? String(item._id) : "blog"}-${index}`}
+          renderItem={(item) => <SingleProductItem row={item} />}
+          darkControls={true}
+          breakpoints={{
+            640: { slidesPerView: 1 },
+            1024: { slidesPerView: 2 },
+            1280: { slidesPerView: 3 },
+          }}
+        />
+      )}
+    </section>
+  )
 }

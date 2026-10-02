@@ -4,9 +4,10 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { sellerComponentMap } from "../../amitkk/componentMaps";
-import { checkPermission, clo, get404Url } from "@amitkk/basic/utils/utils";
 import Loader from "@amitkk/basic/static/Loader";
 import { getCookie } from "hooks/CookieHook";
+import { get404Url } from "@amitkk/basic/utils/my-utils/client-utils";
+import { checkPermission, clo } from "@amitkk/basic/utils/my-utils/admin-utils";
 
 const DynamicSellerPage: React.FC & { delayLayoutRender?: boolean } = () => {
   const router = useRouter();
@@ -55,7 +56,7 @@ const DynamicSellerPage: React.FC & { delayLayoutRender?: boolean } = () => {
     loadComponent();
   }, [slug, router.isReady]);
   
-  if (loading) return <Loader message="Loading seller page..." />;
+  if (loading) return <Loader/>;
   if (!Component) return <h1>Page Not Found</h1>;
 
   return (

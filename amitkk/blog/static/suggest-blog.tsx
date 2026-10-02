@@ -1,45 +1,45 @@
-import { MUICarousel } from "@amitkk/basic/static/MUICarousel";
-import { SingleBlogItem } from "@amitkk/blog/static/single-blog-item";
-import { Container, Typography } from "@mui/material";
-import Grid from '@mui/material/Grid';
+import type { SingleBlogProps } from "@amitkk/basic/types/shared";
+import type { PageDetailProps } from "@amitkk/basic/types/page";
+import SingleBlogItem from "@amitkk/blog/static/single-blog-item";
+import HeaderCrumbOne from "@amitkk/components/ui/HeaderCrumbOne";
+import SwiperJS from "@amitkk/basic/static/Swiper";
+import { UI_STRINGS } from "@amitkk/basic/utils/config";
 
-export interface BlogFinalProps {
-  blogs: BlogProps[];
+export interface Props {
+  data: SingleBlogProps[];
+  details?: PageDetailProps;
 }
-  
-export default function SuggestBlogs({ blogs = [] }: BlogFinalProps) {
-  
-  if (!blogs || blogs.length === 0) return null;
-  
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    cssEase: "linear",
-    arrows: true,
-    responsive: [
-      { breakpoint: 768, settings: { slidesToShow: 1, slidesToScroll: 1, centerMode: true, centerPadding: '60px', } },
-      { breakpoint: 1024, settings: { slidesToShow: 3, slidesToScroll: 1, } }, 
-      { breakpoint: 1200, settings: { slidesToShow: 3, slidesToScroll: 1, } },
-    ]
-  };
-  
+
+export default function SuggestBlogs({data = [], details }: Props) {
+  if (!data?.length) return null;
+
+  const heading = details?.blog_title?.trim() || UI_STRINGS.blog_title;
+  const text = details?.blog_text?.trim() || UI_STRINGS.blog_text;
+  const shouldUseCarousel = data.length >= 4;
+
   return (
-    <Grid size={12} sx={{ py: 5 }}>
-      <Typography variant="h3" gutterBottom>Interesting Reads</Typography>
-      {blogs?.length < 4 ? (
-        <Grid container spacing={3}>
-          {blogs?.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
-        </Grid>
-      ) : (
-        <MUICarousel settings={settings}>
-          {blogs?.map((i) => ( <SingleBlogItem key={i._id.toString()} row={i}/>))}
-        </MUICarousel>
+    <section className="container py-12">
+      <HeaderCrumbOne heading={heading} text={text} url="/blogs" url_text="All Blogs"/>
+
+      {!shouldUseCarousel && (
+        <div className="row">
+          {data.map((i, index) => ( <div className="col-span-12 md:col-span-3" key={`${i._id ? String(i._id) : "blog"}-${index}`}><SingleBlogItem row={i}/></div> ))}
+        </div>
       )}
-    </Grid>
+
+      {shouldUseCarousel && (
+        <SwiperJS<SingleBlogProps>
+          items={data}
+          getItemKey={(item, index) => `${item._id ? String(item._id) : "blog"}-${index}`}
+          renderItem={(item) => <SingleBlogItem row={item} />}
+          darkControls={true}
+          breakpoints={{
+            640: { slidesPerView: 1 },
+            1024: { slidesPerView: 2 },
+            1280: { slidesPerView: 3 },
+          }}
+        />
+      )}
+    </section>
   );
 }

@@ -1,7 +1,6 @@
-import { Box, Checkbox, FormControlLabel, Typography } from "@mui/material";
+import { Checkbox } from "@amitkk/components/basic/checkbox";
 import { Types } from "mongoose";
 import Link from "next/link";
-import { useState } from "react";
 
 export interface singleFilterItem {
   _id: string | Types.ObjectId;
@@ -17,49 +16,29 @@ interface FilterCheckProps {
   basePath?: string;
 }
 
-export function FilterCheck({
-  items,
-  selected,
-  onChange,
-  withLinks = false,
-  basePath = "",
-}: FilterCheckProps) {
+export function FilterCheck({ items, selected, onChange, withLinks = false, basePath = "" }: FilterCheckProps) {
   const handleToggle = (id: string) => {
-    const newSelected = selected.includes(id as string)
-      ? selected.filter((s) => s !== id)
-      : [...selected, id];
+    const newSelected = selected.includes(id as string) ? selected.filter((s) => s !== id) : [...selected, id];
     onChange(newSelected);
   };
 
   return (
-    <Box>
+    <div className="flex flex-wrap gap-2">
       {items.map((item) => {
-        const isChecked = selected.includes(item._id as string);
+        const itemId = item._id.toString();
+        const isChecked = selected.includes(itemId);
 
         return (
-          <Box
-            key={item._id as string}
-            sx={{
-              px: 2,
-              py: 0.5,
-              mb: 1,
-              mr: 1,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <Checkbox checked={isChecked} onChange={() => handleToggle(item._id as string)} size="small"/>
+          <div key={itemId} className="inline-flex items-center gap-2 px-3 py-1 mb-1 mr-1 border border-border rounded-md bg-card hover:bg-muted/50 transition-colors">
+            <Checkbox id={`filter-${itemId}`} checked={isChecked} onCheckedChange={() => handleToggle(itemId)}/>
             {withLinks && item.url ? (
-              <Link href={`${basePath}/${item.url}`} passHref>
-                <Typography variant="body2" onClick={() => handleToggle(item._id as string)} sx={{ cursor: "pointer" }}>{item.name}</Typography>
-              </Link>
+              <Link href={`${basePath}/${item.url}`} className="cursor-pointer text-sm font-medium hover:underline">{item.name}</Link>
             ) : (
-              <Typography variant="body2" onClick={() => handleToggle(item._id as string)} sx={{ cursor: "pointer" }}>{item.name}</Typography>
+              <label htmlFor={`filter-${itemId}`} className="cursor-pointer text-sm font-medium select-none">{item.name}</label>
             )}
-          </Box>
+          </div>
         );
       })}
-    </Box>
+    </div>
   );
 }

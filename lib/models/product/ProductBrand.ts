@@ -6,7 +6,7 @@ interface ProductBrandDoc extends Document<Types.ObjectId> {
   content: string;
   status: boolean;
   displayOrder?: number;
-  vendor_id?: Types.ObjectId;
+  seller_id?: Types.ObjectId;
   media_id?: Types.ObjectId;
   meta_id?: Types.ObjectId;
   createdAt: Date;
@@ -20,7 +20,7 @@ const productBrandSchema = new Schema<ProductBrandDoc>({
     content: { type: String, required: false },
     status: { type: Boolean, default: true },
     displayOrder: { type: Number, required: false },
-    vendor_id: { type: Schema.Types.ObjectId, ref: "User" },
+    seller_id: { type: Schema.Types.ObjectId, ref: "User" },
     media_id: { type: Schema.Types.ObjectId, ref: "Media" },
     meta_id: { type: Schema.Types.ObjectId, ref: "Meta" },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

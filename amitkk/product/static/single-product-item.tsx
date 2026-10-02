@@ -1,62 +1,48 @@
-import { Grid, Typography, Box, Button } from "@mui/material";
+import { Button } from "@amitkk/components/button/button";
 import Image from "next/image";
 import Link from "next/link";
 
 interface SingleProductItemProps {
-  row: Partial<SingleProductProps>;
+  row: any
 }
 
 export function SingleProductItem({ row }: SingleProductItemProps) {
-  const hasMultipleImages = row.medias && row.medias.length > 1;
-  const firstImage = row.medias?.[0]?.path || "/default.jpg";
-  const secondImage = hasMultipleImages ? row.medias?.[1].path : firstImage;
+  const hasMultipleImages = row.mediaHubs && row.mediaHubs.length > 1;
+  const firstImage = row.mediaHubs?.[0]?.media_id?.path || "/default.jpg";
+  const secondImage = hasMultipleImages ? row.mediaHubs?.[1]?.media_id?.path : firstImage;
 
   return (
-    <Grid size={4}>
-      <Box
-        sx={{
-          position: "relative",
-          overflow: "hidden",
-          borderRadius: 2,
-          boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
-          cursor: "pointer",
-          "&:hover .hoverImage": { opacity: 1, transform: "scale(1)" },
-          "&:hover .defaultImage": { opacity: 0, transform: "scale(1.05)" },
-          "&:hover .hoverContent": { opacity: 1, transform: "translateY(0)" },
-          "&:hover .defaultText": { opacity: 0, transform: "translateY(100%)" },
-        }}>
-          <Link href={`/product/${row.url}`} passHref style={{ textDecoration: "none" }}>
-            <Box sx={{ position: "relative", cursor: "pointer" }}>
-              <Box className="defaultImage" sx={{ position: "relative", width: "100%", height: 350, transition: "all 0.5s ease", }}>
-                <Image src={firstImage} alt={row.medias?.[0]?.alt || row.name} fill style={{ objectFit: "cover" }}/>
-              </Box>
-              
-              {hasMultipleImages && (
-                <Box className="hoverImage" sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: 350, opacity: 0, transform: "scale(1.05)", transition: "all 0.5s ease", }}>
-                  <Image src={secondImage} alt={row.medias?.[1]?.alt || row.name} fill style={{ objectFit: "cover" }}/>
-                </Box>
+    <div className="col-span-12 md:col-span-4 group">
+      <div className="relative overflow-hidden rounded-2xl shadow-[0_6px_20px_rgba(0,0,0,0.2)] cursor-pointer">
+        <Link href={`/${row.url}`} className="block relative">
+          <div className="relative cursor-pointer">
+            <div className="relative w-full h-[350px] transition-all duration-500 ease-in-out group-hover:opacity-0 group-hover:scale-105">
+              <Image src={firstImage} alt={row.mediaHubs?.[0]?.alt || row.name} fill className="object-cover" />
+            </div>
+            {hasMultipleImages && (
+              <div className="absolute top-0 left-0 w-full h-[350px] opacity-0 scale-105 transition-all duration-500 ease-in-out group-hover:opacity-100 group-hover:scale-100">
+                <Image src={secondImage} alt={row.mediaHubs?.[1]?.alt || row.name} fill className="object-cover" />
+              </div>
+            )}
+
+            <div className="absolute w-full bottom-0 left-0 right-0 text-black p-4 text-center transition-all duration-300 ease-in-out backdrop-blur-md group-hover:opacity-0 group-hover:translate-y-full">
+              <p className="text-center text-white font-medium">{row.name}</p>
+              {row.dietary_type && (
+                <p className="text-white absolute top-1 right-2 text-xs font-semibold">{row.dietary_type}</p>
               )}
+            </div>
+          </div>
+        </Link>
 
-              <Box className="defaultText" sx={{ position: "absolute", width: "100%", bottom: 0, left: 0, right: 0, color: "#000", p: 2, textAlign: "center", transition: "all 0.3s ease", backdropFilter: "blur(6px)", }}>
-                <Typography variant="body1" sx={{ color: "#fff", textAlign:"center"}}>{row.name}</Typography>
-                {row.dietary_type && <Typography variant="body2" sx={{ color: "#fff", position: "absolute", top: "5px", right: "5px", }}>{row.dietary_type}</Typography>}
-              </Box>
-            </Box>
-          </Link>
-
-        <Box className="hoverContent" sx={{ position: "absolute", inset: 0, bgcolor: "rgba(0,0,0,0.6)", display: "flex", flexDirection: "column", justifyContent:  "center", alignItems: "center", opacity: 0, transform: "translateY(20px)", transition: "all 0.3s ease", color: "#fff", }}>
-          {row.weight && ( <Typography variant="body1" sx={{ mb: 1 }}>{row.weight}</Typography> )}
-          <Button variant="contained" sx={{ borderRadius: 10, px: 4 }}>Buy Now</Button>
-
-          <Box sx={{ position: "absolute", bottom: 16 }}>
-            <Link href={`/product/${row.url}`} passHref>
-              <Button variant="outlined" sx={{ borderRadius: 10, px: 4, color: "#fff", borderColor: "#fff" }}>
-                Check Product
-              </Button>
-            </Link>
-          </Box>
-        </Box>
-      </Box>
-    </Grid>
+        <Link href={`/${row.url}`}>
+          <div className="absolute inset-0 bg-black/60 flex flex-col justify-center items-center opacity-0 translate-y-5 transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:translate-y-0 text-white p-4">
+            {row.weight && <p className="mb-2 text-sm">{row.weight}</p>}
+            <div className="absolute bottom-4">
+              <Button variant="secondary">Check Product</Button>
+            </div>
+          </div>
+        </Link>
+      </div>
+    </div>
   );
 }

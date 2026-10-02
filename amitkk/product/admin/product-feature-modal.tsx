@@ -1,27 +1,27 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Select, {SelectChangeEvent} from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import type {DataProps} from '@amitkk/product/admin/admin-product-feature-table';
 import { useState } from 'react';
-import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/utils';
-import CkEditor from '@amitkk/basic/components/static/ckeditor-input';
-import ImageUpload from '@amitkk/basic/components/static/file-input';
-import StatusSelect from '@amitkk/basic/components/static/status-input';
-import MediaImage from '@amitkk/basic/components/static/table-image';
+import CkEditor from '@amitkk/components/admin/ckeditor-input';
+import ImageUpload from '@amitkk/components/admin/file-input';
+import MediaImage from '@amitkk/components/admin/table-image';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import { MediaProps } from '@amitkk/basic/types/page';
-import { FormControl, InputLabel, MenuItem } from '@mui/material';
-import MetaInput from '@amitkk/basic/components/static/meta-input';
+import MetaInput from '@amitkk/components/admin/meta-input';
+import { useFormHandler } from 'hooks/useFormHandler';
+import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/my-utils/admin-utils';
+import { MediaProps } from '@amitkk/basic/types/media';
+import { TextField } from '@amitkk/components/basic/TextField';
+import { Button } from '@amitkk/components/button/button';
+import OpenSelect from '@amitkk/components/basic/OpenSelect';
+import StatusSelect from '@amitkk/components/admin/status-input';
+import StickyFormFooter from '@amitkk/components/ui/StickyFormFooter';
 
 type DataFormProps = TableDataFormProps & {
-  onUpdate: (updatedData: DataProps) => void;
+  handleUpdate: () => Promise<void>;
 };
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
+export default function DataModal({ open, handleClose, selectedDataId, handleUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
-    function : 'create_update_product_feature',
+    _id: '',
     module: '',
     module_value: '',
     name: '',
@@ -32,8 +32,6 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     createdAt: new Date(),
     updatedAt: new Date(),
     media_id: '',
-    _id: '',
-    selectedDataId,
     meta_id: '', title: '', description: '',
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
@@ -43,27 +41,21 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     handleClose();
   };  
 
-  const [media_id, setMedia_id] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [imageError, setImageError] = useState<string | null>(null);
-
   const [content, setContent] = useState("");
   const [contentError, setContentError] = useState<string | null>(null);
   const handleEditorChange = (name: string, value: string) => { setContent(value); };
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value })); 
-  };
+  const handleChange = useFormHandler(setFormData);
 
   React.useEffect(() => {
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `product/basic?function=get_single_product_feature&id=${selectedDataId}`);
+          const res = await apiRequest("GET", `product/basic?function=get_single_product_feature&id=${selectedDataId}`);
   
           setFormData({
-            function: 'create_update_product_feature',
+            _id: res?.data?._id || "",
             module: res?.data?.module || "",
             module_value: res?.data?.module_value || "",
             name: res?.data?.name || "",
@@ -74,8 +66,6 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
             createdAt: res?.data?.createdAt || new Date(),
             updatedAt: new Date(),
             media_id: res?.data?.media_id || null,
-            _id: res?.data?._id || "",
-            selectedDataId: res?.data?._id || "",
             meta_id: res?.data?.meta_id?._id,
             title: res?.data?.meta_id?.title || '',
             description: res?.data?.meta_id?.description || '',
@@ -110,11 +100,11 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
       formDataToSend.append("description", formData.description?.toString() ?? "");
       formDataToSend.append( "meta_id", typeof formData.meta_id === "string" ? formData.meta_id : formData.meta_id?.meta_id?.toString() ?? "" );
 
-      const res = await apiRequest("post", `product/basic`, formDataToSend);
+      const res = await apiRequest("POST", `product/basic`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);
-        onUpdate(res?.data)
+        await handleUpdate();
         setImage(null);
         hitToastr('success', res?.message);
         setContent(res?.data?.content || ""); 
@@ -124,33 +114,24 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   const title = !selectedDataId ? 'Add Feature' : 'Update Feature';
 
+  const module_options = ["Flavor", "Color", "Eggless", "Glutten Free", "Sugar Free", "Storage", ]; 
+  
+  
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
-      <form onSubmit={handleSubmit} style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <FormControl sx={{ width: "100%" }}>
-            <InputLabel id="module-label">Module <span style={{ color: "red" }}>*</span></InputLabel>
-            <Select labelId="module-label" id="module" name="module" value={formData.module} onChange={handleChange} required>
-              <MenuItem value="Flavor">Flavor</MenuItem>
-              <MenuItem value="Color">Color</MenuItem>
-              <MenuItem value="Eggless">Eggless</MenuItem>
-              <MenuItem value="Glutten Free">Glutten Free</MenuItem>
-              <MenuItem value="Sugar Free">Sugar Free</MenuItem>
-              <MenuItem value="Storage">Storage</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField label="Module Value" variant="outlined" value={formData.module_value} name="module_value" fullWidth onChange={handleChange} required/>
-          <TextField label="Feature Name" variant="outlined" value={formData.name} name="name" fullWidth onChange={handleChange} required/>
-          <TextField label="URL" variant="outlined" value={formData.url} name="url" fullWidth onChange={handleChange} required/>
-          <StatusSelect value={formData.status} onChange={handleChange}/>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <OpenSelect name={String(formData.module)} label="Module" value={formData.module} onChange={(value) => setFormData((prev) => ({...prev, module: value}))} options={module_options.map((mod) => ({ label: mod, value: mod }))}/>
+          <TextField label="Module Value" value={formData.module_value} name="module_value" onChange={handleChange} required/>
+          <TextField label="Feature Name" value={formData.name} name="name" onChange={handleChange} required/>
+          <TextField label="URL" value={formData.url} name="url" onChange={handleChange} required/>
+          <StatusSelect value={formData.status} onChange={(value) => handleChange("status", value)}/>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <MediaImage media={formData.media_id as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
-            <ImageUpload name="image" label="Upload Image" required={false} error={imageError} onChange={(name, file) => { setImage(file); }}/>
+            <ImageUpload name="image" label="Upload Image" required={false} onChange={(name, file) => { setImage(file); }}/>
           </div>
-          <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
+          <MetaInput title={formData.title} description={formData.description} onChange={handleChange} fullWidth={true}/>
           <CkEditor name="content" value={formData.content} onChange={handleEditorChange} required={!selectedDataId} error={contentError} />
-          <Button type="submit" variant="contained" color="primary">{title}</Button>
-        </Box>
+          <StickyFormFooter title={title}/>
       </form>
     </CustomModal>
   );

@@ -1,6 +1,6 @@
 import { sendMail } from "@amitkk/basic/utils/mailer";
-import { apiRequest, clo } from "@amitkk/basic/utils/utils";
-import { OrderProps } from '@amitkk/ecom/types/ecom';
+import { apiRequest, clo } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { OrderProps } from '@amitkk/ecom/types';
 
 export async function BulkOrderAdminMail(data_id: string) {
     if (!data_id) throw new Error("data_id is required");
@@ -8,7 +8,7 @@ export async function BulkOrderAdminMail(data_id: string) {
     let data: OrderProps | null = null;
 
     try {
-        const res = await apiRequest("post", `product/product`, { function: "get_single_bulk_order", data_id });
+        const res = await apiRequest("POST", `product/product`, { function: "get_single_bulk_order", data_id });
         if ( !res?.data ) { throw new Error("Entry not found"); }
 
         data = res.data as OrderProps;

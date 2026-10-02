@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 export default function AddUpdateVendorCommission() {
   const router = useRouter();
   if (!router.isReady) return null;
-  const { vendor_id } = router.query;
+  const { seller_id } = router.query;
 
-  return <AdminVendorCommission vendor_id={vendor_id as string} />;
+  return <AdminVendorCommission seller_id={seller_id as string} />;
 }

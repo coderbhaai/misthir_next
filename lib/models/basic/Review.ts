@@ -1,6 +1,6 @@
 import mongoose, { Schema, model, models, Document, Types } from "mongoose";
 
-export interface ReviewProps extends Document<Types.ObjectId> {
+export interface ReviewDoc extends Document<Types.ObjectId> {
   module: string;
   module_id: Types.ObjectId;
   user_id: Types.ObjectId;
@@ -13,7 +13,7 @@ export interface ReviewProps extends Document<Types.ObjectId> {
   mediaHub?: Types.ObjectId[];
 }
 
-const reviewSchema = new Schema<ReviewProps>({
+const reviewSchema = new Schema<ReviewDoc>({
     module: { type: String, required: true, enum: ["Blog", "Destination", "Product", "Page"] },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
@@ -25,4 +25,4 @@ const reviewSchema = new Schema<ReviewProps>({
 );
 
 reviewSchema.virtual("mediaHub", { ref: "MediaHub", localField: "_id", foreignField: "module_id", justOne: false, match: { module: "Review" }, });
-export default models.Review || model<ReviewProps>("Review", reviewSchema);
+export default models.Review || model<ReviewDoc>("Review", reviewSchema);

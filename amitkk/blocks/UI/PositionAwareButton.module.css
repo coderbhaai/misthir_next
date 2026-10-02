@@ -1,0 +1,48 @@
+.positionAwareBtn {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #0ff;
+  border-radius: 8px;
+  background: transparent;
+  color: rgb(6, 48, 45);
+  padding: 0.8rem 2.2rem;
+  cursor: pointer;
+  transition: color 0.3s ease, border-color 0.3s ease;
+  isolation: isolate;
+}
+
+.positionAwareBtn::before {
+  content: "";
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle closest-side, rgba(0, 255, 255, 0.4), transparent);
+  transition: width 0.3s ease, height 0.3s ease, opacity 0.4s ease;
+  border-radius: 50%;
+  opacity: 0;
+  z-index: 0;
+}
+
+.positionAwareBtn:hover::before {
+  width: 300px;
+  height: 300px;
+  opacity: 1;
+}
+
+.positionAwareBtn:hover {
+  color: #000;
+  border-color: #00e5ff;
+  background-color: rgba(8, 50, 50, 0.966);
+}
+
+.text {
+  position: relative;
+  z-index: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+}

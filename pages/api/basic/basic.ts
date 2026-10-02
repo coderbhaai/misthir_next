@@ -1,19 +1,26 @@
+// pages/api/basic/basic
+
 import { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { uploadMedia } from './media';
-import { exportToExcel, log } from '../utils';
 import Client from 'lib/models/basic/Client';
 import Contact from 'lib/models/basic/Contact';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import SiteSetting from 'lib/models/payment/SiteSetting';
-import { APIHandlers } from '../middleware';
+import { logError } from '../utils';
+import { APIHandlers } from 'lib/server/middleware';
+import UrlRegistry from 'lib/models/basic/UrlRegistry';
+import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
+import Blog from 'lib/models/blog/Blog';
+import Page from 'lib/models/basic/Page';
+import Product from 'lib/models/product/Product';
 
 // Client
   export async function get_all_clients(req: NextApiRequest, res: NextApiResponse) {
     try {
       const data = await Client.find().populate('media_id').exec();
       return res.status(200).json({ message: 'Fetched all Clients', data });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
   }
 
   export async function get_single_client(req: NextApiRequest, res: NextApiResponse){
@@ -26,13 +33,11 @@ import { APIHandlers } from '../middleware';
     
       return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
 
-    }catch (error) { return log(error); }
+    }catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
   };
 
   export async function create_update_client(req: ExtendedRequest, res: NextApiResponse) {
     try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
       const data = req.body;
       if (!data?.name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
 
@@ -65,7 +70,7 @@ import { APIHandlers } from '../middleware';
           );
 
           return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
-        } catch (error) { return log(error); }
+        } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
       }
 
       // === Create flow ===
@@ -83,23 +88,27 @@ import { APIHandlers } from '../middleware';
 
       await newEntry.save();
       return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
   }
 
   export async function get_all_client_options(req: NextApiRequest, res: NextApiResponse) {
     try {
       const data = await Client.find().select('_id name').exec();
       return res.status(200).json({ message: 'Fetched all Clients', data });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
   }
 // Client
 
 // Contact
-  export async function get_all_contacts(req: NextApiRequest, res: NextApiResponse) {
+  export async function get_filtered_contacts(req: NextApiRequest, res: NextApiResponse) {
     try {
-      const data = await Contact.find().exec();
-      return res.status(200).json({ message: 'Fetched all Contacts', data });
-    } catch (error) { return log(error); }
+      const { filters = {}, page = 0, limit = 10 } = req.body || {};
+      const { matchQuery, skip, limit: safeLimit } = buildFilterQuery(filters, { page, limit, defaultLimit: 10, maxLimit: 100, searchableFields: ["name", "email", "phone"] });
+      const total = await Contact.countDocuments(matchQuery);
+
+      const data = await Contact.find(matchQuery).skip(skip).limit(safeLimit).sort({ createdAt: -1 });
+      return res.status(200).json({ message: 'Fetched Filtered Contacts', data, pagination: { total, page, limit: safeLimit, pages: Math.ceil(total / safeLimit) } });
+    } catch (error) { await logError(error, { function: "get_filtered_contacts", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
   }
 
   export async function get_single_contact(req: NextApiRequest, res: NextApiResponse){
@@ -112,13 +121,11 @@ import { APIHandlers } from '../middleware';
     
       return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
 
-    }catch (error) { return log(error); }
+    }catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
   };
 
   export async function create_update_contact(req: ExtendedRequest, res: NextApiResponse) {
     try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
       const data = req.body;
       if (!data?.name || !data?.email || !data?.phone ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
 
@@ -141,7 +148,7 @@ import { APIHandlers } from '../middleware';
           );
 
           return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
-        } catch (error) { return log(error); }
+        } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
       }
 
       // === Create flow ===
@@ -157,88 +164,11 @@ import { APIHandlers } from '../middleware';
 
       await newEntry.save();
       return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
-    } catch (error) { return log(error); }
-  }
-
-  export async function export_contacts(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
-      const contacts = await Contact.find().lean();
-
-      const data = contacts.map( (i, key) => ({
-        _id: key+1,
-        name: i.name,
-        email: i.email,
-        phone: i.phone,
-        status: i.status,
-        user_remarks: i.user_remarks ?? "",
-        admin_remarks: i.admin_remarks ?? "",
-      }));
-
-      const columns = [
-        { header: "ID", key: "_id" },
-        { header: "Name", key: "name" },
-        { header: "Email", key: "email" },
-        { header: "Status", key: "status" },
-        { header: "User Remarks", key: "user_remarks" },
-        { header: "Admin Remarks", key: "admin_remarks" },
-      ];
-
-      await exportToExcel( res, columns, data );
-
-      return res.status(200).json({ message: 'Fetched all Contacts for Export' });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
   }
 // Contact
 
-// SiteSetting
-  export async function get_all_settings(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      const data = await SiteSetting.find().exec();
-      return res.status(200).json({ message: 'Fetched all Settings', data });
-    } catch (error) { return log(error); }
-  }
 
-  export async function get_single_setting(req: NextApiRequest, res: NextApiResponse){
-    try{
-      const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-      if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }  
-    
-      const entry = await SiteSetting.findById(id).exec();  
-      if (!entry) { return res.status(404).json({ message: `SiteSetting with ID ${id} not found` }); }
-    
-      return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
-
-    }catch (error) { return log(error); }
-  };
-
-  export async function create_update_setting(req: ExtendedRequest, res: NextApiResponse) {
-    try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
-      const data = req.body;
-      if (!data?.module || !data?.module_value ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
-
-      const entry = await SiteSetting.findOneAndUpdate({ module: data.module }, {
-          module: data.module,
-          module_value: data.module_value,
-          status: data.status,
-          updatedAt: new Date(),
-        }, { new: true, upsert: true, setDefaultsOnInsert: true }
-      );
-
-      return res.status(200).json({ message: '✅ Entry updated successfully', data: entry });
-    } catch (error) { return log(error); }
-  }
-
-  export async function get_site_settings(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      const data = await SiteSetting.find({ status: 1 }).exec();
-      return res.status(200).json({ message: 'Fetched all Settings', data });
-    } catch (error) { return log(error); }
-  }
-// SiteSetting
 
 export const functions: APIHandlers = {
   get_all_clients : { middlewares: [] },	
@@ -246,15 +176,9 @@ export const functions: APIHandlers = {
   create_update_client : { middlewares: [] },	
   get_all_client_options : { middlewares: [] },	
 
-  get_all_contacts : { middlewares: [] },	
+  get_filtered_contacts : { middlewares: [] },	
   get_single_contact : { middlewares: [] },	
-  create_update_contact : { middlewares: [] },	
-  export_contacts : { middlewares: [] },	
-
-  get_all_settings : { middlewares: [] },	
-  get_single_setting : { middlewares: [] },	
-  create_update_setting : { middlewares: [] },	
-  get_site_settings : { middlewares: [] },	
+  create_update_contact : { middlewares: [] },
 }
 
 export const basicHandlers = {
@@ -263,16 +187,10 @@ export const basicHandlers = {
   create_update_client,
   get_all_client_options,
 
-  get_all_contacts,
+  get_filtered_contacts,
   get_single_contact,
   create_update_contact,
-  export_contacts,
-
-  get_all_settings,
-  get_single_setting,
-  create_update_setting,
-  get_site_settings
 };
 
 export const config = { api: { bodyParser: false } };
-export default createApiHandler(functions);
+export default createApiHandler(functions, basicHandlers);

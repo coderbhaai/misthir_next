@@ -1,20 +1,18 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Select, {SelectChangeEvent} from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import type {DataProps} from './admin-tax-table';
-import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/utils';
-import StatusSelect from '@amitkk/basic/components/static/status-input';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import { FormControl, InputLabel, MenuItem } from '@mui/material';
-import StatusDisplay from '@amitkk/basic/components/static/status-display-input';
+import StatusDisplay from '@amitkk/components/admin/status-display-input';
+import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/my-utils/admin-utils';
+import { TextField } from '@amitkk/components/basic/TextField';
+import { Button } from '@amitkk/components/button/button';
+import { useFormHandler } from 'hooks/useFormHandler';
+import StickyFormFooter from '@amitkk/components/ui/StickyFormFooter';
 
 type DataFormProps = TableDataFormProps & {
-  onUpdate: (updatedData: DataProps) => void;
+  handleUpdate: () => Promise<void>;
 };
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
+export default function DataModal({ open, handleClose, selectedDataId, handleUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
     function: 'create_update_tax',
     name: '',
@@ -37,7 +35,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `payment/payment?function=get_single_tax&id=${selectedDataId}`);
+          const res = await apiRequest("GET", `payment/payment?function=get_single_tax&id=${selectedDataId}`);
 
           setFormData({
             function: 'create_update_tax',
@@ -67,11 +65,11 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
       formDataToSend.append("status", String(formData.status));
       formDataToSend.append("displayOrder", String(formData.displayOrder ));
       formDataToSend.append("_id", selectedDataId as string);
-      const res = await apiRequest("post", `payment/payment`, formDataToSend);
+      const res = await apiRequest("POST", `payment/payment`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);
-        onUpdate(res?.data)
+        await handleUpdate();
         hitToastr('success', res?.message);
       }
     } catch (error) { clo( error ); }
@@ -79,21 +77,15 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   const title = !selectedDataId ? 'Add Tax' : 'Update Tax';
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-    const target = e.target as HTMLInputElement & { name: string; value: string };
-    const { name, value } = target;
-    setFormData((prevData) => ({ ...prevData, [name]: name === 'status' ? value === 'true' : value }));
-  };
+  const handleChange = useFormHandler(setFormData);
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
-      <form onSubmit={handleSubmit}>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>          
-          <TextField label="Name" variant="outlined" name="name" value={formData.name} onChange={handleChange} fullWidth required/>
-          <TextField type="number" label="Tax Rate" variant="outlined" name="rate" value={formData.rate} onChange={handleChange} fullWidth required/>
-          <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
-          <Button type='submit' variant='contained' color='primary'>{title}</Button>
-        </Box>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <TextField label="Name" name="name" value={formData.name} onChange={handleChange} required/>
+        <TextField type="number" label="Tax Rate" name="rate" value={formData.rate} onChange={handleChange} required/>
+        <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={(value) => setFormData((prev) => ({...prev, status: value}))} onDisplayOrderChange={(value) => setFormData((prev) => ({...prev, displayOrder: value}))}/>
+        <StickyFormFooter title={title}/>
       </form>
     </CustomModal>
   );

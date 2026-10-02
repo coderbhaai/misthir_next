@@ -1,7 +1,7 @@
 // models/Role.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface IRoleProps extends Document<Types.ObjectId> {
+export interface IRoleDoc extends Document<Types.ObjectId> {
   name: string;
   status: boolean;
   displayOrder?: number;
@@ -17,7 +17,7 @@ export interface IRoleWithPermissions {
   }>;
 }
 
-const spatieRoleSchema = new Schema<IRoleProps>({
+const spatieRoleSchema = new Schema<IRoleDoc>({
   name: { type: String, required: true, trim: true },
   status: { type: Boolean, required: true },
   displayOrder: { type: Number, required: false, },
@@ -27,4 +27,4 @@ spatieRoleSchema.virtual("permissionsAttached", { ref: "RolePermission", localFi
 spatieRoleSchema.set("toObject", { virtuals: true });
 spatieRoleSchema.set("toJSON", { virtuals: true });
 
-export default mongoose.models.SpatieRole || mongoose.model<IRoleProps>("SpatieRole", spatieRoleSchema);
+export default mongoose.models?.SpatieRole || mongoose.model<IRoleDoc>("SpatieRole", spatieRoleSchema);

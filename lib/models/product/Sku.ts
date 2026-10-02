@@ -1,8 +1,11 @@
-import { Schema, Document, Types, model, models } from "mongoose";
+import mongoose, { Schema, Document, Types, model, models } from "mongoose";
 
-export interface SkuDocument extends Document<Types.ObjectId> {
+export interface SkuDoc extends Document<Types.ObjectId> {
   _id: Types.ObjectId;
   product_id?: Types.ObjectId;
+  item_code?: string;
+  unit?: string;
+  price_per_unit?: number;
   name: string;
   price: number;
   inventory: number;
@@ -16,9 +19,12 @@ export interface SkuDocument extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const skuSchema = new Schema<SkuDocument>({
+const skuSchema = new Schema<SkuDoc>({
     product_id: { type: Schema.Types.ObjectId, ref: "Product" },
     name: { type: String, required: true },
+    item_code: { type: String, required: false },
+    unit: { type: String, required: false },
+    price_per_unit: { type: Number, required: false },
     price: { type: Number, required: true },
     inventory: { type: Number, required: true },
     status: { type: Boolean, default: true },
@@ -30,42 +36,9 @@ const skuSchema = new Schema<SkuDocument>({
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-skuSchema.virtual("flavors", {
-  ref: "SkuProductFeature",
-  localField: "_id",
-  foreignField: "sku_id",
-  justOne: false,
-});
-
-skuSchema.virtual("colors", {
-  ref: "SkuProductFeature",
-  localField: "_id",
-  foreignField: "sku_id",
-  justOne: false,
-});
+skuSchema.virtual("flavors", { ref: "SkuProductFeature", localField: "_id", foreignField: "sku_id", justOne: false });
+skuSchema.virtual("colors", { ref: "SkuProductFeature", localField: "_id", foreignField: "sku_id", justOne: false });
+skuSchema.virtual("features", { ref: "SkuProductFeature", localField: "_id", foreignField: "sku_id", justOne: false, });
 skuSchema.virtual("details", { ref: "SkuDetail", localField: "_id", foreignField: "sku_id", justOne: true });
 
-export const Sku = models.Sku || model<SkuDocument>("Sku", skuSchema);
-
-export interface SkuDetailDocument extends Document<Types.ObjectId> {
-  sku_id: Types.ObjectId;
-  weight?: number;
-  length?: number;
-  width?: number;
-  height?: number;
-  preparationTime?: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const skuDetailSchema = new Schema<SkuDetailDocument>({
-    sku_id: { type: Schema.Types.ObjectId, ref: "Sku", required: true, unique: true },
-    weight: { type: Number, default: 0 },
-    length: { type: Number, default: 0 },
-    width: { type: Number, default: 0 },
-    height: { type: Number, default: 0 },
-    preparationTime: { type: Number, default: 0 },
-  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-);
-
-export const SkuDetail = models.SkuDetail || model<SkuDetailDocument>("SkuDetail", skuDetailSchema);
+export default mongoose.models.Sku || model<SkuDoc>('Sku', skuSchema);

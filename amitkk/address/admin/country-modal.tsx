@@ -1,27 +1,25 @@
+'use client'
+
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import {SelectChangeEvent} from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
+import { TextField } from '@amitkk/components/basic/TextField';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import { TableDataFormProps, apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
-import { CountryProps } from '@amitkk/address/types/address';
-import StatusDisplay from '@amitkk/basic/components/static/status-display-input';
+import { TableDataFormProps, apiRequest } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { CountryProps } from '@amitkk/address/types';
+import StatusDisplay from '@amitkk/components/admin/status-display-input';
+import { hitToastr, clo } from '@amitkk/basic/utils/my-utils/admin-utils';
+import { useFormHandler } from 'hooks/useFormHandler';
+import OpenSelect from '@amitkk/components/basic/OpenSelect';
+import StickyFormFooter from '@amitkk/components/ui/StickyFormFooter';
 
 type DataFormProps = TableDataFormProps & {
-  onUpdate: (updatedData: DataProps) => void;
+  handleUpdate: () => Promise<void>;
 };
 
 export interface DataProps extends CountryProps {
-  function?: string;
-  selectedDataId?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
+export default function DataModal({ open, handleClose, selectedDataId, handleUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
-    function: 'create_update_country',
     _id: '',
     name: '',
     capital: '',
@@ -29,30 +27,26 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     calling_code: '',
     flag: '',
     status: true,
+    site: false,
     displayOrder: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
+  const handleChange = useFormHandler(setFormData);
   
   const handleCloseModal = () => {
     setFormData(initialFormData);
     handleClose();
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-    const { name, value } = e.target;  
-    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
-  };
-
   React.useEffect(() => {
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `address/address?function=get_single_country&id=${selectedDataId}`);
+          const res = await apiRequest("GET", `address/address?function=get_single_country&id=${selectedDataId}`);
 
           setFormData({
-            function: 'create_update_country',
             _id: res?.data?._id || '',
             name: res?.data?.name || '',
             capital: res?.data?.capital || '',
@@ -60,6 +54,8 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
             calling_code: res?.data?.calling_code || '',
             flag: res?.data?.flag || '',
             status: res?.data?.status ?? true,
+            displayOrder: res?.data?.displayOrder ?? null,
+            site: res?.data?.site ?? false,
             createdAt: res?.data?.createdAt || new Date(),
             updatedAt: new Date(),
           });
@@ -71,13 +67,23 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedData: CountryProps = {...formData };
     try {
-      const res = await apiRequest("post", `address/address`, updatedData);
+      const formDataToSend = new FormData();
+      formDataToSend.append("function", "create_update_country");
+      formDataToSend.append("_id", selectedDataId as string);
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("capital", formData.capital ?? "");
+      formDataToSend.append("code", formData.code ?? "");
+      formDataToSend.append("calling_code", formData.calling_code ?? "");
+      formDataToSend.append("flag", formData.flag ?? "");
+      formDataToSend.append("site", String(formData.site));
+      formDataToSend.append("status", String(formData.status));
+      formDataToSend.append("displayOrder", String(formData.displayOrder));
 
+      const res = await apiRequest("POST", `address/address`, formDataToSend);
       if( res?.data ){
         setFormData(initialFormData);
-        onUpdate(res?.data)
+        await handleUpdate();
         hitToastr('success', res?.message);
       }
     } catch (error) { clo( error ); }
@@ -87,15 +93,14 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
-      <form onSubmit={handleSubmit}>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
-          <TextField label='Name' variant='outlined' value={formData.name} name='name' fullWidth onChange={handleChange} required/>
-          <TextField label='Captial' variant='outlined' value={formData.capital} name='capital' fullWidth onChange={handleChange} required/>
-          <TextField label='Code' variant='outlined' value={formData.code} name='code' fullWidth onChange={handleChange} required/>
-          <TextField label='Calling Code' variant='outlined' value={formData.calling_code} name='calling_code' fullWidth onChange={handleChange} required/>
-          <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
-          <Button type='submit' variant='contained' color='primary'>{title}</Button>
-        </Box>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <TextField label='Name' value={formData.name} name='name' onChange={handleChange} required/>
+        <TextField label='Captial' value={formData.capital} name='capital' onChange={handleChange}/>
+        <TextField label='Code' value={formData.code} name='code' onChange={handleChange} required/>
+        <TextField label='Calling Code' value={formData.calling_code} name='calling_code' onChange={handleChange} required/>
+        <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={(value) => setFormData((prev) => ({...prev, status: value}))} onDisplayOrderChange={(value) => setFormData((prev) => ({...prev, displayOrder: value}))}/>
+        <OpenSelect label="Site Status" name="site" value={formData.site} onChange={(value) => setFormData((prev) => ({...prev, site: value}))} options={[ { label: "Active", value: true }, { label: "Not Active", value: false } ]}/>
+        <StickyFormFooter title={title}/>
       </form>
     </CustomModal>
   );

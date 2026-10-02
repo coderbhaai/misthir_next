@@ -1,95 +1,101 @@
-import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import { Collapse, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
-import { useState, useEffect } from "react";
-import { getLayoutLinks } from "../utils/utils";
+"use client";
+
+import Link from "next/link";
+import {useEffect, useState } from "react";
 import { useAuth } from "contexts/AuthContext";
+import { getLayoutLinks } from "../utils/my-utils/shared-utils";
 
-export default function MenuLink() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+interface MenuItemProps {
+  _id: string;
+  name: string;
+  url?: string;
+  media_id?: {path?: string;} | null;
+  media?: string | null;
+  children?: MenuItemProps[];
+}
 
-  const { onLogin, onLogout } = useAuth();
-  const [open, setOpen] = useState(true);
-  const [submenuOpen, setSubmenuOpen] = useState<{ [key: string]: boolean }>({});
-  const [menu, setMenu] = useState<any[]>([]);
-  const [userLinks, setUserLinks] = useState<any[]>([]);
-  
+export default function MenuLink({collapsed = false}: {collapsed?: boolean;}) {
+  const [menu, setMenu] = useState<MenuItemProps[]>([]);
+  const [userLinks, setUserLinks] = useState<MenuItemProps[]>([]);
+  const [openMap, setOpenMap] = useState<{[key: string]: boolean}>({});
+  const {onLogin, onLogout} = useAuth();
+
   useEffect(() => {
     async function fetchMenu() {
       const data = await getLayoutLinks();
-      setMenu(data.adminLinks);
-      setUserLinks(data.userSubmenus);
+
+      const mapMenu = (items: MenuItemProps[] = []): MenuItemProps[] => {
+        return items.map(
+          (item) => ({
+            ...item,
+            media: item.media_id?.path || null,
+            children: mapMenu(item.children || []),
+          })
+        );
+      };
+
+      setMenu(mapMenu(data.adminLinks));
+      setUserLinks(mapMenu(data.userSubmenus));
     }
 
     fetchMenu();
 
-    const unsubscribeLogin = onLogin(() => {
-      fetchMenu();
-    });
-    
+    const unsubscribeLogin = onLogin(() => fetchMenu());
     const unsubscribeLogout = onLogout(() => {
       setMenu([]);
       setUserLinks([]);
-      setSubmenuOpen({});
+      setOpenMap({});
     });
-    
+
     return () => {
       unsubscribeLogin();
       unsubscribeLogout();
     };
   }, []);
 
-  const handleSubmenuToggle = (name: string) => {
-    setSubmenuOpen((prev) => ({ ...prev, [name]: !prev[name] }));
+  const toggleMenu = (id: string) => { setOpenMap((prev) => ({...prev, [id]: !prev[id]})); };
+
+  const renderItems = (items: MenuItemProps[] = [], depth = 0) => {
+    return items.map((item) => {
+      const hasChildren = item.children && item.children.length > 0;
+      const isOpen = openMap[item._id];
+
+      return (
+        <div key={item._id} className="px-2">
+          {hasChildren ? (
+            <>
+              <button onClick={() => toggleMenu(item._id)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left" style={{paddingLeft: depth * 16 + 12}}>
+                <div className="flex items-center gap-2">{renderMenuContent(item)}</div>
+
+                {!collapsed && (<span>{isOpen ? "-" : "+"}</span>)}
+              </button>
+
+              {isOpen && ( <div className="mt-1">{renderItems(item.children, depth + 1)}</div> )}
+            </>
+          ) : (
+            <Link href={item.url || "#"} className="flex items-center gap-2 rounded-lg px-3 py-2" style={{paddingLeft: depth * 16 + 12}}>{renderMenuContent(item)}</Link>
+          )}
+        </div>
+      );
+    });
   };
 
-  if (!mounted) return null;
-  
-  return(
-    <List>
-      {menu?.map((item) => (
-        <div key={item.name}>
-          <ListItem disablePadding>
-            <ListItemButton onClick={() => item.children && handleSubmenuToggle(item.name)}>
-              {item.media && (
-                <img src={item.media} alt={item.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: "50%", marginRight: 8, }}/>
-              )}
-              {open && <ListItemText primary={item.name} />}
-              {open && item.children && (submenuOpen[item.name] ? <ExpandLess /> : <ExpandMore />)}
-            </ListItemButton>
-          </ListItem>
-        
-            {item.children && open && (
-              <Collapse in={submenuOpen[item.name]} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
-                  {item.children?.map((child: { name: string; url?: string, media?:string }) => (
-                    <List key={`${item.name}-${child.url || child.name}`}>
-                      <ListItem component="a" href={child.url} sx={{ pl: 4 }}>
-                        {child.media && (
-                          <img src={child.media} alt={child.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: "50%", marginRight: 8, }}/>
-                        )}
-                        <ListItemText primary={child.name} />
-                      </ListItem>
-                    </List>
-                  ))}
-                </List>
-              </Collapse>
-            )}
-        </div>
-      ))}
+  const renderMenuContent = (item: MenuItemProps) => (
+    <>
+      {item.media && !collapsed && (
+        <img src={item.media} alt={item.name} className="h-5 w-5 rounded-full object-cover" loading="lazy"/>
+      )}
+      <span>{item.name}</span>
+    </>
+  );
 
-      {userLinks?.map((i) => (
-        <div key={i._id as string}>
-          <List key={`${i.name}-${i.url || i.name}`}>
-            <ListItem component="a" href={i.url}>
-              {i.media && (
-                <img src={i.media} alt={i.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: "50%", marginRight: 8, }}/>
-              )}
-              <ListItemText primary={i.name} />
-            </ListItem>
-          </List>
-        </div>
+  return (
+    <div className="space-y-1">
+      {renderItems(menu)}
+
+      {userLinks.map((item) => (
+        <Link key={item._id} href={item.url || "#"} className="flex items-center gap-2 rounded-lg px-3 py-2">{renderMenuContent(item)}</Link>
       ))}
-    </List>
+    </div>
   );
 }

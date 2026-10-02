@@ -1,25 +1,25 @@
 import mongoose, { isValidObjectId, Types } from 'mongoose';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { fetchData, log } from '../utils';
 import Sale from 'lib/models/ecom/Sale';
 import SaleSku from 'lib/models/ecom/SaleSku';
 import Product from 'lib/models/product/Product';
-import { SkuDocument } from 'lib/models/product/Sku';
-import { APIHandlers } from '../middleware';
+import SkuProps from 'lib/models/product/Sku';
+import { APIHandlers } from 'lib/server/middleware';
+import { logError } from '../utils';
 
 export async function get_all_sales(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { vendor_id } = req.query;
+    const { seller_id } = req.query;
     const filter: Record<string, any> = {};
 
-    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
-      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    if (seller_id && mongoose.Types.ObjectId.isValid(seller_id as string)) {
+      filter.seller_id = new mongoose.Types.ObjectId(seller_id as string);
     }
 
     const data = await Sale.find(filter)
       .populate([
-        { path: "vendor_id" },
+        { path: "seller_id" },
         {
           path: "saleSkus",
           populate: [
@@ -61,9 +61,7 @@ export async function get_all_sales(req: NextApiRequest, res: NextApiResponse) {
     });
 
     return res.status(200).json({ message: "Sales Fetched", data: salesWithCounts });
-  } catch (error) {
-    return log(error);
-  }
+  } catch (error) { return await logError(error, { function: "get_all_sales", payload: req.body }); }
 }
 
 export async function get_single_sale(req: NextApiRequest, res: NextApiResponse){
@@ -71,40 +69,38 @@ export async function get_single_sale(req: NextApiRequest, res: NextApiResponse)
     const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;  
     if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
 
-    const { vendor_id } = req.query;
+    const { seller_id } = req.query;
     const filter: Record<string, any> = {};
 
     filter._id = new mongoose.Types.ObjectId(id);
-    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
-      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    if (seller_id && mongoose.Types.ObjectId.isValid(seller_id as string)) {
+      filter.seller_id = new mongoose.Types.ObjectId(seller_id as string);
     }
 
     const data = await Sale.findOne(filter)
-      .populate([ { path: 'vendor_id' }, { path: 'saleSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).lean(false).exec();
+      .populate([ { path: 'seller_id' }, { path: 'saleSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).lean(false).exec();
   
     if (!data) { return res.status(404).json({ message: `Sales with ID ${id} not found` }); }
     return res.status(200).json({ message: 'Fetched Single Sale', data });
-  }catch (error) { return log(error); }
+  }catch (error) { return await logError(error, { function: "get_single_sale", payload: req.body }); }
 };
 
 export async function create_update_sale(req: ExtendedRequest, res: NextApiResponse) {
   try {
-    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
     const data = req.body;
-    if ( !data?.name || !data?.vendor_id || !data?.valid_from || !data?.valid_to || !data?.type || !data?.discount || !data?.status  ) { 
+    if ( !data?.name || !data?.seller_id || !data?.valid_from || !data?.valid_to || !data?.type || !data?.discount || !data?.status  ) { 
       return res.status(400).json({ message: 'Required fields missing' });
     }
 
     const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
-    const {name, vendor_id, valid_from, valid_to, type, discount, status } = data;
+    const {name, seller_id, valid_from, valid_to, type, discount, status } = data;
 
     const skus = JSON.parse(data.skus || []);
 
     if (modelId && isValidObjectId(modelId)) {
       try {
         const updated = await Sale.findByIdAndUpdate( modelId, {
-          vendor_id: data.vendor_id,
+          seller_id: data.seller_id,
           name: data.name,
           valid_from: data.valid_from,
           valid_to: data.valid_to,
@@ -125,11 +121,11 @@ export async function create_update_sale(req: ExtendedRequest, res: NextApiRespo
         } else {
           return res.status(404).json({ message: 'Entry not found for update' });
         }
-      } catch (error) { log(error); }
+      } catch (error) { await logError(error, { function: "create_update_sale", payload: req.body }); }
     }
 
     const newEntry = new Sale({
-        vendor_id: data.vendor_id,
+        seller_id: data.seller_id,
         name: data.name,
         valid_from: data.valid_from,
         valid_to: data.valid_to,
@@ -148,7 +144,7 @@ export async function create_update_sale(req: ExtendedRequest, res: NextApiRespo
 
     return res.status(200).json({ message: 'Entry Created successfully', data: newEntry });
 
-  } catch (error) { log(error); }
+  } catch (error) { await logError(error, { function: "create_update_sale", payload: req.body }); }
 }
 
 interface UpsertSaleInput {
@@ -180,7 +176,7 @@ export async function upsertSaleSku(data: UpsertSaleInput) {
 
     const sku = await SaleSku.findOneAndUpdate(filter, update, options);
     return sku;
-  } catch (error) { log(error); throw error; }
+  } catch (error) { await logError(error, { function: "upsertSaleSku", payload: {data} }); throw error; }
 }
 
 interface MediaProps {
@@ -207,33 +203,27 @@ interface ProductSaleProps {
 
 export async function get_product_sale_modules(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { vendor_id } = req.query;
+    const { seller_id } = req.query;
     const filter: any = {};
-    if (vendor_id && mongoose.Types.ObjectId.isValid(vendor_id as string)) {
-      filter.vendor_id = new mongoose.Types.ObjectId(vendor_id as string);
+    if (seller_id && mongoose.Types.ObjectId.isValid(seller_id as string)) {
+      filter.seller_id = new mongoose.Types.ObjectId(seller_id as string);
     }
 
-    const data: ProductSaleProps[] = await fetchData<ProductSaleProps>(Product, {
-      filter,
-      sort: { name: 1 },
-      lean: false,
-      select: "_id name url",
-      populate: [
-        { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" }, },
-        { path: "sku", select: "_id name price" },
-      ],
-    });
+    const data = await Product.find(filter).sort({ name: 1 }).select("_id name url").populate([
+                    { path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } },
+                    { path: "sku", select: "_id name price" },
+                  ]).exec();
 
     return res.status(200).json({ message: 'Fetched all Products', data });
-  } catch (error) { return log(error); }
+  } catch (error) { return await logError(error, { function: "get_product_sale_modules", payload: req.body }); }
 }
 
-export async function getEffectiveSkuPrice(sku: SkuDocument, vendorId: Types.ObjectId): Promise<number> {
+export async function getEffectiveSkuPrice(sku: SkuProps, vendorId: Types.ObjectId): Promise<number> {
   if (!sku?.price) return 0;
 
   const now = new Date();
   const activeSales = await Sale.find({
-    vendor_id: vendorId,
+    seller_id: vendorId,
     valid_from: { $lte: now },
     valid_to: { $gte: now },
     status: true,
@@ -263,10 +253,10 @@ export async function getEffectiveSkuPrice(sku: SkuDocument, vendorId: Types.Obj
 }
 
 export const functions: APIHandlers = {
-  get_all_sales : { middlewares: [] },
+  get_all_sales : { middlewares: ["checkUserId", "checkPostMethod" ] },
   get_single_sale : { middlewares: [] },
-  create_update_sale : { middlewares: [] },
-  get_product_sale_modules : { middlewares: [] },
+  create_update_sale : { middlewares: ["checkUserId", "checkPostMethod" ] },
+  get_product_sale_modules : { middlewares: ["checkUserId", "checkPostMethod" ] },
 }
 
 export const salesHandlers = {
@@ -277,4 +267,4 @@ export const salesHandlers = {
 };
 
 export const config = { api: { bodyParser: false } };
-export default createApiHandler(functions);
+export default createApiHandler(functions, salesHandlers);

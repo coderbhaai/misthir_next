@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-export interface UserBrowsingHistoryProps extends Document<Types.ObjectId> {
+export interface UserBrowsingHistoryDoc extends Document<Types.ObjectId> {
   module: "Blog" | "Destination" | "Page" | "Product";
   module_id: string | Types.ObjectId;
   user_id?: Types.ObjectId;
@@ -9,7 +9,7 @@ export interface UserBrowsingHistoryProps extends Document<Types.ObjectId> {
   updatedAt?: Date;
 }
 
-const userBrowsingHistorySchema = new Schema<UserBrowsingHistoryProps>({
+const userBrowsingHistorySchema = new Schema<UserBrowsingHistoryDoc>({
     module: { type: String, enum: ["Blog", "Destination", "Page", "Product"], required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -17,4 +17,4 @@ const userBrowsingHistorySchema = new Schema<UserBrowsingHistoryProps>({
   }, { timestamps: true, toObject: { virtuals: true }, toJSON: { virtuals: true } }
 );
 
-export default mongoose.models.UserBrowsingHistory || mongoose.model<UserBrowsingHistoryProps>("UserBrowsingHistory", userBrowsingHistorySchema);
+export default mongoose.models.UserBrowsingHistory || mongoose.model<UserBrowsingHistoryDoc>("UserBrowsingHistory", userBrowsingHistorySchema);

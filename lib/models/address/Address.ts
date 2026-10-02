@@ -2,8 +2,7 @@ import mongoose, { Schema, Document, Types, model } from 'mongoose';
 
 interface AddressDocument extends Document<Types.ObjectId> {
   user_id?: Types.ObjectId;
-  first_name: string;
-  last_name?: string;
+  name: string;
   email?: string;
   phone: string;
   whatsapp?: string;
@@ -21,8 +20,7 @@ interface AddressDocument extends Document<Types.ObjectId> {
 
 const addressSchema = new Schema<AddressDocument>({
   user_id: { type: Schema.Types.ObjectId, ref: 'User' },
-  first_name: { type: String, required: true },
-  last_name: { type: String, required: false },
+  name: { type: String, required: true },
   email: { type: String, required: false },
   phone: { type: String, required: true },
   whatsapp: { type: String, required: false },

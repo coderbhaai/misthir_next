@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Card, Typography, Checkbox, Button } from '@mui/material';
 import { fullAddress } from '@amitkk/address/utils/addressUtils';
-import { AddressProps } from '@amitkk/address/types/address';
-import { apiRequest, clo } from '@amitkk/basic/utils/utils';
 import { useAuth } from 'contexts/AuthContext';
+import { apiRequest, clo } from '@amitkk/basic/utils/my-utils/admin-utils';
+import { Button } from '@amitkk/components/button/button';
+import { Checkbox } from '@amitkk/components/basic/checkbox';
+import { Card } from '@amitkk/components/ui/card';
+import { AddressProps } from '@amitkk/address/types';
 
 type SelectAddressTabProps = {
   onSelect: (addressId: string) => void;
@@ -21,72 +23,41 @@ export default function SelectAddressTab({ onSelect }: SelectAddressTabProps) {
     }
   };
 
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn } = useAuth();
   const [addressOptions, setAddressOptions] = useState<AddressProps[]>([]);
-    const fetchData = useCallback(async () => {
-        if( !isLoggedIn ){ return; }
-        try {
-            const res = await apiRequest("get", "address/address?function=get_my_addresses");
-            setAddressOptions(res?.data ?? []);
-        } catch (error) { clo( error ); }
-    }, [isLoggedIn]);
-  
-    useEffect(() => { fetchData(); }, [fetchData]);
+  const fetchData = useCallback(async () => {
+      if( !isLoggedIn ){ return; }
+      try {
+          const res = await apiRequest("GET", "address/address?function=get_my_addresses");
+          setAddressOptions(res?.data ?? []);
+      } catch (error) { clo( error ); }
+  }, [isLoggedIn]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   return (
-    <Box sx={{ position: 'relative', pb: 8 }}>
-      {addressOptions.length === 0 && (
-        <Typography variant="body2" color="textSecondary">
-          No saved addresses found.
-        </Typography>
-      )}
+    <div className="relative py-5 space-y-4">
+      {addressOptions.length === 0 && ( <p className="text-sm text-muted-foreground">No saved addresses found.</p> )}
 
-      {addressOptions.map((address) => {
-        const addressId = address._id?.toString() || '';  // Ensure it's string
+      <div className="space-y-3">
+        {addressOptions.map((address) => {
+          const addressId = address._id?.toString() || "";
+          const isSelected = selectedAddressId === addressId;
 
-        return (
-          <Card
-            key={addressId}
-            onClick={() => handleCardClick(addressId)}
-            sx={{
-              p: 2,
-              mb: 2,
-              cursor: 'pointer',
-              border: selectedAddressId === addressId ? '2px solid #1976d2' : '1px solid #ccc',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <Checkbox
-              checked={selectedAddressId === addressId}
-              onChange={() => handleCardClick(addressId)}
-              sx={{ mr: 2 }}
-            />
-            <Box>
-              <Typography variant="body1">{fullAddress(address)}</Typography>
-            </Box>
-          </Card>
-        );
-      })}
+          return (
+            <Card key={addressId} onClick={() => handleCardClick(addressId)} className={`p-4 cursor-pointer flex items-center transition-all shadow-none ${ isSelected ? "border-2 border-primary bg-primary/5" : "border border-border hover:bg-muted/50"}`}>
+              <Checkbox checked={isSelected} onCheckedChange={() => handleCardClick(addressId)} className="mr-3"/>
+              <p className="text-sm font-medium">{fullAddress(address)}</p>
+            </Card>
+          );
+        })}
+      </div>
 
       {selectedAddressId && (
-        <Box
-          sx={{
-            position: 'sticky',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            backgroundColor: '#fff',
-            borderTop: '1px solid #ccc',
-            p: 2,
-            textAlign: 'center',
-          }}
-        >
-          <Button variant="contained" color="primary" onClick={handleSelectClick}>
-            Select Address
-          </Button>
-        </Box>
+        <div className="sticky bottom-0 left-0 w-full bg-background border-t border-border p-4 text-center shadow-md z-10">
+          <Button onClick={handleSelectClick}>Select Address</Button>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }

@@ -1,46 +1,69 @@
-// pages/_app.tsx
+// pages > _app.tsx.
+
 import "../styles/globals.css";
+import type { AppProps } from "next/app";
+import Providers from "contexts/Providers";
+import Loader from "@amitkk/basic/static/Loader";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import AdminLayout from "@amitkk/basic/utils/layouts/AdminLayout";
 import AppLayout from "@amitkk/basic/utils/layouts/AppLayout";
-import { AuthProvider } from "contexts/AuthContext";
-import type { AppProps } from "next/app";
-import { useRouter } from "next/router";
+import GuestLayout from "@amitkk/basic/utils/layouts/Guest";
+import { FilterProvider } from "contexts/FilterContext";
+import { MenuProvider } from "contexts/MenuContext";
 
-import { CacheProvider, EmotionCache } from "@emotion/react";
-import { ThemeProvider, CssBaseline } from "@mui/material";
-import createEmotionCache from "./createEmotionCache";
-import theme from "pages/theme";
-import Providers from "contexts/Providers";
-
-const clientSideEmotionCache = createEmotionCache();
-
-export interface MyAppProps extends AppProps {
-  emotionCache?: EmotionCache;
-}
-
-export default function App({ Component, pageProps, emotionCache = clientSideEmotionCache }: MyAppProps) {
+function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const adminLayout = ["/admin", "/seller", "/user"].some(prefix =>
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const handleStart = () => setLoading(true);
+    const handleStop = () => setLoading(false);
+
+    router.events.on("routeChangeStart", handleStart);
+    router.events.on("routeChangeComplete", handleStop);
+    router.events.on("routeChangeError", handleStop);
+
+    const timer = setTimeout(() => setLoading(false), 600);
+
+    return () => {
+      router.events.off("routeChangeStart", handleStart);
+      router.events.off("routeChangeComplete", handleStop);
+      router.events.off("routeChangeError", handleStop);
+      clearTimeout(timer);
+    };
+  }, [router]);
+
+  const isPreviewPage = router.pathname.startsWith("/preview");
+  const adminLayout = ["/admin", "/user"].some(prefix =>
     router.pathname.startsWith(prefix)
   );
 
-  const delayedRender = (Component as any).delayLayoutRender ?? false;
-
   return (
-    <Providers>
-      {adminLayout ? (
-        delayedRender ? (
-          <AdminLayout>
-            <Component {...pageProps} />
-          </AdminLayout>
-        ) : (
-          <Component {...pageProps} />
-        )
-      ) : (
-        <AppLayout meta={pageProps.meta}>
-          <Component {...pageProps} />
-        </AppLayout>
-      )}
-    </Providers>
+    <MenuProvider>
+      <Providers>
+        <div>
+          {loading && <Loader />}
+
+          {isPreviewPage ? (
+            <GuestLayout>
+              <Component {...pageProps} />
+            </GuestLayout>
+          ) : adminLayout ? (
+            <FilterProvider>
+              <AdminLayout>
+                <Component {...pageProps} />
+              </AdminLayout>
+            </FilterProvider>
+          ) : (
+            <AppLayout meta={pageProps.meta}>
+              <Component {...pageProps} />
+            </AppLayout>
+          )}
+        </div>
+      </Providers>
+    </MenuProvider>
   );
 }
+
+export default App;

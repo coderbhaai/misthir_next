@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-export interface MediaHubProps extends Document<Types.ObjectId> {
+export interface MediaHubDoc extends Document<Types.ObjectId> {
   module: string;
   module_id: string | Types.ObjectId;
   media_id: Types.ObjectId;
@@ -11,7 +11,7 @@ export interface MediaHubProps extends Document<Types.ObjectId> {
   updatedAt?: Date;
 }
 
-const mediaHubSchema = new Schema<MediaHubProps>({
+const mediaHubSchema = new Schema<MediaHubDoc>({
     module: { type: String, enum: ["Blog", "Destination", "Product", "Page"], required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     media_id: { type: Schema.Types.ObjectId, ref: 'Media' },
@@ -21,4 +21,4 @@ const mediaHubSchema = new Schema<MediaHubProps>({
   }, { timestamps: true, toObject: { virtuals: true }, toJSON: { virtuals: true } }
 );
 
-export default mongoose.models.MediaHub || mongoose.model<MediaHubProps>("MediaHub", mediaHubSchema);
+export default mongoose.models.MediaHub || mongoose.model<MediaHubDoc>("MediaHub", mediaHubSchema);

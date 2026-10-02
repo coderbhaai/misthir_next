@@ -1,24 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Box, TextField, Button, Checkbox, FormControl, FormControlLabel, FormLabel, SelectChangeEvent } from '@mui/material';
-import GenericSelect from '@amitkk/basic/components/static/generic-select';
-import GenericSelectInput from '@amitkk/basic/components/static/GenericSelectInput';
-import StatusSelect from '@amitkk/basic/components/static/status-input';
-import { OptionProps } from '@amitkk/basic/types/page';
+import GenericSelect from '@amitkk/components/admin/generic-select';
+import GenericSelectInput from '@amitkk/components/admin/GenericSelectInput';
+import { OptionProps } from '@amitkk/basic/types/generic';
 import { DataProps } from '@amitkk/address/admin/admin-address-table';
-import { apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
+import { useFormHandler } from 'hooks/useFormHandler';
+import { apiRequest, clo, hitToastr } from '@amitkk/basic/utils/my-utils/admin-utils';
+import { TextField } from '@amitkk/components/basic/TextField';
+import { Button } from '@amitkk/components/button/button';
+import StatusSelect from '@amitkk/components/admin/status-input';
+import { Label } from '@amitkk/components/basic/label';
+import { Checkbox } from '@amitkk/components/basic/checkbox';
 
 type DataFormProps = {
     selectedAddressId?: string | number | null | object;
-    userId: string | undefined;
     onSubmit: (data: DataProps) => void;
 };
 
-export default function AddressForm({ selectedAddressId, userId, onSubmit }: DataFormProps) {
+export default function AddressForm({ selectedAddressId, onSubmit }: DataFormProps) {
     const initialFormData: DataProps = {
-        function: 'create_update_address',
         _id: "",
-        first_name: "",
-        last_name: "",
+        name: "",
         email: "",
         phone: "",
         whatsapp: "",
@@ -46,7 +47,7 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
     useEffect(() => {
         const fetchCountries = async () => {
             try {
-                const res = await apiRequest('get', 'address/address?function=get_country_options');
+                const res = await apiRequest('GET', 'address/address?function=get_country_options');
                 const countries = res?.data ?? [];
                 setCountryOptions(countries);
                 const india = countries.find((c: OptionProps) => c.name === 'India');
@@ -63,7 +64,7 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
         if (formData.country_id) {
             const fetchStates = async () => {
                 try {
-                    const res = await apiRequest('post', 'address/address', {
+                    const res = await apiRequest("POST", 'address/address', {
                         function: 'get_states_of_country',
                         country_id: formData.country_id,
                     });
@@ -78,7 +79,7 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
         if (formData.state_id) {
             const fetchCities = async () => {
                 try {
-                    const res = await apiRequest('post', 'address/address', {
+                    const res = await apiRequest("POST", 'address/address', {
                         function: 'get_cities_of_state',
                         state_id: formData.state_id,
                     });
@@ -94,13 +95,9 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
         setIsSameAsPhone(formData.phone === formData.whatsapp && formData.phone !== '');
     }, [formData.phone, formData.whatsapp]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-        const { name, value } = e.target;  
-        setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
-    };
+    const handleChange = useFormHandler(setFormData);
 
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const checked = e.target.checked;
+    const handleCheckboxChange = (checked: boolean) => {    
         setIsSameAsPhone(checked);
         setFormData(prev => ({ ...prev, whatsapp: checked ? prev.phone : '' }));
     };
@@ -110,14 +107,12 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
             if (!selectedAddressId) { return; }
 
             try {
-                const res = await apiRequest("post", `address/address`, { function : "get_single_address_id_selected", id: selectedAddressId });
+                const res = await apiRequest("POST", `address/address`, { function : "get_single_address_id_selected", id: selectedAddressId });
 
                 setFormData({
-                    function: 'create_update_address',
                     _id: res?.data?._id || '',
                     user_id: res?.data?.user_id?._id || '',
-                    first_name: res?.data?.first_name || '',
-                    last_name: res?.data?.last_name || '',
+                    name: res?.data?.name || '',
                     email: res?.data?.email || '',
                     phone: res?.data?.phone || '',
                     whatsapp: res?.data?.whatsapp || '',
@@ -144,7 +139,7 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
 
         const updatedData: DataProps = {...formData};
         try {
-            const res = await apiRequest("post", `address/address`, updatedData);
+            const res = await apiRequest("POST", `address/address`, updatedData);
 
             if( res?.data ){
                 setFormData(initialFormData);
@@ -157,19 +152,19 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
     const title = !selectedAddressId ? "Create Address" : "Edit Address";
 
     return (
-        <form onSubmit={handleSubmit}>
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
-            <TextField label='First Name' variant='outlined' value={formData.first_name} name='first_name' fullWidth onChange={handleChange} required/>
-            <TextField label='Last Name' variant='outlined' value={formData.last_name} name='last_name' fullWidth onChange={handleChange}/>
-            <TextField label='Email' variant='outlined' value={formData.email} name='email' fullWidth onChange={handleChange}/>
-            <TextField label='Phone' variant='outlined' value={formData.phone} name='phone' fullWidth onChange={handleChange} required/>
-            <Box display="flex" alignItems="center" gap={2}>
-            <FormControl component="fieldset">
-                <FormLabel component="legend">Same as Phone</FormLabel>
-                <FormControlLabel control={ <Checkbox checked={isSameAsPhone} onChange={handleCheckboxChange} /> } label=""/>
-            </FormControl>
-                <TextField label='Whatsapp' variant='outlined' value={formData.whatsapp} name='whatsapp' fullWidth onChange={handleChange}/>
-            </Box>
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <TextField label='First Name' value={formData.name} name='name' onChange={handleChange} required/>
+            <TextField label='Email' value={formData.email} name='email' onChange={handleChange}/>
+            <TextField label='Phone' value={formData.phone} name='phone' onChange={handleChange} required/>
+            <div className="flex items-center gap-4">
+                <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="same-as-phone">Same as Phone</Label>
+                    <div className="flex h-10 items-center">
+                        <Checkbox id="same-as-phone" checked={isSameAsPhone} onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked))}/>
+                    </div>
+                </div>
+                <TextField label='Whatsapp' value={formData.whatsapp} name='whatsapp' onChange={handleChange}/>
+            </div>
             <GenericSelect label="State" name="state_id" value={formData.state_id?.toString() ?? ""} options={stateOptions} onChange={(val) => setFormData({ ...formData, state_id: val as string })}/>
             
             <GenericSelectInput label="City" name="city" value={cityOptions.find(opt => opt._id === formData.city_id) || null} 
@@ -178,14 +173,13 @@ export default function AddressForm({ selectedAddressId, userId, onSubmit }: Dat
                 setFormData(prev => ({ ...prev, city_id: id ?? '', city_new: city_new ?? '' }));
             }}/>
 
-            <TextField label='Address 1' variant='outlined' value={formData.address1} name='address1' fullWidth onChange={handleChange} required/>
-            <TextField label='Address 2' variant='outlined' value={formData.address2} name='address2' fullWidth onChange={handleChange}/>
-            <TextField label='PIN' variant='outlined' value={formData.pin} name='pin' fullWidth onChange={handleChange} required/>
-            <TextField label='Landmark' variant='outlined' value={formData.landmark} name='landmark' fullWidth onChange={handleChange}/>
-            <TextField label='Company' variant='outlined' value={formData.company} name='company' fullWidth onChange={handleChange}/>
-            <StatusSelect value={formData.status} onChange={handleChange}/>
-            <Button type='submit' variant='contained' color='primary'>{title}</Button>
-            </Box>
+            <TextField label='Address 1' value={formData.address1} name='address1' onChange={handleChange} required/>
+            <TextField label='Address 2' value={formData.address2} name='address2' onChange={handleChange}/>
+            <TextField label='PIN' value={formData.pin} name='pin' onChange={handleChange} required/>
+            <TextField label='Landmark' value={formData.landmark} name='landmark' onChange={handleChange}/>
+            <TextField label='Company' value={formData.company} name='company' onChange={handleChange}/>
+            <StatusSelect value={formData.status} onChange={(value) => handleChange("status", value)}/>
+            <Button type='submit' color='primary'>{title}</Button>
         </form>
     );
 }

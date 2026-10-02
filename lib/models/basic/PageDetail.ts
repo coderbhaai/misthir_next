@@ -1,7 +1,7 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 
 interface PageDetailDoc extends Document<Types.ObjectId> {
-  page_detail_id: Types.ObjectId;
+  page_id: Types.ObjectId;
   faq_title?: string;
   faq_text?: string;
   blog_title?: string;
@@ -16,7 +16,7 @@ interface PageDetailDoc extends Document<Types.ObjectId> {
 
 const pageDetailSchema = new Schema<PageDetailDoc>(
   {
-    page_detail_id: { type: Schema.Types.ObjectId, ref: "Page" },
+    page_id: { type: Schema.Types.ObjectId, ref: "Page" },
     faq_title: String,
     faq_text: String,
     blog_title: String,

@@ -1,17 +1,19 @@
-import { Schema, model, models, Document } from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 
-interface MetaDoc extends Document<Types.ObjectId> {
+export interface MetaDoc extends Document<Types.ObjectId> {
   url: string;
   title: string;
   description: string;
+  media_id?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const metaSchema = new Schema<MetaDoc>({
   url: { type: String, required: true },
-  title: String,
-  description: String,
+  title: { type: String, required: true, translatable: true },
+  description: { type: String, required: true, translatable: true },
+  media_id: { type: Schema.Types.ObjectId, ref: 'Media' },
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
-export default models.Meta || model<MetaDoc>("Meta", metaSchema);
+export default mongoose.models?.Meta || mongoose.model<MetaDoc>("Meta", metaSchema);

@@ -1,4 +1,4 @@
-import SellerCouponForm from '@amitkk/seller/admin/add-update-seller-coupon-form';
+import SellerCouponForm from '@amitkk/coupon/admin/add-update-coupon-form';
 import { useVendorId } from 'hooks/useVendorId';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 const EditSellerCouponId = () => {
   const router = useRouter();
   const { id } = router.query;
-  const vendor_id = useVendorId();
+  const seller_id = useVendorId();
 
   useEffect(() => {
   }, [router.query]);
@@ -15,7 +15,7 @@ const EditSellerCouponId = () => {
 
   if (!id) return <div>Error: No ID found</div>;
 
-  return <SellerCouponForm dataId={id as string} vendor_id ={vendor_id as string} coupon_by="Vendor"/>;
+  return <SellerCouponForm dataId={id as string} seller_id ={seller_id as string} coupon_by="Vendor"/>;
 };
 
 export default EditSellerCouponId;

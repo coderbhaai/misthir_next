@@ -1,17 +1,21 @@
-import { socialLinks } from "@amitkk/basic/utils/config";
-import { Stack, Box, Button, Typography } from "@mui/material";
 import Link from "next/link";
-import { linkButtonStyles } from "pages/sitemap";
+import Image from "next/image";
+import amitkk from "../utils/amitkk";
 
-export default function SocialMedia() {
+interface SocialMediaProps {
+  className?: string;
+  iconClassName?: string;
+  spacing?: string;
+}
+
+export default function SocialMedia({className = "", iconClassName = "h-5 w-5", spacing = "gap-3"}: SocialMediaProps) {
   return (
-    <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="left" alignItems="center">
-      {socialLinks?.map((item, index) => (
-        <Box key={`${item.href}-social-${index}`} sx={{ display: 'inline-flex', alignItems: 'center' }}>
-          <Button variant="text" href={item.href} component={Link} target={item.href.startsWith('http') ? '_blank' : undefined} rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined} sx={linkButtonStyles}>{item.label}</Button>
-          {index !== socialLinks.length - 1 && ( <Typography sx={{ mx: 2, userSelect: 'none', lineHeight: 1, fontSize: 28 }}>|</Typography>)}
-        </Box>
+    <div className={`flex items-center ${spacing} ${className}`}>
+      {amitkk.socialLinks.map((social, index) => (
+        <Link key={index} href={social.url} target="_blank" rel="noopener noreferrer" aria-label={social.name} className="transition-all duration-200 hover:scale-110">
+          <Image src={`/images/icons/social/${social.icon}`} alt={social.name} width={20} height={20} className={iconClassName}/>
+        </Link>
       ))}
-  </Stack>
+    </div>
   );
 }

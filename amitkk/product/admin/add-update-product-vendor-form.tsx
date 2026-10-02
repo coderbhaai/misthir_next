@@ -1,18 +1,20 @@
 "use client"
 import React from "react";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Box, Button, Checkbox, Chip, FormControl, InputLabel, ListItemText, MenuItem, TextField, Typography } from "@mui/material";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
+import { useState, useEffect } from "react";
 import router, { useRouter } from 'next/navigation';
 import dynamic from "next/dynamic";
-import ImageUpload from "@amitkk/basic/components/static/file-input";
-import MetaInput from "@amitkk/basic/components/static/meta-input";
-import MultiSelectDropdown from "@amitkk/basic/components/static/multiselect-dropdown";
-import MediaImage from "@amitkk/basic/components/static/table-image";
-import { apiRequest, clo, hitToastr, handleMultiSelectChange } from "@amitkk/basic/utils/utils";
-import { MediaProps } from "@amitkk/basic/types/page";
+import ImageUpload from "@amitkk/components/admin/file-input";
+import MetaInput from "@amitkk/components/admin/meta-input";
+import MultiSelectDropdown from "@amitkk/components/admin/multiselect-dropdown";
+import MediaImage from "@amitkk/components/admin/table-image";
+import { apiRequest, clo, handleMultiSelectChange, hitToastr } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { useFormHandler } from "hooks/useFormHandler";
+import { MediaProps } from "@amitkk/basic/types/media";
+import { TextField } from "@amitkk/components/basic/TextField";
+import { Button } from "@amitkk/components/button/button";
+import StickyFormFooter from "@amitkk/components/ui/StickyFormFooter";
 
-const CkEditor = dynamic(() => import("@amitkk/basic/components/static/ckeditor-input"), { 
+const CkEditor = dynamic(() => import("@amitkk/components/admin/ckeditor-input"), { 
   ssr: false, loading: () => <p>Loading editor...</p>,
 });
 
@@ -59,7 +61,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
         if (dataId) {
             const fetchSingleEntry = async () => {
                 try {
-                    const res = await apiRequest("get", `blog/blogs?function=get_single_blog&id=${dataId}`);
+                    const res = await apiRequest("GET", `blog/blogs?function=get_single_blog&id=${dataId}`);
                     
                     if (res?.data) {
                         const metas = res?.data.metas || [];
@@ -100,14 +102,11 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
         }
     }, [dataId]);
 
-    const [media_id, setMedia_id] = useState("");
     const [content, setContent] = useState("");
     const [contentError, setContentError] = useState<string | null>(null);
-    const [author_id, setAuthor_id] = useState("");
     const [author_options, setAuthorOptions] = React.useState<{_id: string; name: string}[]>([]);
 
     const [image, setImage] = useState<File | null>(null);
-    const [imageError, setImageError] = useState<string | null>(null);
     
     const [selectedCategory, setSelectedCategory] = React.useState<string[]>([]);
     const [category, setCategory] = React.useState<{_id: string; name: string}[]>([]);
@@ -118,7 +117,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
     React.useEffect(() => {
         const fetchCategory = async () => {
           try {
-            const res_1 = await apiRequest("get", `blog/blogmeta?function=get_category`);
+            const res_1 = await apiRequest("GET", `blog/blogmeta?function=get_category`);
             setCategory(res_1.data ?? []);
           } catch (error) { clo( error ); }
         };
@@ -126,7 +125,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
     
         const fetchTags = async () => {
           try {
-            const res_2 = await apiRequest("get", `blog/blogmeta?function=get_tag`);
+            const res_2 = await apiRequest("GET", `blog/blogmeta?function=get_tag`);
             setTag(res_2.data ?? []);
           } catch (error) { clo( error ); }
         };
@@ -134,7 +133,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
 
         const fetchAuthors = async () => {
             try {
-                const res_3 = await apiRequest("get", `blog/author?function=get_all_author`);
+                const res_3 = await apiRequest("GET", `blog/author?function=get_all_author`);
                 setAuthorOptions(res_3.data ?? []);
             } catch (error) { clo( error ); }
           };
@@ -172,7 +171,7 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
 
             if (image) { formDataToSend.append("image", image); }
 
-            const result = await apiRequest("post", `blog/blogs`, formDataToSend);
+            const result = `blog/blogs`, formDataToSend);
             hitToastr('success', 'Entry Done');
 
             router.replace('/admin/blog/blogs');
@@ -180,60 +179,41 @@ export const BlogForm: React.FC<DataFormProps> = ({ dataId = '' }) => {
         } catch (error) { clo( error ); }
     };
 
-    const handleAuthorChange = (e: SelectChangeEvent) => {
-        const { value } = e.target;
-    
-        setFormData((prevData) => ({
-          ...prevData,
-          author_id: value,
-        }));
-    };
-
-    const handleChange = (e: SelectChangeEvent | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value === "true" ? true : value === "false" ? false : value,
-        }));
-    };
+    const handleChange = useFormHandler(setFormData);
 
     const title = !dataId ? 'Add Blog' : 'Update Blog';
     
     return(
         <>
-            <Box display="flex" alignItems="center" mb={5} sx={{ padding: "1em" }}>
-                <Typography variant="h4" flexGrow={1}>{title}</Typography>
-            </Box>
-            <form onSubmit={handleSubmit} style={{ padding: "10px" }}>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-                    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2, width: "100%" }}>
-                        <TextField label="Blog Name" variant="outlined" value={formData.name} name="name" fullWidth onChange={handleChange} required sx={{ gridColumn: "span 1" }}  />
-                        <TextField label="Blog URL" variant="outlined" value={formData.url} name="url" fullWidth onChange={handleChange} required sx={{ gridColumn: "span 1" }}  />
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", gridColumn: "span 1" }}>
-                            <MediaImage media={formData.media as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
-                            <ImageUpload name="image" required error={imageError} onChange={(name, file) => { setImage(file); }}/>
-                        </div>
-                        <FormControl sx={{ width: "100%" }}>
-                            <InputLabel id="author-label">Author<span style={{ color: "red" }}>*</span></InputLabel>
-                            <Select labelId="author-label" id="author" name="author_id" value={formData.author_id} onChange={handleAuthorChange}>
-                                {Array.isArray(author_options) && author_options.length > 0 ? (author_options?.map((i, index) => (
-                                    <MenuItem key={index} value={i._id}>{i.name}</MenuItem>
-                                    ))
-                                ) : ( <MenuItem disabled>No authors available</MenuItem>)}
-                            </Select>
-                        </FormControl>
-                    </Box>
+            <p>{title}</p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    <TextField label="Blog Name" value={formData.name} name="name" onChange={handleChange} required sx={{ gridColumn: "span 1" }}  />
+                    <TextField label="Blog URL" value={formData.url} name="url" onChange={handleChange} required sx={{ gridColumn: "span 1" }}  />
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", gridColumn: "span 1" }}>
+                        <MediaImage media={formData.media as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
+                        <ImageUpload name="image" required onChange={(name, file) => { setImage(file); }}/>
+                    </div>
+                    <FormControl sx={{ width: "100%" }}>
+                        <InputLabel id="author-label">Author<span style={{ color: "red" }}>*</span></InputLabel>
+                        <Select labelId="author-label" id="author" name="author_id" value={formData.author_id} onChange={handleAuthorChange}>
+                            {Array.isArray(author_options) && author_options.length > 0 ? (author_options?.map((i, index) => (
+                                <MenuItem key={index} value={i._id}>{i.name}</MenuItem>
+                                ))
+                            ) : ( <MenuItem disabled>No authors available</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                </div>
 
-                    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2, width: "100%" }}>
-                        <MultiSelectDropdown label="Category" options={category} selected={selectedCategory} onChange={(e) => handleMultiSelectChange(e, setSelectedCategory)}/>
-                        <MultiSelectDropdown label="Tags" options={tag} selected={selectedTag} onChange={(e) => handleMultiSelectChange(e, setSelectedTag)}/>                        
-                    </Box>
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    <MultiSelectDropdown label="Category" options={category} selected={selectedCategory} onChange={(e) => handleMultiSelectChange(e, setSelectedCategory)}/>
+                    <MultiSelectDropdown label="Tags" options={tag} selected={selectedTag} onChange={(e) => handleMultiSelectChange(e, setSelectedTag)}/>                        
+                </div>
 
-                    <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
+                <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/>
 
-                    <CkEditor name="content" value={content} onChange={handleEditorChange} required error={contentError} />
-                    <Button type="submit" variant="contained" color="primary">{title}</Button>
-                </Box>
+                <CkEditor name="content" value={content} onChange={handleEditorChange} required error={contentError} />
+                <StickyFormFooter title={title}/>
             </form>
         </>
     )

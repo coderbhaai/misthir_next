@@ -1,9 +1,9 @@
 "use client"
 
-import PageForm from "@amitkk/basic/components/page/add-update-page-form";
+import PageForm from "@amitkk/basic/admin/page/add-update-page-form";
 
 const AddPage = () => {
-  return <PageForm selectedDataId={''} />;
+  return <PageForm dataId={''} />;
 };
 
 export default AddPage;

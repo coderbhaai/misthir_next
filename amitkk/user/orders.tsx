@@ -1,54 +1,30 @@
-import { useState, useEffect, useCallback } from "react";
-import { useTable, AdminTableHead, emptyRows } from "@amitkk/basic/utils/AdminUtils";
-import { apiRequest, clo, useTableFilter, withAuth } from "@amitkk/basic/utils/utils";
-import { AdminDataTable, DataProps } from "@amitkk/user/admin/user-order-table";
+"use client";
+
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useRouter } from "next/router";
+import { useAdminPage } from "hooks/useAdminPage";
+import { AdminDataTable, DataProps } from "@amitkk/user/admin/user-order-table";
 
-export function UserOrders(){
-    const router = useRouter();
-    const showCheckBox = false;
-    const table = useTable();
-    const setOpen = () =>{
-        router.push('/shop');
-    }
-    const [data, setData] = useState<DataProps[]>([]);
-    const [filterData, setFilterData] = useState("");
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["total"] );
+export function UserOrders() {
+    const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/ecom", listFunction: "get_user_orders" });
 
-    const handleEdit = (row: DataProps) => { 
-        localStorage.setItem("order_id", row?._id as string);
-        window.open("/order", "_blank");
-    };
+    const FILTER_CONFIG = [
+        { name: "SearchFilter", grid: "col-span-9", },
+        { name: "StatusFilter", grid: "col-span-3", },
+    ] as const;
 
-    const fetchData = useCallback(async () => {
-        try {
-            const res = await apiRequest("get", "ecom/ecom?function=get_user_orders");
-            setData(res?.data ?? []);
-        } catch (error) { clo( error ); }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
-    
-    return(
-        <AdminTableLayout<DataProps>
-            title="Orders" addButtonLabel="Shop Page" onAddNew={setOpen} filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
+    const head: { id: string; label: string }[] = [
                     { id: "sku", label: "Products" },
                     { id: "total", label: "Payment" },
                     { id: "charges", label: "Charges" },
                     { id: "date", label: "Date" },
                     { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} onEdit={handleEdit} showCheckBox={false}/>
-                ))}>
+                ]];
+
+    return (
+        <AdminTableLayout admin={admin} title="Orders" filters={FILTER_CONFIG} head={head} 
+            rows={admin.data.map((i: DataProps) => ( <AdminDataTable key={String(i._id)} row={i}/> ))}>
         </AdminTableLayout>
-    )
+    );
 }
 
-export default withAuth(UserOrders);
+export default UserOrders;

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export interface BuyOneGetOneProps extends Document<Types.ObjectId> {
+export interface BuyOneGetOneDoc extends Document<Types.ObjectId> {
   coupon_id: Types.ObjectId;
   buy_id: Types.ObjectId;
   get_id: Types.ObjectId;
@@ -8,7 +8,7 @@ export interface BuyOneGetOneProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const buyOneGetOneSchema = new Schema<BuyOneGetOneProps>({
+const buyOneGetOneSchema = new Schema<BuyOneGetOneDoc>({
     coupon_id: { type: Schema.Types.ObjectId, ref: "Coupon", required: true },
     buy_id: { type: Schema.Types.ObjectId, ref: "Sku", required: true },
     get_id: { type: Schema.Types.ObjectId, ref: "Sku", required: true },
@@ -20,5 +20,5 @@ buyOneGetOneSchema.index(
   { unique: true }
 );
 
-const BuyOneGetOne: Model<BuyOneGetOneProps> = mongoose.models.BuyOneGetOne || mongoose.model<BuyOneGetOneProps>("BuyOneGetOne", buyOneGetOneSchema);
+const BuyOneGetOne: Model<BuyOneGetOneDoc> = mongoose.models.BuyOneGetOne || mongoose.model<BuyOneGetOneDoc>("BuyOneGetOne", buyOneGetOneSchema);
 export default BuyOneGetOne;

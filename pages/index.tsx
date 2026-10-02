@@ -1,46 +1,56 @@
 // pages > index.tsx
 
-import HomeSlider from "@amitkk/basic/components/HomeSlider";
-import { Box } from "@mui/material";
-import Achievement from "@amitkk/basic/components/Achievement";
-import ServicesSlider from "@amitkk/basic/components/ServicesSlider";
-import Portfolio from "@amitkk/basic/components/Portfolio";
-import MobileSecond from "@amitkk/basic/components/MobileSecond";
-import Admin from "@amitkk/basic/components/admin";
-import { apiRequest } from "@amitkk/basic/utils/utils";
-import FaqPanel from "@amitkk/basic/components/faq/FaqPanel";
-import CommentPanel from "@amitkk/basic/components/comment/CommentPanel";
-import SuggestTestimonial from "@amitkk/basic/components/testimonial/suggest-testimonial";
+import FaqPanel from "@amitkk/basic/admin/faq/FaqPanel";
+import SuggestTestimonial from "@amitkk/basic/admin/testimonial/suggest-testimonial";
 import SuggestProducts from "@amitkk/product/static/suggest-products";
 import SuggestBlogs from "@amitkk/blog/static/suggest-blog";
+import { SinglePageProps } from "@amitkk/basic/types/page";
+import { RelatedContent } from "@amitkk/basic/types";
+import Achievement from "@amitkk/basic/achievement";
+import CommentPanel from "@amitkk/basic/admin/comment/CommentPanel";
+import { apiRequest } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { GetServerSideProps } from "next";
+import { groupBlockContent, serverApiRequest } from "@amitkk/basic/utils/my-utils/client-utils";
 
 interface HomePageProps {
-  page: PageProps;
+  page: SinglePageProps;
   relatedContent: RelatedContent;
 }
 
 export default function HomePage({ page, relatedContent }: HomePageProps) {
   return (
-    <Box>
-      <HomeSlider />
-      <Achievement />
-      <ServicesSlider />
-      <MobileSecond />
-      <Portfolio />
-      <Admin />
+    <div>
+      {/* <HomeSlider /> */}
+      {/* <Achievement /> */}
+      {/* <MobileSecond /> */}
+      {/* <Admin /> */}
       <FaqPanel faq={relatedContent.faq} />
       <SuggestTestimonial testimonials={relatedContent.testimonials} />
-      <SuggestProducts products={relatedContent.products} />
-      <SuggestBlogs blogs={relatedContent.blogs}/>
-      {page && ( <CommentPanel module="Page" module_id={page?._id} module_name={page?.name}/> )}
-    </Box>
+      <SuggestProducts data={relatedContent.products}/>
+      <SuggestBlogs data={relatedContent.blogs}/>
+      {/* {page && ( <CommentPanel module="Page" module_id={page?._id} module_name={page?.name}/> )} */}
+    </div>
   );
 }
 
-export async function getServerSideProps() {
-  const res = await apiRequest("get", `basic/page?function=get_page_data&url=/&module=Page`);
-  const meta = res?.data?.meta_id || { title: process.env.NEXT_PUBLIC_DEFAULT_TITLE, description: process.env.NEXT_PUBLIC_DEFAULT_DESCRIPTION };
-  const page = res?.data || null;
-  const relatedContent = res?.relatedContent || { faq: [], testimonials: [], blogs: [], products: [] };
-  return { props: { page, relatedContent } };
-}
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  try {
+    const apiRes = await serverApiRequest(req, "GET", `basic/page?function=get_page_by_url&url=/&module=Page`);
+    if (!apiRes?.data) { return { notFound: true }; }
+    
+    const meta = {
+      ...(apiRes?.seo || {}),
+      schema: apiRes?.schema || null,
+      path: "/"
+    };
+
+    const data = apiRes?.data || null;
+    const relatedContent = apiRes?.relatedContent || { faq: [], testimonials: [], blogs: [] };
+    const { groupedBlocks, groupedDetails } = await groupBlockContent(apiRes?.blockContent ?? null);
+
+    return { props: { data, meta, relatedContent, groupedBlocks, groupedDetails } };
+  } catch (error) {
+    console.error("❌ Home page error:", error);
+    return { notFound: true };
+  }
+};

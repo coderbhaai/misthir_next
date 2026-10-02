@@ -1,82 +1,125 @@
-const fs = require("fs"); 
+const fs = require("fs");
 const path = require("path");
 
-const amitkkRoot = path.resolve(__dirname);
-const outputPath = path.resolve(amitkkRoot, "componentMaps.ts");
+const root = path.resolve(__dirname);
+const outputPath = path.join(root, "componentMaps.ts");
+const EXCLUDE_FOLDERS = ["components", "lib", "seller", "user"];
+const INTERNAL_MODULES = ["portfolio", "blog", "basic"];
+const INTERNAL_SUBDIRS = ["pages", "regional"];
 
-// Folder configurations
-const includeFolders = {
-  seller: ["seller"],
-  user: ["user"],
-};
+function normalize(p) { return p.replace(/\\/g, "/"); }
 
-function collectFiles(folderPath, baseRoot) {
+function validateMap(map, mapName) {
+  Object.entries(map).forEach(([key, value]) => {
+    if (!key) console.error(`❌ Empty key in ${mapName}`);
+    if (!value || typeof value.path !== "string" || !value.path.startsWith("./")) {
+      console.error(`❌ Invalid import path for key: ${key} in ${mapName}`, value);
+    }
+  });
+}
+
+function collectImmediateFiles(folderPath, baseRoot) {
   const result = {};
   if (!fs.existsSync(folderPath)) return result;
 
   const entries = fs.readdirSync(folderPath, { withFileTypes: true });
+
   for (const entry of entries) {
-    if (entry.isFile() && /\.(tsx|ts)$/.test(entry.name)) {
-      const name = path.basename(entry.name, path.extname(entry.name)).toLowerCase();
-      const relativePath = path
-        .relative(baseRoot, path.join(folderPath, entry.name))
-        .replace(/\\/g, "/");
-      const importPath = `./${relativePath.replace(/\.(tsx|ts)$/, "")}`;
-      result[name] = importPath;
+    if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name)) {
+      const key = path.basename(entry.name, path.extname(entry.name));
+      const rel = normalize(
+        path.relative(baseRoot, path.join(folderPath, entry.name)).replace(/\.(ts|tsx)$/, "")
+      );
+      result[key] = { path: `./${rel}`, translate: true };
     }
   }
   return result;
 }
 
-function getAdminFiles(root) {
+function getAdminFiles() {
   const result = {};
-  const subfolders = fs.readdirSync(root, { withFileTypes: true })
-    .filter(entry => entry.isDirectory() && entry.name !== 'seller' && entry.name !== 'user');
+  const entries = fs.readdirSync(root, { withFileTypes: true });
 
-  for (const folder of subfolders) {
-    const folderPath = path.join(root, folder.name);
-    Object.assign(result, collectFiles(folderPath, root));
+  for (const entry of entries) {
+    if (entry.isDirectory() && !EXCLUDE_FOLDERS.includes(entry.name)) {
+      const folderPath = path.join(root, entry.name);
+      Object.assign(result, collectImmediateFiles(folderPath, root));
+    }
+  }
+  return result;
+}
+
+function getRoleMap(folder) {
+  return collectImmediateFiles(path.join(root, folder), root);
+}
+
+function collectInternalMap() {
+  const componentMap = {};
+
+  for (const moduleName of INTERNAL_MODULES) {
+    for (const sub of INTERNAL_SUBDIRS) {
+      const dir = path.join(root, moduleName, sub);
+      if (!fs.existsSync(dir)) continue;
+
+      const files = fs.readdirSync(dir);
+
+      for (const file of files) {
+        if (!file.endsWith(".ts") && !file.endsWith(".tsx")) continue;
+
+        const slug = file.replace(/\.(ts|tsx)$/, "");
+        const rel = normalize(
+          path.relative(root, path.join(dir, file)).replace(/\.(ts|tsx)$/, "")
+        );
+
+        componentMap[slug] = { path: `./${rel}`, translate: true };
+      }
+    }
   }
 
-  return result;
+  return componentMap;
 }
 
-
-function getFilesFromFixedFolder(folderName) {
-  const result = {};
-  const folderPath = path.join(amitkkRoot, folderName);
-  Object.assign(result, collectFiles(folderPath, amitkkRoot));
-  return result;
-}
-
-function formatMap(name, files) {
-  const entries = Object.entries(files)
-    .map(([key, importPath]) => `  "${key}": () => import("${importPath}"),`)
+function formatLoaderMap(name, map) {
+  const entries = Object.entries(map)
+    .map(([k, v]) => `  "${k}": { loader: () => import("${v.path}"), translate: ${v.translate} },`)
     .join("\n");
 
-  return `export const ${name}: Record<string, () => Promise<any>> = {\n${entries}\n};\n`;
+  return `export const ${name}: Record<string, { loader: () => Promise<any>; translate: boolean }> = {
+${entries}
+};`;
 }
 
 try {
-  const adminFiles = getAdminFiles(amitkkRoot);
-  const sellerFiles = getFilesFromFixedFolder("seller");
-  const userFiles = getFilesFromFixedFolder("user");
+  const admin = getAdminFiles();
+  const seller = getRoleMap("seller");
+  const user = getRoleMap("user");
+  const internal = collectInternalMap();
 
-  const output = `// AUTO-GENERATED FILE. DO NOT EDIT.
+  validateMap(admin, "adminComponentMap");
+  validateMap(seller, "sellerComponentMap");
+  validateMap(user, "userComponentMap");
+  validateMap(internal, "internalComponentMap");
 
-  ${formatMap("adminComponentMap", adminFiles)}
-  ${formatMap("sellerComponentMap", sellerFiles)}
-  ${formatMap("userComponentMap", userFiles)}
+  const output = `// 🚨 AUTO-GENERATED FILE. DO NOT EDIT.
 
-  export default {
-    adminComponentMap,
-    sellerComponentMap,
-    userComponentMap,
-  };
+${formatLoaderMap("adminComponentMap", admin)}
+
+${formatLoaderMap("sellerComponentMap", seller)}
+
+${formatLoaderMap("userComponentMap", user)}
+
+${formatLoaderMap("internalComponentMap", internal)}
+
+export default {
+  adminComponentMap,
+  sellerComponentMap,
+  userComponentMap,
+  internalComponentMap,
+};
 `;
 
-  fs.writeFileSync(outputPath, output);
-  console.log("✅ componentMaps.ts generated at:", outputPath);
-} catch (error) {
-  console.error("❌ Error generating component maps:", error);
+  fs.writeFileSync(outputPath, output, "utf-8");
+  console.log("✅ componentMaps.ts successfully regenerated with translation metadata flags and validation.");
+} catch (err) {
+  console.error("❌ Generator failed:", err);
 }

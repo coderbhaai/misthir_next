@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Drawer, Box, Typography, List, ListItem, Button, Card, CardMedia, IconButton, Badge, TextField } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useEcom } from "contexts/EcomContext";
 import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
-import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
-import { hitToastr } from "@amitkk/basic/utils/utils";
 import Link from "next/link";
 import CartList from "./CartList";
+import { hitToastr } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { Button } from "@amitkk/components/button/button";
+import { Plus, ShoppingCart, X } from "lucide-react";
+import { Card } from "@amitkk/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@amitkk/components/ui/sheet";
+import { Textarea } from "@amitkk/components/basic/textarea";
 
 export default function CartSidebar() {
   const { sendAction, cart, cartItemCount, relatedProducts } = useEcom();
@@ -16,7 +17,7 @@ export default function CartSidebar() {
   const [showNoteBox, setShowNoteBox] = useState(false);
   const [orderNote, setOrderNote] = useState("");
 
-useEffect(() => {
+  useEffect(() => {
   if (cart?.user_remarks) {
     setOrderNote(cart.user_remarks);
   }
@@ -34,80 +35,100 @@ useEffect(() => {
 
   return (
     <>
+      <div className="border-b border-border mb-4" />
       {cartItemCount > 0 && (
-        <Box sx={{ position: 'fixed', bottom: 20, left: 16, zIndex: 1000, }}>
-          <IconButton onClick={() => setOpen(true)} sx={{ backgroundColor: '#5a3825', color: '#fff', width: 56, height: 56, '&:hover': { backgroundColor: '#7a5230' }, borderRadius: '50%', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', }}>
-            <Badge badgeContent={cartItemCount} color="error" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{ '& .MuiBadge-badge': { transform: 'translate(90%, -90%)', fontSize: '0.75rem', minWidth: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', }}}><ShoppingCartIcon/></Badge>
-          </IconButton>
-        </Box>
+        <div className="fixed bottom-5 left-4 z-[1000]">
+          <Button
+            size="icon"
+            onClick={() => setOpen(true)}
+            className="relative bg-[#5a3825] hover:bg-[#7a5230] text-white w-14 h-14 rounded-full shadow-lg"
+          >
+            <ShoppingCart className="h-6 w-6" />
+            <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-xs font-bold min-w-6 h-6 px-1 rounded-full flex items-center justify-center shadow-md">
+              {cartItemCount}
+            </span>
+          </Button>
+        </div>
       )}
 
-      <Box sx={{ display: 'flex', position: "relative" }}>
+      {/* Main Drawer Layout Wrapper */}
+      <div className="flex relative">
+        {/* Related Products Sidebar (Appears on the left side of the right drawer) */}
         {open && (
-          <Box sx={{
-            width: 200,
-            height: '100vh',
-            overflowY: 'auto',
-            borderRight: '1px solid #ccc',
-            position: 'fixed',
-            top: 0,
-            right: 400,
-            backgroundColor: '#fff',
-            zIndex: 1500,
-          }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2, backgroundColor: "#d6d6d6" }}>
-              <Typography variant="h6" sx={{ color: "#000" }}>Other Products</Typography>
-            </Box>
+          <div className="w-[200px] h-screen overflow-y-auto border-r border-border fixed top-0 right-[400px] bg-background z-[1500] shadow-lg">
+            <div className="flex justify-between items-center p-4 bg-[#d6d6d6] text-zinc-900 font-semibold text-sm">
+              <p>Other Products</p>
+            </div>
 
-            <List sx={{ p: 2 }}>
+            <div className="p-4 space-y-3">
               {relatedProducts?.map((product: any) => (
-                <ListItem key={product._id} disablePadding sx={{ mb: 3 }}>
-                  <Link href={`/product/${product.url}`} passHref style={{ textDecoration: 'none', width: '100%' }}>
-                    <Card sx={{ width: '100%', display: 'flex', flexDirection: 'column', p: 1 }}>
+                <div key={product._id} className="w-full">
+                  <Link href={`/${product.url}`} className="block no-underline w-full">
+                    <Card className="w-full flex flex-col p-2 shadow-none hover:bg-muted/50 transition-colors">
                       <ImageWithFallback img={product.medias?.[0]} height={80} />
-                      <Box sx={{ mt: 1 }}>
-                        <Typography variant="subtitle2" textAlign="center">{product.name}</Typography>
-                      </Box>
+                      <div className="mt-2">
+                        <p className="text-center text-xs font-medium line-clamp-2">{product.name}</p>
+                      </div>
                     </Card>
                   </Link>
-                </ListItem>
+                </div>
               ))}
-            </List>
-          </Box>
+            </div>
+          </div>
         )}
 
-        <Drawer anchor="right" open={open} slotProps={{ paper: { sx: { width: 400, height: '100vh', display: 'flex', flexDirection: 'column' } } }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2, backgroundColor: "#d6d6d6" }}>
-              <Typography variant="h6">My Cart</Typography>
-              <IconButton sx={{ p: 0 }} onClick={() => setOpen(false)}><CloseIcon/></IconButton>
-            </Box>
+        {/* Shadcn Sheet (Drawer) */}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="right" className="w-[400px] sm:max-w-[400px] flex flex-col p-0 z-[1500]">
+            <SheetHeader className="flex flex-row justify-between items-center p-4 bg-[#d6d6d6] text-zinc-900 space-y-0">
+              <SheetTitle className="text-base font-semibold m-0 text-zinc-900">My Cart</SheetTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 p-0" onClick={() => setOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </SheetHeader>
 
-            <CartList/>
-              
-            <Box sx={{ p: 2, borderTop: '1px solid #ccc', backgroundColor: '#fff' }}>
+            <div className="flex-1 overflow-y-auto">
+              <CartList />
+            </div>
+
+            <div className="p-4 border-t border-border bg-background space-y-4">
               {showNoteBox && (
-                <Box sx={{ mb: 2 }}>
-                  <TextField label="Add a note" fullWidth size="small" multiline minRows={3} value={orderNote} onChange={(e) => setOrderNote(e.target.value)}/>
-                  <Box sx={{ display: 'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <Button variant="contained" size="small" sx={{ mt: 1 }} onClick={handleAddOrderToCart}>Save</Button>
-                    <Button variant="contained" size="small" sx={{ mt: 1 }} onClick={()=> setShowNoteBox(false) }>Camcel</Button>
-                  </Box>
-                </Box>
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Add a note"
+                    rows={3}
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                  />
+                  <div className="flex items-center justify-between">
+                    <Button size="sm" onClick={handleAddOrderToCart}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowNoteBox(false)}>Cancel</Button>
+                  </div>
+                </div>
               )}
 
-              <Button variant="contained" fullWidth startIcon={<AddShoppingCartIcon />} onClick={() => setShowNoteBox(true)}>Add Order to Cart</Button>
+              {!showNoteBox && (
+                <Button variant="outline" className="w-full" onClick={() => setShowNoteBox(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Add Order to Cart
+                </Button>
+              )}
 
-              <Box sx={{ mt: 2, textAlign: 'center' }}>
-                <Typography variant="body2">Delivery available at <b>122003</b></Typography>
-                <Typography variant="caption" color="text.secondary">All orders received post 10 AM Friday to 10 AM Monday will be shipped on Monday.</Typography>
-              </Box>
+              <div className="text-center text-xs text-muted-foreground space-y-1">
+                <p>Delivery available at <strong className="text-foreground">122003</strong></p>
+                <p>All orders received post 10 AM Friday to 10 AM Monday will be shipped on Monday.</p>
+              </div>
 
-              {cart?.total?.$numberDecimal && ( <Button href="/cart" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>Checkout - ₹{cart?.total?.$numberDecimal}</Button> )}
-            </Box>
-          </Box>
-        </Drawer>
-      </Box>
+              {cart?.total && (
+                <Button asChild className="w-full bg-primary text-primary-foreground">
+                  <Link href="/cart">
+                    Checkout - ₹{cart?.total}
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
     </>
   );
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { ChargesItem } from "../types/ecom";
+import { ChargesItem } from "../types";
 
 interface ChargesDetailsProps {
   charges?: ChargesItem;

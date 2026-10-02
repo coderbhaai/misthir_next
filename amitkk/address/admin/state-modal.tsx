@@ -1,30 +1,26 @@
+'use client'
+
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Select, {SelectChangeEvent} from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
+import { TextField } from '@amitkk/components/basic/TextField';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import { TableDataFormProps, apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
-import { StateProps } from '@amitkk/address/types/address';
-import StatusDisplay from '@amitkk/basic/components/static/status-display-input';
-import GenericSelect from '@amitkk/basic/components/static/generic-select';
-import { OptionProps } from '@amitkk/basic/types/page';
-import { FormControl, InputLabel, MenuItem } from '@mui/material';
+import { TableDataFormProps, apiRequest } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { StateProps } from '@amitkk/address/types';
+import StatusDisplay from '@amitkk/components/admin/status-display-input';
+import { hitToastr, clo } from '@amitkk/basic/utils/my-utils/admin-utils';
+import { useFormHandler } from 'hooks/useFormHandler';
+import OpenSelect from '@amitkk/components/basic/OpenSelect';
+import StickyFormFooter from '@amitkk/components/ui/StickyFormFooter';
+import SingleCountryDropdown from '../static/SingleCountryDropdown';
 
 type DataFormProps = TableDataFormProps & {
-  onUpdate: (updatedData: DataProps) => void;
+  handleUpdate: (data?: any) => Promise<void> | void;
 };
 
 export interface DataProps extends StateProps {
-  function?: string;
-  selectedDataId?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
+export default function DataModal({ open, handleClose, selectedDataId, handleUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
-    function: 'create_update_state',
     _id: '',
     country_id: '',
     name: '',
@@ -35,39 +31,25 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     updatedAt: new Date(),
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
+  const handleChange = useFormHandler(setFormData);
   
   const handleCloseModal = () => {
     setFormData(initialFormData);
     handleClose();
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: name === "status" || name === "major" ? value === "true" : value, }));
-  };
-
-  const [countryOptions, setCountryOptions] = React.useState<OptionProps[]>([]);
-    const initData = React.useCallback(async () => {
-      try {
-          const res_1 = await apiRequest("get", `address/address?function=get_country_options`);
-          setCountryOptions(res_1?.data ?? []);
-      } catch (error) { clo( error ); }
-    }, []);
-  
-    React.useEffect(() => { initData(); }, [initData]);
-
   React.useEffect(() => {
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `address/address?function=get_single_state&id=${selectedDataId}`);
+          const res = await apiRequest("GET", `address/address?function=get_single_state&id=${selectedDataId}`);
 
           setFormData({
-            function: 'create_update_state',
             _id: res?.data?._id || '',
             country_id: res?.data?.country_id?._id || '',
             name: res?.data?.name || '',
             status: res?.data?.status ?? true,
+            displayOrder: res?.data?.displayOrder ?? null,
             major: res?.data?.major ?? false,
             createdAt: res?.data?.createdAt || new Date(),
             updatedAt: new Date(),
@@ -80,13 +62,22 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedData: StateProps = {...formData };
+    
     try {
-      const res = await apiRequest("post", `address/address`, updatedData);
+      const formDataToSend = new FormData();
+      formDataToSend.append("function", "create_update_state");
+      formDataToSend.append("_id", selectedDataId as string);
+      formDataToSend.append("country_id", formData.country_id.toString());
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("status", String(formData.status));
+      formDataToSend.append("displayOrder", String(formData.displayOrder));
+      formDataToSend.append("major", String(formData.major));
+
+      const res = await apiRequest("POST", `address/address`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);
-        onUpdate(res?.data)
+        await handleUpdate();
         hitToastr('success', res?.message);
       }
     } catch (error) { clo( error ); }
@@ -96,20 +87,12 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
-      <form onSubmit={handleSubmit}>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
-          <GenericSelect label="Country" name="country_id" value={formData.country_id?.toString() ?? ""} options={countryOptions} onChange={(val) => setFormData({ ...formData, country_id: val as string })}/>
-          <TextField label='Name' variant='outlined' value={formData.name} name='name' fullWidth onChange={handleChange} required/>
-          <FormControl sx={{ width: "100%" }}>
-            <InputLabel id="major-label">Major <span style={{ color: "red" }}>*</span></InputLabel>
-            <Select labelId="major-label" id="major" name="major" value={formData.major ? "true" : "false"} onChange={handleChange} required>
-              <MenuItem value="true">Yes</MenuItem>
-              <MenuItem value="false">No</MenuItem>
-            </Select>
-          </FormControl>
-          <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={handleChange} onDisplayOrderChange={handleChange}/>
-          <Button type='submit' variant='contained' color='primary'>{title}</Button>
-        </Box>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <SingleCountryDropdown value={String(formData.country_id || "")} onChange={(value) => setFormData((prev) => ({ ...prev, country_id: value }))} required/>
+        <TextField label='Name' value={formData.name} name='name' onChange={handleChange} required/>
+        <OpenSelect label="Major" name="major" value={formData.major} onChange={(value) => setFormData((prev) => ({...prev, major: value}))} options={[ { label: "Yes", value: true }, { label: "No", value: false } ]}/>
+        <StatusDisplay statusValue={formData.status} displayOrderValue={formData.displayOrder} onStatusChange={(value) => setFormData((prev) => ({...prev, status: value}))} onDisplayOrderChange={(value) => setFormData((prev) => ({...prev, displayOrder: value}))}/>
+        <StickyFormFooter title={title}/>
       </form>
     </CustomModal>
   );

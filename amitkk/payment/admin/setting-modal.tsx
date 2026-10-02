@@ -1,16 +1,15 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Select, {SelectChangeEvent} from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import type {DataProps} from './admin-setting-table';
-import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/utils';
-import StatusSelect from '@amitkk/basic/components/static/status-input';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import { FormControl, InputLabel, MenuItem } from '@mui/material';
+import { useFormHandler } from 'hooks/useFormHandler';
+import { Button } from '@amitkk/components/button/button';
+import OpenSelect from '@amitkk/components/basic/OpenSelect';
+import { SiteSettingProps } from '../types';
+import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/my-utils/admin-utils';
+import StatusSelect from '@amitkk/components/admin/status-input';
+import { TextField } from '@amitkk/components/basic/TextField';
 
 type DataFormProps = TableDataFormProps & {
-  onUpdate: (updatedData: DataProps) => void;
+  handleUpdate: () => Promise<void>;
 };
 
 const module_options = [
@@ -31,18 +30,16 @@ const moduleValueOptions: Record<string, (string[] | Record<string, string>)> = 
   Shipping: ['Ship Rocket'],
 };
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
-  const initialFormData: DataProps = {
-    function: 'create_update_setting',
+export default function DataModal({ open, handleClose, selectedDataId, handleUpdate }: DataFormProps) {
+  const initialFormData: SiteSettingProps = {
     module: '',
     module_value: '',
     status: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     _id: '',
-    selectedDataId,
   };
-  const [formData, setFormData] = React.useState<DataProps>(initialFormData);
+  const [formData, setFormData] = React.useState<SiteSettingProps>(initialFormData);
 
   const handleCloseModal = () => {
     setFormData(initialFormData);
@@ -53,17 +50,15 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `basic/basic?function=get_single_setting&id=${selectedDataId}`);
+          const res = await apiRequest("GET", `payment/payment?function=get_single_setting&id=${selectedDataId}`);
 
           setFormData({
-            function: 'create_update_setting',
+            _id: res?.data._id || '',
             module: res?.data.module || '',
             module_value: res?.data.module_value || '',
             status: res?.data.status ?? true,
             createdAt: res?.data.createdAt || new Date(),
             updatedAt: new Date(),
-            _id: res?.data._id || '',
-            selectedDataId: res?.data._id || '',
           });
           
         } catch (error) { clo( error ); }
@@ -77,72 +72,47 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("function", "create_update_setting");
+      formDataToSend.append("_id", selectedDataId as string);
       formDataToSend.append("module", formData.module);
       formDataToSend.append("module_value", formData.module_value);
       formDataToSend.append("status", String(formData.status));
-      formDataToSend.append("_id", selectedDataId as string);
-      const res = await apiRequest("post", `basic/basic`, formDataToSend);
+      const res = await apiRequest("POST", `payment/payment`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);
-        onUpdate(res?.data)
+        await handleUpdate();
         hitToastr('success', res?.message);
       }
     } catch (error) { clo( error ); }
   };
 
   const title = !selectedDataId ? 'Add Setting' : 'Update Setting';
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-    const target = e.target as HTMLInputElement & { name: string; value: string }; // type assertion
-    const { name, value } = target;
-    setFormData((prevData) => ({ ...prevData, [name]: name === 'status' ? value === 'true' : value }));
-  };
+  const handleChange = useFormHandler(setFormData);
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
-      <form onSubmit={handleSubmit}>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
-          <FormControl sx={{width: '100%'}}>
-            <InputLabel id="setting-select-label">Module <span style={{ color: 'red' }}>*</span></InputLabel>
-            <Select labelId="setting-select-label" id="setting-select" label="module" name="module" value={formData.module} onChange={handleChange} required>
-              {module_options?.map((i: any) => ( <MenuItem value={i}>{i}</MenuItem> ))}
-            </Select>
-          </FormControl>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <OpenSelect name={String(formData.module)} label="Module" value={formData.module} onChange={(value) => setFormData((prev) => ({...prev, module: value}))} options={module_options.map((mod) => ({ label: mod, value: mod }))}/>
           
           {formData.module && (
             <>
               {['Site', 'Test Site', 'Order Replacement Days', 'Free Shipping Above'].includes(formData.module) && (
-                <TextField label="Setting Value" variant="outlined" name="module_value" value={formData.module_value} onChange={handleChange} fullWidth required/>
+                <TextField label="Setting Value" name="module_value" value={formData.module_value} onChange={handleChange} required/>
               )}
-              
+
               {['Mode', 'Payment Gateway', 'Shipping'].includes(formData.module) && (
-                <FormControl sx={{ width: '100%' }}>
-                  <InputLabel id="value-select-label">Value *</InputLabel>
-                  <Select labelId="value-select-label" id="value-select" label="Value" name="module_value" value={formData.module_value} onChange={handleChange} required>
-                    <MenuItem value="">Select Value</MenuItem>
-                    {Array.isArray(moduleValueOptions[formData.module]) &&
-                      (moduleValueOptions[formData.module] as string[]).map((v) => ( <MenuItem key={v} value={v}>{v}</MenuItem> ))}
-                  </Select>
-                </FormControl>
+                <OpenSelect name="module_value" label="Value *" value={formData.module_value} onChange={(value) => setFormData((prev) => ({ ...prev, module_value: value }))}
+                  options={[ { label: "Select Value", value: "" }, ...(Array.isArray(moduleValueOptions[formData.module]) ? (moduleValueOptions[formData.module] as string[]).map((v) => ({ label: v, value: v })) : []) ]}/>
               )}
-              
+
               {formData.module === 'Allow Cod' && (
-                <FormControl sx={{ width: '100%' }}>
-                  <InputLabel id="value-select-label">Value *</InputLabel>
-                  <Select labelId="value-select-label" id="value-select" label="Value" name="module_value" value={formData.module_value} onChange={handleChange} required>
-                    <MenuItem value="">Select Value</MenuItem>
-                    <MenuItem value="1">Yes</MenuItem>
-                    <MenuItem value="0">No</MenuItem>
-                  </Select>
-                </FormControl>
+                <OpenSelect name="module_value" label="Value *" value={formData.module_value}  onChange={(value) => setFormData((prev) => ({ ...prev, module_value: value }))} options={[ { label: "Select Value", value: "" }, { label: "Yes", value: "1" }, { label: "No", value: "0" } ]}/>
               )}
             </>
           )}
 
-          <StatusSelect value={formData.status} onChange={handleChange}/>
-          <Button type='submit' variant='contained' color='primary'>{title}</Button>
-        </Box>
+          <StatusSelect value={formData.status} onChange={(value) => handleChange("status", value)}/>
+          <Button type='submit' color='primary'>{title}</Button>
       </form>
     </CustomModal>
   );

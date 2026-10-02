@@ -1,10 +1,10 @@
 "use client"
 
-import PageForm from '@amitkk/basic/components/page/add-update-page-form';
+import PageForm from '@amitkk/basic/admin/page/add-update-page-form';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
-const EditBlog = () => {
+const EditPage = () => {
   const router = useRouter();
   const { id } = router.query;
 
@@ -15,7 +15,7 @@ const EditBlog = () => {
 
   if (!id) return <div>Error: No ID found</div>;
 
-  return <PageForm selectedDataId={id as string} />;
+  return <PageForm dataId={id as string} />;
 };
 
-export default EditBlog;
+export default EditPage;

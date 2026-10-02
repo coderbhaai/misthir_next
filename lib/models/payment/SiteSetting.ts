@@ -1,4 +1,4 @@
-import { Schema, model, models, Document } from "mongoose";
+import { Schema, model, models, Document, Types } from "mongoose";
 
 interface SiteSettingDoc extends Document<Types.ObjectId> {
   module: string;

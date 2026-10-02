@@ -1,33 +1,30 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import {SelectChangeEvent} from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import { DataProps } from '@amitkk/basic/components/media/admin-media-table';
 import { useState } from 'react';
-import ImageUpload from '@amitkk/basic/components/static/file-input';
-import MediaImage from '@amitkk/basic/components/static/table-image';
+import ImageUpload from '@amitkk/components/admin/file-input';
+import MediaImage from '@amitkk/components/admin/table-image';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import { TableDataFormProps, apiRequest, clo, hitToastr } from '@amitkk/basic/utils/utils';
-import { MediaProps } from '@amitkk/basic/types/page';
+import { TableDataFormProps, apiRequest,  clo, hitToastr  } from "@amitkk/basic/utils/my-utils/admin-utils";
 import { useVendorId } from 'hooks/useVendorId';
+import { useFormHandler } from 'hooks/useFormHandler';
+import { MediaProps, SingleMediaProps } from '@amitkk/basic/types/media';
+import { TextField } from '@amitkk/components/basic/TextField';
+import { Button } from '@amitkk/components/button/button';
+import StickyFormFooter from '@amitkk/components/ui/StickyFormFooter';
 
 type DataFormProps = TableDataFormProps & {
-  onUpdate: (updatedData: DataProps) => void;
+  handleUpdate: () => Promise<void>;
 };
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate }: DataFormProps) {
-  const vendor_id = useVendorId();
-  const initialFormData: DataProps = {
-    function : 'create_update_media',
+export default function DataModal({ open, handleClose, selectedDataId, handleUpdate }: DataFormProps) {
+  const seller_id = useVendorId();
+  const initialFormData: SingleMediaProps = {
+    _id: '',
     alt: 'Image',
     createdAt: new Date(),
     updatedAt: new Date(),
-    _id: '',
-    user_id: vendor_id,
-    selectedDataId,
+    user_id: seller_id,
   };
-  const [formData, setFormData] = React.useState<DataProps>(initialFormData);
+  const [formData, setFormData] = React.useState<SingleMediaProps>(initialFormData);
   
   const handleCloseModal = () => {
     setFormData(initialFormData);
@@ -35,25 +32,19 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
   };
 
   const [image, setImage] = useState<File | null>(null);
-  const [imageError, setImageError] = useState<string | null>(null);
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: name === "status" ? value === "true" : value }));
-  };
+  const [imageError, setImageError] = useState<string | null>(null);  
+  const handleChange = useFormHandler(setFormData);
 
   React.useEffect(() => {
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("get", `basic/media?function=get_single_media&id=${selectedDataId}`);
+          const res = await apiRequest("GET", `basic/media?function=get_single_media&id=${selectedDataId}`);
   
           setFormData({
-            function: 'create_update_media',
             alt: res?.data?.alt || "",
             _id: res?.data?._id || "",
             user_id: res?.data?.user_id?._id || "",
-            selectedDataId: selectedDataId,
             updatedAt: res?.data?.updatedAt || new Date(),
             createdAt: res?.data?.createdAt || new Date(),
           });
@@ -65,7 +56,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedData: DataProps = {...formData, updatedAt: new Date(), _id: selectedDataId as string};
+    const updatedData: SingleMediaProps = {...formData, updatedAt: new Date(), _id: selectedDataId as string};
 
     try {
       const formDataToSend = new FormData();
@@ -80,11 +71,11 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
       if (formData._id){ formDataToSend.append("_id", String(formData._id)); }
       if (image) { formDataToSend.append("image", image); }
   
-      const res = await apiRequest("post", `basic/media`, formDataToSend);
+      const res = await apiRequest("POST", `basic/media`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);
-        onUpdate(res?.data)
+        await handleUpdate();
         setImage(null);
         hitToastr('success', res?.message);
       }
@@ -95,17 +86,15 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate 
 
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
-      <form onSubmit={handleSubmit} style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2,  width: "100%" }}>
-          <TextField label="Media Alt" variant="outlined" value={formData.alt} name="alt" fullWidth onChange={handleChange} required/>
+      <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField label="Media Alt" value={formData.alt} name="alt" onChange={handleChange} required/>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <MediaImage media={formData.media_id as MediaProps} style={{ marginRight: "10px", width: "120px", height: "70px" }}/>
             {!selectedDataId &&(
               <ImageUpload name="image" label="Upload Image" required={!selectedDataId} error={imageError} onChange={(name, file) => { setImage(file); }}/>
             )}
           </div>
-          <Button type="submit" variant="contained" color="primary">{title}</Button>
-        </Box>
+          <StickyFormFooter title={title}/>
       </form>
     </CustomModal>
   );

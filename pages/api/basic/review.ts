@@ -1,17 +1,16 @@
 import { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getUserIdFromToken, log } from '../utils';
 import { syncMediaHub, uploadMedia } from './media';
 import { createApiHandler, ExtendedRequest, HandlerMap, } from '../apiHandler';
 import Review from 'lib/models/basic/Review';
 import "lib/models";
-import { APIHandlers } from '../middleware';
+import { APIHandlers } from 'lib/server/middleware';
+import { getUserIdFromToken } from './auth';
+import { logError } from '../utils';
 
 export async function create_update_review(req: ExtendedRequest, res: NextApiResponse) { 
   try {
-    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
-    
-    const user_id = getUserIdFromToken(req);
+    const user_id = await getUserIdFromToken(req);
     if (!user_id) { return res.status(401).json({ message: "Unauthorized" }); }
 
     const data = req.body;  
@@ -48,14 +47,14 @@ export async function create_update_review(req: ExtendedRequest, res: NextApiRes
     await syncMediaHub({ module: "Review", module_id: updatedOrCreated._id, mediaArray });
 
     return res.status(201).json({ message: "✅ Review Submitted successfully", data: updatedOrCreated });
-  } catch (error) { log(error); return res.status(500).json({ message: "Server error", error });}
+  } catch (error) { await logError(error, { function: "create_update_review", payload: req.body }); return res.status(500).json({ message: "Server error", error });}
 }
 
-export async function get_all_reviews(req: NextApiRequest, res: NextApiResponse) {
+export async function get_filtered_reviews(req: NextApiRequest, res: NextApiResponse) {
   try {
     const data = await Review.find().populate([ { path: "module_id", select: "_id name url" }, { path: "user_id", select: "name email phone" } ]).exec();
     return res.status(200).json({ message: 'Fetched all Reviews', data });
-  } catch (error) { log(error); }
+  } catch (error) { await logError(error, { function: "get_filtered_reviews", payload: req.body }); }
 }
 
 export async function get_single_review(req: NextApiRequest, res: NextApiResponse){
@@ -70,8 +69,6 @@ export async function get_single_review(req: NextApiRequest, res: NextApiRespons
 
 export async function update_review(req: ExtendedRequest, res: NextApiResponse) { 
   try {
-    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
-
     const data = req.body;  
     if ( !data?.review || !data?.rating || !data?.user_id ) { return res.status(400).json({ message: 'Required fields missing' }); }
 
@@ -90,7 +87,7 @@ export async function update_review(req: ExtendedRequest, res: NextApiResponse) 
         );
 
     return res.status(201).json({ message: "✅ Review Submitted successfully", data: updatedOrCreated });
-  } catch (error) { log(error); return res.status(500).json({ message: "Server error", error });}
+  } catch (error) { await logError(error, { function: "update_review", payload: req.body }); return res.status(500).json({ message: "Server error", error });}
 }
 
 export async function getReviews({ module, moduleId }: { module: string; moduleId: string }) {
@@ -98,7 +95,7 @@ export async function getReviews({ module, moduleId }: { module: string; moduleI
     const data = Review.find({ module, module_id: moduleId, status: true }).populate([ { path: "module_id", select: "_id name url" }, { path: "user_id", select: "name email phone" }, { path: "mediaHub", populate: { path: "media_id" } } ]).sort({ displayOrder: 1, createdAt: -1 }).lean().exec();
 
     return data;
-  }catch (err) { log(err); }
+  }catch (error) { await logError(error, { function: "getReviews", payload: { module, moduleId } }); }
 }
 
 export const functions: APIHandlers = {
@@ -106,7 +103,7 @@ export const functions: APIHandlers = {
     middlewares: [],
     // "authRequired", "roleOwnerVendorStaff", "canCreateOrUpdateReview"
   },
-  get_all_reviews: {
+  get_filtered_reviews: {
     middlewares: [],
   },
   get_single_review: {
@@ -119,10 +116,10 @@ export const functions: APIHandlers = {
 
 export const reviewHandlers = {
   create_update_review,
-  get_all_reviews,
+  get_filtered_reviews,
   get_single_review,
   update_review,
 };
 
 export const config = { api: { bodyParser: false } };
-export default createApiHandler(functions);
+export default createApiHandler(functions, reviewHandlers);

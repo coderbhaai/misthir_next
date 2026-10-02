@@ -1,6 +1,6 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 
-interface TaxProps extends Document<Types.ObjectId> {
+interface TaxDoc extends Document<Types.ObjectId> {
   name: string;
   rate: number;
   status: boolean;
@@ -9,11 +9,11 @@ interface TaxProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const taxSchema = new Schema<TaxProps>({
+const taxSchema = new Schema<TaxDoc>({
   name: { type: String, required: true },
   rate: { type: Number, required: true },
   status: { type: Boolean, required: true, default: true },
   displayOrder: { type: Number, required: false },
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
-export default models.Tax || model<TaxProps>("Tax", taxSchema);
+export default models.Tax || model<TaxDoc>("Tax", taxSchema);

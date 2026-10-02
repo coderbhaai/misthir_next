@@ -1,14 +1,24 @@
-import Link from "next/link";
-import { Button, Box, Typography } from "@mui/material";
-import LoginIcon from "@mui/icons-material/Login";
+import { useState } from "react";
+import EmailRegisterModal from "../admin/auth/Email/EmailRegisterModal";
+import { Button } from "@amitkk/components/button/button";
 
-export default function LoginButton() {
+interface LoginButtonProps {
+  message: string;
+}
+
+export const LoginButton: React.FC<LoginButtonProps> = ({ message }) => {
+  const [authModal, setAuthModal] = useState({ open: false, type: 'Login' });
+  const handleAuthClick = (type: 'Login' | 'Register') => {
+    setAuthModal({ open: true, type });
+  };
   return (
-    <Box textAlign="center" sx={{ my: 5, p: 3, border: "1px dashed #ccc", borderRadius: 2 }}>
-      <Typography variant="h6" fontWeight="bold" gutterBottom>Please Login to Submit a Review</Typography>
-      <Link href="/login" passHref>
-        <Button variant="contained" color="primary" startIcon={<LoginIcon />} sx={{ mt: 2, px: 4, borderRadius: "30px" }}>Login</Button>
-      </Link>
-    </Box>
+    <>
+      <div className="text-center my-5 p: 3, border-2">
+        <h3>{message}</h3>
+          <Button onClick={() => handleAuthClick("Login")} color="primary">Login</Button>
+      </div>
+
+      <EmailRegisterModal module={authModal.type} open={authModal.open} role="User" onUpdate={() => { setAuthModal({...authModal, open: false}); }}/>
+    </>
   );
 }

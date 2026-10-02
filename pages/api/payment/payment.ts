@@ -1,17 +1,60 @@
 import mongoose, { isValidObjectId, Types } from 'mongoose';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getUserIdFromToken, log } from '../utils';
-import { deleteCookie, getCartIdFromRequest, setCookie } from '../cartUtils';
-import { Cart } from 'lib/models/ecom/Cart';
-import { Sku, SkuDocument } from 'lib/models/product/Sku';
-import Product from 'lib/models/product/Product';
-import { Order, OrderCharges, OrderSku } from 'lib/models/ecom/Order';
+import Cart from 'lib/models/ecom/Cart';
 import Razorpay from 'lib/models/payment/Razorpay';
 import TaxCollected from 'lib/models/payment/TaxCollected';
-import { createOrderFromCart, place_order } from '../ecom/ecom';
+import { createOrderFromCart } from '../ecom/ecom';
 import Tax from 'lib/models/payment/Tax';
-import { APIHandlers } from '../middleware';
+import { APIHandlers } from 'lib/server/middleware';
+import { logError } from '../utils';
+import SiteSetting from 'lib/models/payment/SiteSetting';
+
+// SiteSetting
+  export async function get_all_settings(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await SiteSetting.find().exec();
+      return res.status(200).json({ message: 'Fetched all Settings', data });
+    } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
+  }
+
+  export async function get_single_setting(req: NextApiRequest, res: NextApiResponse){
+    try{
+      const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
+      if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }  
+    
+      const entry = await SiteSetting.findById(id).exec();  
+      if (!entry) { return res.status(404).json({ message: `SiteSetting with ID ${id} not found` }); }
+    
+      return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
+
+    }catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
+  };
+
+  export async function create_update_setting(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      const data = req.body;
+      if (!data?.module || !data?.module_value ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
+
+      const entry = await SiteSetting.findOneAndUpdate({ module: data.module }, {
+          module: data.module,
+          module_value: data.module_value,
+          status: data.status,
+          updatedAt: new Date(),
+        }, { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+
+      return res.status(200).json({ message: '✅ Entry updated successfully', data: entry });
+    } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
+  }
+
+  export async function get_site_settings(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const data = await SiteSetting.find({ status: 1 }).exec();
+      return res.status(200).json({ message: 'Fetched all Settings', data });
+    } catch (error) { await logError(error, { function: "get_filtered_country", payload: req.body }); }
+  }
+// SiteSetting
 
 export async function get_payment_data(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -33,7 +76,7 @@ export async function get_payment_data(req: NextApiRequest, res: NextApiResponse
     }
 
     return res.status(200).json({ message: 'Payment Data Fetched', data, response });
-  } catch (error) { return log(error); }
+  } catch (error) { return await logError(error, { function: "get_payment_data", payload: req.body }); }
 }
 
 export async function hit_razorpay(amount: number) {
@@ -56,7 +99,7 @@ export async function hit_razorpay(amount: number) {
       amount: data.amount,
       currency: data.currency,
     };
-  }catch (error) { log(error); return null; }
+  }catch (error) { await logError(error, { function: "hit_razorpay", payload: {amount} }); return null; }
 }
 
 export function getPaymentConfig() {
@@ -92,7 +135,7 @@ export async function payment_response(req: NextApiRequest, res: NextApiResponse
     }
 
     return res.status(200).json({ message: 'Payment Response', data:order_response });
-  } catch (error) { return log(error); }
+  } catch (error) { return await logError(error, { function: "payment_response", payload: req.body }); }
 }
 
 interface Tax {
@@ -113,7 +156,7 @@ export async function razorpay_summary( module: string, module_id: number, sourc
           });
 
           await razorpayEntry.save();
-  }catch (error) { log(error); return null; }
+  }catch (error) { await logError(error, { function: "razorpay_summary", payload: {module, module_id, source, razorpay_payment_id} }); return null; }
 }
 
 // Taxes
@@ -121,7 +164,7 @@ export async function razorpay_summary( module: string, module_id: number, sourc
     try {
       const data = await Tax.find().exec();
       return res.status(200).json({ message: 'Fetched all Taxes', data });
-    } catch (error) { return log(error); }
+    } catch (error) { return await logError(error, { function: "get_all_taxes", payload: req.body }); }
   }
 
   export async function get_single_tax(req: NextApiRequest, res: NextApiResponse){
@@ -134,13 +177,11 @@ export async function razorpay_summary( module: string, module_id: number, sourc
     
       return res.status(200).json({ message: '✅ Single Entry Fetched', data: entry });
 
-    }catch (error) { return log(error); }
+    }catch (error) { return await logError(error, { function: "get_single_tax", payload: req.body }); }
   };
 
   export async function create_update_tax(req: ExtendedRequest, res: NextApiResponse) {
     try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-
       const data = req.body;
       if (!data?.name || !data?.rate || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
 
@@ -160,7 +201,7 @@ export async function razorpay_summary( module: string, module_id: number, sourc
           );
 
           return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
-        } catch (error) { return log(error); }
+        } catch (error) { return await logError(error, { function: "create_update_tax", payload: req.body }); }
       }
       
       const newEntry = new Tax({
@@ -173,27 +214,32 @@ export async function razorpay_summary( module: string, module_id: number, sourc
 
       await newEntry.save();
       return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
-    } catch (error) { return log(error); }
+    } catch (error) { return await logError(error, { function: "create_update_tax", payload: req.body }); }
   }
 
   export async function get_tax_module(req: NextApiRequest, res: NextApiResponse) {
     try {
       const data = await Tax.find().select('_id name').exec();
       return res.status(200).json({ message: 'Fetched all Tax Module', data });
-    } catch (error) { return log(error); }
+    } catch (error) { return await logError(error, { function: "get_tax_module", payload: req.body }); }
   }
 
   export async function get_all_tax_collected(req: NextApiRequest, res: NextApiResponse) {
     try {
       const data = await TaxCollected.find().exec();
       return res.status(200).json({ message: 'Fetched all TaxCollected', data });
-    } catch (error) { return log(error); }
+    } catch (error) { return await logError(error, { function: "get_all_tax_collected", payload: req.body }); }
   }
 // Taxes
 
 export const functions: APIHandlers = {
   get_payment_data : { middlewares: [] },
   payment_response : { middlewares: [] },
+
+  get_all_settings : { middlewares: [] },	
+  get_single_setting : { middlewares: [] },	
+  create_update_setting : { middlewares: [] },	
+  get_site_settings : { middlewares: [] },	
 
   get_all_taxes : { middlewares: [] },
   get_single_tax : { middlewares: [] },
@@ -211,7 +257,12 @@ export const paymentHandlers = {
   create_update_tax,
   get_tax_module,
   get_all_tax_collected,
+
+  get_all_settings,
+  get_single_setting,
+  create_update_setting,
+  get_site_settings,
 };
 
 export const config = { api: { bodyParser: false } };
-export default createApiHandler(functions);
+export default createApiHandler(functions, paymentHandlers);

@@ -1,32 +1,82 @@
-import mongoose, { FilterQuery, Model, PopulateOptions, Types } from "mongoose";
-import { NextApiRequest, NextApiResponse } from "next";
-import jwt from "jsonwebtoken";
+import mongoose, { Types } from "mongoose";
 import Page from "lib/models/basic/Page";
 import Blog from "lib/models/blog/Blog";
-import path from "path";
-import fs from "fs";
-import { format } from "date-fns";
-import { isValidObjectId } from "@amitkk/basic/utils/utils";
-import Media from "lib/models/basic/Media";
-import connectDB from "pages/lib/mongodb";
 import Faq from "lib/models/basic/Faq";
 import Testimonial from "lib/models/basic/Testimonial";
-import Product from "lib/models/product/Product";
 import CommentModel from 'lib/models/basic/Comment';
-import ExcelJS from "exceljs";
-import { nanoid } from "nanoid";
-import { IJwtPayload, IUser, JwtPayload } from "lib/models/types/User";
-import Otp, { IOtp } from "lib/models/spatie/Otp";
-import crypto from 'crypto';
+import GenericBlock from "lib/models/block/GenericBlock";
+import BlockDetail from "lib/models/block/BlockDetail";
+import Achievement from "lib/models/basic/Achievement";
+import ErrorLog from "lib/models/basic/ErrorLog";
+import { AnyModel } from "lib/models";
+import sanitizeHtml from "sanitize-html";
+import { NextApiRequest } from "next";
+import { getSitemapData } from "./basic/meta";
+import Client from "lib/models/basic/Client";
+import Product from "lib/models/product/Product";
+import ProductProductmeta from "lib/models/product/ProductProductmeta";
 
-export const log = (...args: any[]) => {
-  if (process.env.MODE !== 'production') {
-    console.log("[LOG]:", ...args);
+export const sanitizeText = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+// Logging & Errors
+  type ErrorContext = {
+    api?: string;
+    function?: string;
+    module?: string;
+    payload?: any;
+    user_id?: string;
+  };
+
+  function normalizePayload(payload: any) {
+    if (payload === undefined) return undefined;
+
+    // If it's already a plain object, stringify values safely
+    if (typeof payload === "object") {
+      return Object.fromEntries(
+        Object.entries(payload).map(([key, value]) => [
+          key,
+          Array.isArray(value) || typeof value === "object"
+            ? JSON.stringify(value)
+            : value,
+        ])
+      );
+    }
+
+    // Fallback for primitives
+    return JSON.stringify(payload);
   }
-};
+
+  export async function logError(error: any, context?: ErrorContext) {
+    try {
+      console.log("ERROR", error)
+
+      console.log("logError", {
+        message: error?.message || "Unknown error",
+        stack: error?.stack,
+        api: context?.api,
+        function: context?.function,
+        module: context?.module,
+        payload: normalizePayload(context?.payload),
+        user_id: context?.user_id,
+        level: "ERROR",
+      });
+
+      await ErrorLog.create({
+        message: error?.message || "Unknown error",
+        stack: error?.stack,
+        api: context?.api,
+        function: context?.function,
+        module: context?.module,
+        payload: normalizePayload(context?.payload),
+        user_id: context?.user_id,
+        level: "ERROR",
+      });
+    } catch (loggingError) { console.error("❌ Failed to log error:", loggingError); }
+  }
+// Logging & Errors
 
 export async function pivotEntry(
-  model: mongoose.Model<any>,
+  model: AnyModel,
   parentId: mongoose.Types.ObjectId | string,
   childIds: (mongoose.Types.ObjectId | string)[] | undefined | null,
   parentKey: string,
@@ -46,206 +96,83 @@ export async function pivotEntry(
       await model.insertMany(entries);
     }
   } catch (error) {
-    log(error);
+    await logError(error, { function: "pivotEntry", payload: {model, parentId, childIds, parentKey, childKey} });
   }
 }
 
-interface AddUpdateMediaParams {
-  path: string;
-  alt: string;
-  media_id?: string | null;
-}
-
-export async function addUpdateMediaModel({ path, alt, media_id = null }: AddUpdateMediaParams): Promise<string | null> {
+export async function getRelatedContent({ module, moduleId }: { module: string; moduleId: string }) {
   try {
-    if (media_id && isValidObjectId(media_id)) {
-      await Media.findByIdAndUpdate(
-        media_id,
-        { alt: alt, path: path },
-        { new: true }
-      );
-
-      return media_id;
-    } else {
-      const entry = await Media.create({ alt: alt, path: path });
-      return entry._id.toString();
-    }
-
-  } catch (err) { return null; }
-}
-
-export function getUserIdFromToken(req: NextApiRequest): string | null {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) { return null; }
-
-    const token = authHeader.split(" ")[1];
-    if (!token) return null;
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-
-    return decoded?._id || null;
-  } catch (error) { log(error); return null; }
-}
-
-export function generateJWTToken(user: IUser, roles: { _id: string; name: string }[], permissions: { _id: string; name: string }[]): string {
-  if (!process.env.JWT_SECRET) { throw new Error("JWT_SECRET is not defined in environment variables"); }
-
-  const payload: IJwtPayload = {
-    _id: user._id.toString(),
-    name: user.name ?? "",
-    email: user.email ?? "",
-    phone: user.phone ?? "",
-    roles,
-    permissions,
-  };
-
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
-}
-
-export const generateSitemap =async () => {
-  try {
-    await connectDB();
-
-    const site = process.env.MODE === 'dev' ? process.env.DEV_URL as string : process.env.PROD_URL as string;
-    const pages = await Page.find({ status: 1, sitemap: 1, url: { $ne: "/" } }).select("url");
-    const blogs = await Blog.find().select("url name updatedAt");
-  
-    const today = format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX");
-    const urlEntry = (loc: string, priority: number) => `
-      <url>
-        <loc>${loc}</loc>
-        <lastmod>${today}</lastmod>
-        <priority>${priority}</priority>
-      </url>
-    `;
-
-    // Main sitemap
-    const sitemapXML = `<?xml version="1.0" encoding="UTF-8"?>
-      <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-        ${urlEntry(site, 1.0)}
-        ${pages?.map(p => urlEntry(`${site}/${p.url}`, 0.90)).join("")}
-        ${blogs?.map(b => urlEntry(`${site}/${b.url}`, 0.80)).join("")}
-      </urlset>`;
-
-    const sitemapPath = path.join(process.cwd(), "public", "sitemap.xml");
-    fs.writeFileSync(sitemapPath, sitemapXML);
-
-    const imageSitemapXML = `<?xml version="1.0" encoding="UTF-8"?>
-      <urlset xmlns="http://www.google.com/schemas/sitemap-image/1.1">
-        <!-- Your media loop here -->
-      </urlset>`;
-    fs.writeFileSync(path.join(process.cwd(), "public", "sitemap-image.xml"), imageSitemapXML);
-
-    const newsSitemapXML = `<?xml version="1.0" encoding="UTF-8"?>
-      <urlset xmlns="http://www.google.com/schemas/sitemap-news/0.9">
-        <!-- Your news loop here -->
-      </urlset>`;
-    fs.writeFileSync(path.join(process.cwd(), "public", "news-sitemap.xml"), newsSitemapXML);
-
-    const urls = [
-      `${site}/`,
-      ...pages?.map(p => `${site}/${p.url}`),
-      ...blogs?.map(b => `${site}/${b.url}`),
-      `${site}/sitemap.xml`,
-      `${site}/sitemap-image.xml`
-    ];
-
-    // const indexNowResponse = await fetch("https://api.indexnow.org/indexnow", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({
-    //     host: new URL(site).host,
-    //     key: "d273395969c44ba5846970e6b8420587",
-    //     keyLocation: `${site}/index-now.txt`,
-    //     urlList: urls
-    //   })
-    // });
-
-  } catch (err) { log(err); }
-};
-
-type Projection = string | string[] | Record<string, 0 | 1 | boolean>;
-type Populate = PopulateOptions | PopulateOptions[] | string | string[];
-
-interface QueryOptions<TDoc> {
-  filter?: FilterQuery<TDoc>;
-  sort?: Record<string, 1 | -1>;
-  populate?: Populate;
-  select?: Projection;
-  lean?: boolean; // default true
-}
-
-export async function fetchData<TDoc, TResult = TDoc>(
-  model: Model<TDoc>,
-  { filter = {} as FilterQuery<TDoc>, sort, populate, select, lean = true }: QueryOptions<TDoc> = {}
-): Promise<TResult[]> {
-  try{
-    let q = model.find(filter);
-  
-    if (populate) q = q.populate(populate as any);
-    if (select)   q = q.select(select as any);
-    q = q.sort(sort ?? { updatedAt: -1, createdAt: -1 });
-  
-    if (lean) {
-      const res = await q.lean<TResult>().exec();
-      return res as TResult[];
-    }
-    
-    const res = await q.exec();
-    return res as unknown as TResult[];
-  }catch (err) { log(err); return []; }
-}
-
-interface RelatedContentParams {
-  module: string;
-  moduleId: string;
-  blogId?: string | null;
-  productId?: string | null;
-}
-
-export async function getRelatedContent({ module, moduleId, blogId = null, productId = null }: RelatedContentParams) {
-  try{
     const id = new Types.ObjectId(moduleId);
+    const moduleFilter = { module, module_id: id, status: true };
+    const blogFilter = { status: true, ...(module === "Blog" && { _id: { $ne: id } }) };
+    const mediaSelect = "_id url path alt";
 
-    const [faq, testimonials, comments, blogs, products] = await Promise.all([
-      Faq.find({ module, module_id: id, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
-      Testimonial.find({ module, module_id: id, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
-      CommentModel.find({ module, module_id: moduleId, status: true }).sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
-      Blog.find({ status: true, ...(blogId ? { _id: { $ne: blogId } } : {}), }).populate([ { path: 'media_id' }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).limit(10).lean().exec(),
+    let products: any[] = [];
+    if (module === "Product") {
+      const currentProductTypes = await ProductProductmeta.find({ product_id: id }).select("productmeta_id").lean().exec();
+      const typeIds = currentProductTypes.map((pt: any) => pt.productmeta_id);
+      let relatedProductIds: Types.ObjectId[] = [];
+    
+      if (typeIds.length > 0) {
+        const matchingRelations = await ProductProductmeta.find({ productmeta_id: { $in: typeIds }, product_id: { $ne: id } }).select("product_id").lean().exec();
+        relatedProductIds = matchingRelations.map((rel: any) => rel.product_id);
+      }
+    
+      if (relatedProductIds.length > 0) {
+        products = await Product.find({ _id: { $in: relatedProductIds }, status: true }).populate([{ path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } }]).limit(10).lean().exec();
+      }
+    }
 
-      Product.find({ status: true, ...(productId ? { _id: { $ne: productId } } : {}), })
-        .populate([
-          { path: 'meta_id', select: '_id title description' },
-          { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
-          { path: 'mediaHubs', populate: { path: 'media_id', model: 'Media', select: '_id path alt' }
-          }
-        ]).limit(10).exec(),
+    if (products.length < 10) {
+      const excludeIds = module === "Product" ? [id, ...products.map((p: any) => p._id)] : products.map((p: any) => p._id);
+  
+      const fallbackProducts = await Product.find({ _id: { $nin: excludeIds }, status: true }).populate([{ path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } }]).limit(10 - products.length).lean().exec();
+        
+      products = [...products, ...fallbackProducts];
+    }
+
+    console.log("PRODUCTS", products);
+
+    const [faq, testimonials, achievements, comments, blogs] = await Promise.all([
+      Faq.find(moduleFilter).select("_id question answer displayOrder").sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      Testimonial.find(moduleFilter).select("_id content name designation company_name user_id displayOrder").sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      Achievement.find(moduleFilter).select("_id title description value displayOrder").sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      CommentModel.find({ module, module_id: moduleId, status: true }).select("_id name comment createdAt").sort({ displayOrder: 1, createdAt: -1 }).lean().exec(),
+      Blog.find(blogFilter).select('_id name url media_id createdAt').populate([ { path: 'media_id', select: mediaSelect } ]).limit(10).lean().exec(),
     ]);
 
-    const serializedProducts = products.map((p: any) => p.toJSON());
+    const sanitizedTestimonials = testimonials.map((t: any) => ({ ...t, content: typeof t.content === "string" ? sanitizeHtml(t.content) : "" }));
   
-    return { faq, testimonials, comments, blogs, products:serializedProducts };
-  }catch (err) { log(err); }
+    return { faq, testimonials: sanitizedTestimonials, achievements, comments, blogs, products };
+  } catch (error) { 
+    await logError(error, { function: 'getRelatedContent', payload: {} });
+    return { faq: [], testimonials: [], achievements: [], comments: [], blogs: [], products: [] }; 
+  }
+}
+
+export async function getBlockContent({ module, moduleId }: { module: string; moduleId: string }) {
+  try {
+    const id = new Types.ObjectId(moduleId);
+    const mediaSelect = "url alt path";
+
+    const [genericBlocks, blockDetails] = await Promise.all([
+      GenericBlock.find({ module, module_id: id, status: true }).sort({ displayOrder: 1, createdAt: -1 }).populate([ { path: "media_id", select: mediaSelect }, { path: "mobile_media_id", select: mediaSelect } ]).lean().exec(),
+      BlockDetail.find({ module, module_id: id, status: true }).populate([ { path: "media_id", select: mediaSelect }, { path: "mobile_media_id", select: mediaSelect } ]).lean().exec()
+    ]);
+
+    return { genericBlocks, blockDetails };
+  } catch (error) { await logError(error, { function: "getBlockContent", payload: { module, moduleId } }); return { genericBlocks: [], blockDetails: [] }; }
 }
 
 export async function getGenericContent() {
   try{
     const [blogs, products] = await Promise.all([
       Blog.find({ status: true }).populate([ { path: 'media_id' }, { path: 'metas', populate: { path: 'blogmeta_id', model: 'Blogmeta', select: '_id type name url' } } ]).limit(10).lean().exec(),
-      Product.find({ status: true })
-        .populate([
-          { path: 'meta_id', select: '_id title description' },
-          { path: 'productMeta', populate: { path: 'productmeta_id', select: '_id module name url' } },
-          { path: 'mediaHubs', populate: { path: 'media_id', model: 'Media', select: '_id path alt' }
-          }
-        ]).limit(10).exec(),
+      Product.find({ status: true }).populate([{ path: "mediaHubs", populate: { path: "media_id", model: "Media", select: "_id path alt" } }]).limit(10).lean().exec(),
     ]);
-
-    const serializedProducts = products.map(p => p.toJSON()); 
   
-    return { blogs, products:serializedProducts };
-  }catch (err) { log(err); }
+    return { blogs, products };
+  }catch (error) { await logError(error, { function: 'getGenericContent', payload: {} }); }
 }
 
 export function toObjectId(id: string | mongoose.Types.ObjectId | null | undefined) {
@@ -253,58 +180,159 @@ export function toObjectId(id: string | mongoose.Types.ObjectId | null | undefin
 
   try {
     return typeof id === "string" ? new mongoose.Types.ObjectId(id) : id;
-  }catch (err) { log(err); return null; }
+  }catch (error) { logError(error, { function: 'toObjectId', payload: {id} }); return null; }
 }
 
-export interface ExcelColumn {
-  header: string;
-  key: string;
-}
-
-export async function exportToExcel( res: NextApiResponse, columns: ExcelColumn[], data: any[] ) {
+export const safeParse = (value: any) => {
   try {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Sheet1");
+    return typeof value === "string" ? JSON.parse(value) : [];
+  } catch {
+    return [];
+  }
+};
 
-    worksheet.columns = columns.map(col => ({ header: col.header, key: col.key }));
-    data.forEach(item => worksheet.addRow(item));
-    const fileName = `export_${nanoid()}.xlsx`;
-    res.setHeader( "Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" );
-    res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (err) { log(err); res.status(500).json({ message: "Failed to export Excel" }); }
+export function getDuplicateKeyErrorMessage(error: any): string | null {
+  if (error && error.code === 11000 && error.keyValue) {
+    const fields = Object.keys(error.keyValue);
+    // Capitalize the field name for the toast message
+    const fieldName = fields[0] ? fields[0].charAt(0).toUpperCase() + fields[0].slice(1) : "Field";
+    const duplicateValue = error.keyValue[fields[0]];
+    
+    return `❌ ${fieldName} '${duplicateValue}' is already registered. Please use another one.`;
+  }
+  return null;
 }
 
-interface OtpPayload {
-  type: string;
-  email?: string;
-  phone?: string;
-  ttlMinutes?: number;
-  req: NextApiRequest;
-}
+export const cleanContent = (html: string | undefined | null) => {
+  if (!html || typeof html !== 'string') return '';
 
-export async function createOtp({ type, email, phone, ttlMinutes = 5, req }: OtpPayload): Promise<IOtp> {
-  const user_id = getUserIdFromToken(req);
-  const otp = crypto.randomInt(100000, 999999).toString();
-  const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+  const removeEmptyParagraphs = html.replace(/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '');
 
-  const deleteConditions: Record<string, any> = {};
-  if (email) deleteConditions.email = email;
-  if (phone) deleteConditions.phone = phone;
-  if (user_id) deleteConditions.user_id = user_id;
-
-  await Otp.deleteMany(deleteConditions);
-
-  const entry = await Otp.create({
-    type,
-    email,
-    phone,
-    otp,
-    expiresAt,
-    ...(user_id && { user_id }),
+  return sanitizeHtml(removeEmptyParagraphs, {
+    allowedTags: [ 
+      'p', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4',
+      'figure', 'img', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td'
+    ],
+    allowedAttributes: {
+      'a': [ 'href', 'name', 'target' ],
+      'img': [ 'src', 'alt', 'width', 'height', 'style' ],
+      'figure': [ 'class' ]
+    },
+    allowedStyles: {
+      'img': {
+        'aspect-ratio': [/^\d+\/\d+$/],
+        'width': [/^\d+(px|%)?$/],
+        'height': [/^\d+(px|%)?$/]
+      }
+    }
   });
+};
 
-  return entry;
+export const checkNullValue = (value: any) => {
+  try {
+    if ( value === 0 || value === null || value === "undefined" ) { return null; }
+    return value;
+  } catch { return value; }
 }
+
+export function normalizeError(error: any) {
+  if (error?.code === 11000) {
+    return {
+      type: "DUPLICATE_KEY",
+      field: Object.keys(error.keyPattern || {})[0],
+      message: "Duplicate value found"
+    };
+  }
+
+  return {
+    type: "UNKNOWN",
+    message: error?.message || "Error in normalizeError"
+  };
+}
+
+export async function findIdInDB(id: string) {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log("❌ Invalid ObjectId:", id);
+      return [];
+    }
+
+    const objectId = new mongoose.Types.ObjectId(id);
+    const db = mongoose.connection.db;
+
+    if (!db) {
+      throw new Error("MongoDB database connection is not available");
+    }
+
+    const collections = await db.listCollections().toArray();
+
+    const results: any[] = [];
+
+    for (const collection of collections) {
+      try {
+        const document = await db.collection(collection.name).findOne({
+          _id: objectId
+        });
+
+        if (document) {
+          results.push({
+            collection: collection.name,
+            id: document._id?.toString(),
+            document
+          });
+        }
+      } catch (error) { await logError(error, { function: "findIdInDB", payload: { id } }); }
+    }
+
+    return results;
+  } catch (error) {
+    console.error("❌ [findIdInDB] ERROR:", error);
+    return [];
+  }
+}
+
+export function numberOrDefault(value: any): number {
+  const n = Number(value);
+  return isNaN(n) ? 0 : n;
+}
+
+// Exceptions
+type RouteExceptionContext = {
+  req: NextApiRequest;
+  registryEntry: any;
+  englishRegistryEntry: any;
+  englishLangDoc: any;
+  targetLangDoc: any;
+  lang: string;
+  moduleType: string;
+  cleanMasterSlug: string;
+};
+
+type RouteExceptionHandler = (
+  context: RouteExceptionContext
+) => Promise<any>;
+
+export const ROUTE_EXCEPTION_MAP: Record<string, RouteExceptionHandler> = {
+  sitemap: getSitemapRouteData,
+  "our clients": getClientData,
+};
+
+export async function getSitemapRouteData({registryEntry, englishRegistryEntry}: {
+  req: NextApiRequest;
+  registryEntry: any;
+  englishRegistryEntry: any;
+  lang: string;
+}) {
+  const sitemapData = await getSitemapData();
+
+  return { data: sitemapData };
+}
+
+export async function getClientData() {
+  const clients = await Client.find({ status: true }).populate("media_id").lean();
+
+  return { data: clients };
+}
+// Exceptions
+
+export function escapeRegExp(string: string) { return string.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }

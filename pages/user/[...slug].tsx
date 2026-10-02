@@ -1,11 +1,13 @@
 // pages > admin > [...slug].tsx
 
 "use client";
-import { checkPermission, clo, get404Url } from "@amitkk/basic/utils/utils";
+// import { checkPermission, clo, get404Url } from "@amitkk/basic/utils/utils";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { userComponentMap } from "../../amitkk/componentMaps";
 import { getCookie } from "hooks/CookieHook";
+import { get404Url } from "@amitkk/basic/utils/my-utils/client-utils";
+import { clo } from "@amitkk/basic/utils/my-utils/client-api";
 
 const DynamicUserPage = () => {
   const router = useRouter();

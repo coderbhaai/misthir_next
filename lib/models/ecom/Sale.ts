@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface SaleProps extends Document<Types.ObjectId> {
+export interface SaleDoc extends Document<Types.ObjectId> {
   name: string;
-  vendor_id: Types.ObjectId;
+  seller_id: Types.ObjectId;
   valid_from: Date;
   valid_to: Date;
   type: "Amount Based" | "Percent Based";
@@ -12,16 +12,16 @@ export interface SaleProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const SaleSchema = new Schema<SaleProps>({
+const SaleSchema = new Schema<SaleDoc>({
   name: { type: String, required: true },
-  vendor_id: { type: Schema.Types.ObjectId, required: true, ref: 'User', },
+  seller_id: { type: Schema.Types.ObjectId, required: true, ref: 'User', },
   valid_from: { type: Date, required: true },
   valid_to: { type: Date, required: true },
   type: { type: String, enum: ["Amount Based", "Percent Based"], required: true },
   discount: {
-    type: Schema.Types.Decimal128 as unknown as typeof Number,
+    type: Number,
     required: true,
-    get: (v: Types.Decimal128) => (v ? parseFloat(v.toString()) : 0),
+    get: (v: Number) => (v ? parseFloat(v.toString()) : 0),
     set: (v: number) => parseFloat(v.toFixed(2)),
   },
   status: { type: Boolean, default: true },
@@ -29,4 +29,4 @@ const SaleSchema = new Schema<SaleProps>({
 
 SaleSchema.virtual('saleSkus', { ref: 'SaleSku', localField: '_id', foreignField: 'sale_id', justOne: false });
 
-export default mongoose.models.Sale || mongoose.model<SaleProps>("Sale", SaleSchema);
+export default mongoose.models.Sale || mongoose.model<SaleDoc>("Sale", SaleSchema);

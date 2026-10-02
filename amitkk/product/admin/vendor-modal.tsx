@@ -1,23 +1,16 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import {SelectChangeEvent} from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import type {DataProps} from '@amitkk/product/admin/admin-vendor-table';
-import { useState } from 'react';
-import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/utils';
-import CkEditor from '@amitkk/basic/components/static/ckeditor-input';
-import ImageUpload from '@amitkk/basic/components/static/file-input';
-import StatusSelect from '@amitkk/basic/components/static/status-input';
-import MediaImage from '@amitkk/basic/components/static/table-image';
+import {DataProps} from '@amitkk/product/admin/admin-seller-table';
 import CustomModal from '@amitkk/basic/static/CustomModal';
-import { MediaProps } from '@amitkk/basic/types/page';
+import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/my-utils/admin-utils';
+import { Button } from '@amitkk/components/button/button';
+import { TextField } from '@amitkk/components/basic/TextField';
+import { useFormHandler } from 'hooks/useFormHandler';
 
 type DataFormProps = TableDataFormProps & {
-  onUpdate: (updatedData: DataProps) => void;
+  handleUpdate: () => Promise<void>;
 };
 
-export default function DataModal({ open, handleClose, selectedDataId, onUpdate, roles, permissions }: DataFormProps) {
+export default function DataModal({ open, handleClose, selectedDataId, handleUpdate, roles, permissions }: DataFormProps) {
   const initialFormData: DataProps = {
     function: 'create_update_user',
     _id: '',
@@ -36,9 +29,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
   const [selectedRoles, setSelectedRoles] = React.useState<string[]>([]);  
   const [selectedPermissions, setSelectedPermissions] = React.useState<string[]>([]);  
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({...formData, [e.target.name]: e.target.value});
-  };
+  const handleChange = useFormHandler(setFormData);
 
   const handleCloseModal = () => {
     setFormData(initialFormData);
@@ -49,7 +40,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
     if (open && selectedDataId) {
       const fetchUserData = async () => {
         try {
-          const res = await apiRequest("get", `basic/spatie?function=get_single_user&id=${selectedDataId}`);
+          const res = await apiRequest("GET", `basic/spatie?function=get_single_user&id=${selectedDataId}`);
 
           const permissionIds = res?.data?.permission_ids;
           setSelectedPermissions(permissionIds);
@@ -89,11 +80,11 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
     const updatedData: DataProps = {...formData, function: 'create_update_user', role_child: JSON.stringify(selectedRoles ?? []), permission_child: JSON.stringify(selectedPermissions ?? []), updatedAt: new Date(), _id: selectedDataId as string};
 
     try {
-      const res = await apiRequest("post", `basic/spatie`, updatedData);
+      const res = await apiRequest("POST", `basic/spatie`, updatedData);
 
       if( res?.data ){
         setFormData(initialFormData);
-        onUpdate(res?.data)
+        await handleUpdate();
         setSelectedRoles([]);
         setSelectedPermissions([]);
         hitToastr('success', res?.message);
@@ -104,11 +95,12 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
   const title = !selectedDataId ? 'Add User' : 'Update User';
   return (
     <CustomModal open={open} handleClose={handleCloseModal} title={title}>
-      <form onSubmit={handleSubmit}>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '100%'}}>
-          <TextField label='User Name' variant='outlined' value={formData.name} name='name' fullWidth onChange={handleChange} />
-          <TextField label='Email' variant='outlined' type='email' value={formData.email} name='email' fullWidth onChange={handleChange} />
-          <TextField label='Phone' variant='outlined' type='tel' value={formData.phone} name='phone' fullWidth onChange={handleChange} required />
+      <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField label='User Name' value={formData.name} name='name' onChange={handleChange} />
+          <TextField label='Email' type='email' value={formData.email} name='email' onChange={handleChange} />
+          <TextField label='Phone' type='tel' value={formData.phone} name='phone' onChange={handleChange} required />
+
+          
           <FormControl sx={{width: '100%'}}>
             <InputLabel id='role-select-label' sx={{background: '#fff'}}>Roles</InputLabel>
             <Select labelId='role-select-label' id='role-select' multiple value={selectedRoles} onChange={handleRoleChange}
@@ -118,7 +110,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
                     const role = roles.find(r => r._id === value);
                     return <Chip key={value} label={role?.name} />;
                   })}
-                </Box>
+                </div>
               )}
             >
               {roles?.map((i, index) => (
@@ -138,7 +130,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
                     const permission = permissions.find(r => r._id === value);
                     return <Chip key={value} label={permission?.name} />;
                   })}
-                </Box>
+                </div>
               )}
             >
               {permissions?.map((i, index) => (
@@ -149,8 +141,7 @@ export default function DataModal({ open, handleClose, selectedDataId, onUpdate,
               ))}
             </Select>
           </FormControl>
-          <Button type='submit' variant='contained' color='primary'>{title}</Button>
-        </Box>
+          <Button type='submit' color='primary'>{title}</Button>
       </form>
     </CustomModal>
   );

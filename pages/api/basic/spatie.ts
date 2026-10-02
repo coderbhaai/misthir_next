@@ -1,152 +1,275 @@
-import { isValidObjectId, Types } from 'mongoose';
+import mongoose, { isValidObjectId, Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getUserIdFromToken, log, pivotEntry } from '../utils';
+import { getDuplicateKeyErrorMessage,  logError, pivotEntry, safeParse } from '../utils';
 import SpatiePermission from 'lib/models/spatie/SpatiePermission';
 import SpatieRole from 'lib/models/spatie/SpatieRole';
 import RolePermission from 'lib/models/spatie/RolePermission';
 import UserRole from 'lib/models/spatie/UserRole';
 import UserPermission from 'lib/models/spatie/UserPermission';
-import SpatieMenu from 'lib/models/spatie/SpatieMenu';
-import MenuSubmenu from 'lib/models/spatie/MenuSubmenu';
-import SpatieSubmenu from 'lib/models/spatie/SpatieSubmenu';
-import { uploadMedia } from './media';
-import { MediaProps } from '@amitkk/basic/types/page';
-import User from 'lib/models/spatie/User';
-import { createApiHandler, ExtendedRequest, HandlerMap, } from '../apiHandler';
-import "lib/models";
-import { APIHandlers } from '../middleware';
+import User, { IUserProps } from 'lib/models/spatie/User';
+import { createApiHandler } from '../apiHandler';
+import { APIHandlers } from '../../../lib/server/middleware';
+import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
+import bcrypt from "bcryptjs";
+import { AnyModel } from 'lib/models';
+import { checkPermissionLogic, getUserIdFromToken } from 'pages/api/basic/auth';
+import { getUsersWithRole } from 'services/userService';
 
-export interface SpatieMenuWithSubmenus {
-  _id: string;
+export interface UserBasicInfo {
+  _id: Types.ObjectId;
   name: string;
-  media_id?: { path?: string; alt?: string };
-  submenusAttached?: Array<{
-    submenu_id?: {
-      name: string;
-      url: string;
-      media_id?: { path?: string };
+  email: string;
+}
+
+interface IPopulatedUser {
+  _id: string;
+  permissionsAttached?: Array<{
+    permission_id?: {
+      _id: string;
+      name?: string;
+    };
+  }>;
+  rolesAttached?: Array<{
+    role_id?: {
+      _id: string;
+      name?: string;
     };
   }>;
 }
 
-export interface SubmenuAttachedProps {
-  _id: string;
-  submenu_id: SubmenuProps | null;
+
+export enum RoleName {
+  OWNER = "Owner",
+  ADMIN = "Admin",
+  PARTNER = "Partner",
+  SEO = "Seo",
+  USER = "User",
+  AMIT = "Amit",
 }
 
-export interface SubmenuProps {
-  _id: string;
-  name: string;
-  url: string;
-  media_id?: MediaProps | null;
+export const ROLE_QUERY_FIELD_MAP: Partial<Record<string, string>> = {
+  [RoleName.USER]: "user_id",
+  [RoleName.AMIT]: "amit_id",
+};
+
+interface ScopeOptions {
+  customFieldMap?: Partial<Record<string, string>>;
+  bypassRoles?: string[];
 }
 
-export interface MenuProps {
-  _id: string;
-  name: string;
-  media_id?: MediaProps | null;
-  submenusAttached?: SubmenuAttachedProps[];
+export async function get_filtered_users(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { filters = {}, page = 0, limit = 10 } = req.body || {};
+    const { role_id, permission_id, ...otherFilters } = filters;
+    const { matchQuery, skip, limit: safeLimit } = buildFilterQuery(otherFilters, { page, limit, defaultLimit: 10, maxLimit: 100, searchableFields: ["name", "email", "phone"], objectIdFields: ["_id"], booleanFields: ["status"]});
+    
+    const pipeline: any[] = [
+      { $match: matchQuery },
+      { $lookup: { from: "userroles", localField: "_id", foreignField: "user_id", as: "rolesAttached" } },
+      { $lookup: { from: "spatieroles", localField: "rolesAttached.role_id", foreignField: "_id", as: "roles" } },
+      { $lookup: { from: "userpermissions", localField: "_id", foreignField: "user_id", as: "permissionsAttached" } },
+      { $lookup: { from: "spatiepermissions", localField: "permissionsAttached.permission_id", foreignField: "_id", as: "permissions" } },
+    ];
+
+    if (role_id && mongoose.Types.ObjectId.isValid(String(role_id))) {
+      pipeline.push({ $match: { "roles._id": new mongoose.Types.ObjectId(String(role_id)) } });
+    }
+
+    if (permission_id && mongoose.Types.ObjectId.isValid(String(permission_id))) {
+      pipeline.push({ $match: { "permissions._id": new mongoose.Types.ObjectId(String(permission_id)) } });
+    }
+
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          paginatedResults: [
+            { $skip: skip },
+            { $limit: safeLimit },
+            { $lookup: { from: "staffs", localField: "_id", foreignField: "staff_id", as: "staffRelation" } },
+            { $lookup: { from: "users", localField: "staffRelation.employer_id", foreignField: "_id", as: "employer_ids" } },
+            { $lookup: { from: "staffs", localField: "_id", foreignField: "employer_id", as: "subordinateRelations" } },
+            { $lookup: { from: "users", localField: "subordinateRelations.staff_id", foreignField: "_id", as: "staff_user_ids" } },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
+      }
+    );
+    
+    const result = await User.aggregate(pipeline);
+    const data = result[0]?.paginatedResults ?? [];
+    const total = result[0]?.totalCount?.[0]?.count ?? 0;
+
+    return res.status(200).json({
+      message: "Fetched Filtered Users",
+      data,
+      pagination: {
+        total,
+        page,
+        limit: safeLimit,
+        pages: Math.ceil(total / safeLimit),
+      },
+    });
+  } catch (error) {
+    await logError(error, { function: "get_filtered_users", payload: req.body });
+    return res.status(500).json({ message: "Internal Server Error", data: null });
+  }
 }
 
-export interface SimpleSubmenu {
-  name: string;
-  url: string;
-  media: string | null;
-}
+export async function get_single_user(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const id = (req.method === "GET" ? req.query.id : req.body.id) as string;
+    if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
 
-// User
-  export async function get_all_users(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      const data = await User.find()
+    const data = await User.findById(id)
       .populate({ path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "_id name status" } })
       .populate({ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } })
-      .exec();
-      return res.status(200).json({ message: 'Fetched all Users', data });
-    } catch (error) { return log(error); }
-  }
-
-  export async function get_single_user(req: NextApiRequest, res: NextApiResponse){
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;    
-    if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
-    
-    const data = await User.findById(id)
-    .populate({ path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "_id name status" } })
-    .populate({ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } })
-    .lean();
-    const userRoles = await UserRole.find({ user_id: id }).populate("role_id", "name").lean().exec();
-    const rolesIds = userRoles?.map(rp => rp.role_id?._id).filter(Boolean);
-
-    const userPermissions = await UserPermission.find({ user_id: id }).populate("permission_id", "name").lean().exec();
-    const permissionIds = userPermissions?.map(rp => rp.permission_id?._id).filter(Boolean);
+      .lean();
 
     if (!data) { return res.status(404).json({ message: `Entry with ID ${id} not found` }); }
-    return res.status(201).json({ message: 'Entry Fetched', data: { ...data, role_ids: rolesIds, permission_ids: permissionIds } });
-  };
+    
+    const userRoles = await UserRole.find({ user_id: id }).populate("role_id", "name").lean<{ role_id?: { _id: any } }[]>()
+    const rolesIds = userRoles.map((rp) => rp.role_id?._id).filter(Boolean);
+    const userPermissions = await UserPermission.find({ user_id: id }).populate("permission_id", "name").lean<{ permission_id?: { _id: any } }[]>()
+      .exec();
+    const permissionIds = userPermissions.map((rp) => rp.permission_id?._id).filter(Boolean);
+
+    return res.status(200).json({ message: 'Entry Fetched', data: { ...data, role_ids: rolesIds, permission_ids: permissionIds } });
+  } catch (error) {
+    await logError(error, { function: "get_single_user", payload: req.body });
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+}
 
   export async function create_update_user(req: NextApiRequest, res: NextApiResponse) {
     try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-    
       const data = req.body;
-      if ( !data?.name || !data?.email || !data.phone ) { return res.status(400).json({ message: '❌ Required fields missing' }); }
-
       const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
+      if( !modelId && data.password !== data.confirm_password ){ return res.status(400).json({ message: 'Passwords Mismatch' }); }
+
+      const child_role_array = safeParse(data.role_child);
+      const child_permission_array = safeParse(data.permission_child);
+
+      const email = data.email ? String(data.email).trim().toLowerCase() : undefined;
 
       if (modelId && isValidObjectId(modelId)) {
         try {
-          const updated = await User.findByIdAndUpdate(
-            modelId,
-            {
-              name: data.name,
-              email: data.email,
-              phone: data.phone,
-              status: data.status,
-              updatedAt: new Date(),
-            }, { new: true }
-          );
+          const updated = await User.findByIdAndUpdate(modelId, {
+            name: data.name,
+            email,
+            phone: data.phone,
+            status: data.status,
+            updatedAt: new Date(),
+          }, { new: true });
 
-          const child_role_array = JSON.parse(data.role_child);
+          
           await pivotEntry( UserRole, updated._id, child_role_array, 'user_id', 'role_id' );
-
-          const child_permission_array = JSON.parse(data.permission_child);
           await pivotEntry( UserPermission, updated._id, child_permission_array, 'user_id', 'permission_id' );
-
           return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
-        } catch (error) { return log(error); }
-      }      
+        } catch (error) { await logError(error, { function: "create_update_user", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
+      }    
+      
+      const hashedPassword = await bcrypt.hash(data.password, 10);
 
       const newEntry = new User({
         name: data.name,
-        email: data.email,
+        email,
         phone: data.phone,
         status: data.status,
+        password: hashedPassword,
         createdAt: new Date(),
       });
 
       await newEntry.save();
-      
-      const child_role_array = JSON.parse(data.role_child);
       await pivotEntry( UserRole, newEntry._id, child_role_array, 'user_id', 'role_id' );
-
-      const child_permission_array = JSON.parse(data.permission_child);
       await pivotEntry( UserPermission, newEntry._id, child_permission_array, 'user_id', 'permission_id' );
-
       return res.status(200).json({ message: '✅ Entry updated successfully', data: newEntry });
-    } catch (error) { return log(error); }
+    } catch (error) { 
+      await logError(error, { function: "create_update_user", payload: req.body }); 
+      const duplicateMessage = getDuplicateKeyErrorMessage(error);
+      if (duplicateMessage) { return res.status(400).json({ message: duplicateMessage, data: null }); }
+      return res.status(500).json({ message: "Internal Server Error", data: null }); 
+    }
+  }
+
+  export async function getUsersByRoleName(roleName: string): Promise<UserBasicInfo[]> {
+    try{
+      const role = await SpatieRole.findOne({ name: roleName }).select("_id name");
+      if (!role) return [];
+      const userLinks = await UserRole.find({ role_id: role._id }).select("user_id");
+      const userIds = userLinks.map((link: { user_id: any; }) => link.user_id);
+  
+      if (!userIds.length) return [];
+      const users = await User.find({ _id: { $in: userIds } }).select("_id name email").lean<UserBasicInfo[]>();
+  
+      return users;
+    }catch (error) { await logError(error, { function: "getUsersByRoleName", payload: { roleName } }); return []; }
+  }
+
+  export async function get_user_options(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const { search = "", limit = 20, role, selected_id } = req.body;
+      let parsedRoles = role;
+      if (typeof role === "string") {
+        try {
+          parsedRoles = JSON.parse(role);
+        } catch (e) {
+          parsedRoles = [role];
+        }
+      }
+
+      let userIds: string[] | null = null;
+      const roles = Array.isArray(parsedRoles) ? parsedRoles : (parsedRoles ? [parsedRoles] : []);
+
+      if (roles.length) {
+        const roleDocs = await SpatieRole.find({ name: { $in: roles } }).select("_id");
+        const roleIds = roleDocs.map((r: { _id: any }) => r._id);
+        const userRoles = await UserRole.find({ role_id: { $in: roleIds } }).select("user_id");
+        userIds = userRoles.map((r: { user_id: any }) => String(r.user_id));
+      }
+
+      const filterQuery: any = {};
+
+      if (search.trim()) {
+        filterQuery.$or = [
+          { name: { $regex: search.trim(), $options: "i" } },
+          { email: { $regex: search.trim(), $options: "i" } },
+          { phone: { $regex: search.trim(), $options: "i" } },
+        ];
+      }
+      
+      // If roles were specified but no users match those roles, return empty right away
+      if (roles.length && (!userIds || userIds.length === 0)) {
+        return res.status(200).json({ message: "Fetched all Users", data: [] });
+      }
+
+      if (userIds) {
+        filterQuery._id = { $in: userIds };
+      }
+
+      let finalQuery: any = filterQuery;
+      if (selected_id && isValidObjectId(selected_id)) {
+        finalQuery = {
+          $or: [{ _id: selected_id }, filterQuery],
+        };
+      }
+
+      const data = await User.find(finalQuery).select("_id name email phone").limit(limit).lean();
+
+      return res.status(200).json({ message: "Fetched all Users", data });
+    } catch (error) {
+      await logError(error, { function: "get_user_options", payload: req.body });
+      return res.status(500).json({ message: "Internal Server Error", data: [] });
+    }
   }
 // User
 
 // Roles
   export async function create_update_role(req: NextApiRequest, res: NextApiResponse) {
     try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-    
       const data = req.body;
-      if ( !data?.name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
-
-      const modelId = (typeof data._id === 'string' || data._id instanceof Types.ObjectId) ? data._id : null;
       
-      const child_array = JSON.parse(req.body.permission_child);
+      const child_array = safeParse(req.body.permission_child);
       if (data._id) {
         const updated = await SpatieRole.findByIdAndUpdate(
           data._id,
@@ -160,7 +283,8 @@ export interface SimpleSubmenu {
 
         await pivotEntry( RolePermission, updated._id, child_array, 'role_id', 'permission_id' );
 
-        if (updated) { return res.status(200).json({ message: '✅ Entry updated successfully', data: updated }); }
+        if (!updated) { return res.status(404).json({ message: '❌ Entry not found for update' }); }
+        return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
       }
 
       const newEntry = new SpatieRole({
@@ -172,43 +296,66 @@ export interface SimpleSubmenu {
       await pivotEntry( RolePermission, newEntry._id, req.body.permissions, 'role_id', 'permission_id' );
 
       return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "create_update_role", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
+  }
+
+  export async function get_filtered_roles(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const { filters = {}, page = 0, limit = 10 } = req.body || {};
+      const { matchQuery, skip, limit: safeLimit } = buildFilterQuery(filters, { page, limit, defaultLimit: 10, maxLimit: 100, searchableFields: ["name"] });
+      const total = await SpatieRole.countDocuments(matchQuery);
+
+      const data = await SpatieRole.find(matchQuery ).populate([ { path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } }]).skip(skip).limit(safeLimit).sort({ createdAt: -1 });
+      return res.status(200).json({ message: 'Fetched all Roles', data, pagination: { total, page, limit: safeLimit, pages: Math.ceil(total / safeLimit) } });
+    } catch (error) { await logError(error, { function: "get_filtered_roles", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
   }
 
   export async function get_all_roles(req: NextApiRequest, res: NextApiResponse) {
     try {
       const data = await SpatieRole.find().populate([ { path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } }]).exec();
       return res.status(200).json({ message: 'Fetched all Roles', data });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "get_all_roles", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
   }
 
-  export async function get_single_role(req: NextApiRequest, res: NextApiResponse){
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-    
-    if (!id || !Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid or missing ID' });
+  export async function get_selected_roles(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const { roles } = req.body;
+      let rolesFilter: string[] = [];
+      if (Array.isArray(roles)) {
+        rolesFilter = roles;
+      } else if (typeof roles === "string") {
+        rolesFilter = roles.split(",").map(i => i.trim());
+      }
+      if (rolesFilter.length === 0) { return res.status(200).json({ message: 'No target roles specified', data: [] }); }
+
+      const data = await SpatieRole.find({ name: { $in: rolesFilter } }).populate([ { path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } }]).exec();
+      return res.status(200).json({ message: 'Fetched Roles', data });
+    } catch (error) { await logError(error, { function: "get_selected_roles", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
+  }
+
+  export async function get_single_role(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const id = (req.method === "GET" ? req.query.id : req.body.id) as string;
+      if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
+
+      const data = await SpatieRole.findById(id).populate([ { path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } } ]).lean();
+      if (!data) { return res.status(404).json({ message: `Entry with ID ${id} not found` }); }
+
+      const rolePermissions = await RolePermission.find({ role_id: id }).populate("permission_id", "name").lean<{ permission_id?: { _id: any } }[]>().exec();
+      const permissionIds = rolePermissions?.map((rp) => rp.permission_id?._id).filter(Boolean);
+      return res.status(200).json({ message: 'Entry Fetched', data: { ...data, permission_ids: permissionIds } });
+    } catch (error) {
+      await logError(error, { function: "get_single_role", payload: req.body });
+      return res.status(500).json({ message: "Internal Server Error", data: null });
     }
-
-    const data = await SpatieRole.findById(id).populate([ { path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "_id name" } }]).lean();
-
-    const rolePermissions = await RolePermission.find({ role_id: id }).populate("permission_id", "name").lean().exec();
-    const permissionIds = rolePermissions?.map(rp => rp.permission_id?._id).filter(Boolean);
-
-    if (!data) { return res.status(404).json({ message: `Entry with ID ${id} not found` }); }
-
-    return res.status(201).json({ message: 'Entry Fetched', data: { ...data, permission_ids: permissionIds } });
-  };
+  }
 // Roles
 
 // Permissions
   export async function create_update_permission(req: NextApiRequest, res: NextApiResponse) {
     try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-    
       const data = req.body;
-      if ( !data?.name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
-
-      const child_array = JSON.parse(req.body.role_child);
+      const child_array = safeParse(req.body.role_child);
 
       if (data._id) {
         const updated = await SpatiePermission.findByIdAndUpdate(
@@ -220,11 +367,11 @@ export interface SimpleSubmenu {
           },
           { new: true }
         );
-
         
         await pivotEntry( RolePermission, updated._id, child_array, 'permission_id', 'role_id' );
 
-        if (updated) { return res.status(200).json({ message: '✅ Entry updated successfully', data: updated }); }
+        if (!updated) { return res.status(404).json({ message: '❌ Entry not found for update' }); }
+        return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
       }
 
       const newEntry = new SpatiePermission({
@@ -237,324 +384,249 @@ export interface SimpleSubmenu {
       await pivotEntry( RolePermission, newEntry._id, child_array, 'permission_id', 'role_id' );
 
       return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "create_update_permission", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
+  }
+
+  export async function get_filtered_permissions(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const { filters = {}, page = 0, limit = 10 } = req.body || {};
+      const { role_id, ...otherFilters } = filters;
+
+      const { matchQuery, skip, limit: safeLimit } = buildFilterQuery(otherFilters, { page, limit, defaultLimit: 10, maxLimit: 100, searchableFields: ["name"], });
+
+      const pipeline: any[] = [
+        { $match: matchQuery },
+        { $sort: { createdAt: -1 } },
+        { $lookup: { from: "rolepermissions", localField: "_id", foreignField: "permission_id", as: "rolesAttached" }, },
+        { $lookup: { from: "spatieroles", localField: "rolesAttached.role_id", foreignField: "_id", as: "role_docs" }, },
+        ...(role_id ? [ { $match: { "role_docs._id": new mongoose.Types.ObjectId(String(role_id)), }, }, ] : []),
+        {
+          $addFields: {
+            rolesAttached: {
+              $map: {
+                input: "$rolesAttached",
+                as: "ra",
+                in: {
+                  $mergeObjects: [
+                    "$$ra",
+                    {
+                      role_id: {
+                        $arrayElemAt: [
+                          { $filter: { input: "$role_docs", as: "rd", cond: { $eq: ["$$rd._id", "$$ra.role_id"] } }, },
+                          0,
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        { $project: { role_docs: 0 } },
+        {
+          $facet: {
+            paginatedResults: [{ $skip: skip }, { $limit: safeLimit }],
+            totalCount: [{ $count: "count" }],
+          },
+        },
+      ];
+
+      const result = await SpatiePermission.aggregate(pipeline);
+      const data = result[0]?.paginatedResults ?? [];
+      const total = result[0]?.totalCount?.[0]?.count ?? 0;
+
+      return res.status(200).json({ message: "Fetched Filtered Permissions", data, pagination: { total, page, limit: safeLimit, pages: Math.ceil(total / safeLimit) }, });
+    } catch (error) { await logError(error, { function: "get_filtered_permissions", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
   }
 
   export async function get_all_permissions(req: NextApiRequest, res: NextApiResponse) {
     try {
       const data = await SpatiePermission.find().populate([ { path: 'rolesAttached', populate: { path: 'role_id', model: 'SpatieRole', select: '_id name' } } ]).exec();
       return res.status(200).json({ message: 'Fetched all Permissions', data });
-    } catch (error) { return log(error); }
+    } catch (error) { await logError(error, { function: "get_all_permissions", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
+  }
+
+  export async function get_selected_permissions(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      const { permissions } = req.body;
+      let permissionsFilter: string[] = [];
+      if (Array.isArray(permissions)) {
+        permissionsFilter = permissions;
+      } else if (typeof permissions === "string") {
+        permissionsFilter = permissions.split(",").map(i => i.trim());
+      }
+      if (permissionsFilter.length === 0) { return res.status(200).json({ message: 'No target permissions specified', data: [] }); }
+
+      const data = await SpatiePermission.find({ name: { $in: permissionsFilter } }).populate([ { path: 'rolesAttached', populate: { path: 'role_id', model: 'SpatieRole', select: '_id name' } } ]).exec();
+      return res.status(200).json({ message: 'Fetched all Permissions', data });
+    } catch (error) { await logError(error, { function: "get_selected_permissions", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
   }
 
   export async function get_single_permission(req: NextApiRequest, res: NextApiResponse){
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-
-    if (!id || !Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid or missing ID' });
-    }
-    
-    const data = await SpatiePermission.findById(id).populate([ { path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "_id name" } }]).lean();
-    
-    const rolePermissions = await RolePermission.find({ permission_id: id }).populate("role_id", "name").lean().exec();
-    const rolesIds = rolePermissions?.map(rp => rp.role_id?._id).filter(Boolean);
-
-    if (!data) { return res.status(404).json({ message: `Entry with ID ${id} not found` }); }
-
-    return res.status(201).json({ message: 'Entry Fetched', data: { ...data, role_ids: rolesIds } });
+    try{
+      const id = (req.method === "GET" ? req.query.id : req.body.id) as string;
+  
+      if (!id || !Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid or missing ID' });
+      }
+      
+      const data = await SpatiePermission.findById(id).populate([ { path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "_id name" } }]).lean();
+      
+      const rolePermissions = await RolePermission.find({ permission_id: id }).populate("role_id", "name").lean<{ role_id?: { _id: any } }[]>().exec();
+      const rolesIds = rolePermissions?.map((rp) => rp.role_id?._id).filter(Boolean);
+      if (!data) { return res.status(404).json({ message: `Entry with ID ${id} not found` }); }
+  
+      return res.status(201).json({ message: 'Entry Fetched', data: { ...data, role_ids: rolesIds } });
+    }catch (error) { await logError(error, { function: "get_single_permission", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
   };
 // Permissions
 
-// Menu
-  export async function create_update_menu(req: ExtendedRequest, res: NextApiResponse) {
-    try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-    
-      const data = req.body;
-      if ( !data?.name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
-
-      const child_array = JSON.parse(req.body.submenus);
-
-      let media_id: string | null = null;
-      if (data.media_id && isValidObjectId(data.media_id)) { media_id = data.media_id; }
-      const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
-      
-      if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
-      }
-
-      if (data._id) {
-        const updated = await SpatieMenu.findByIdAndUpdate(
-          data._id,
-          {
-            name: data.name,
-            media_id:media_id,
-            status: data.status,
-            updatedAt: new Date(),
-          },
-          { new: true }
-        );
-        
-        await pivotEntry( MenuSubmenu, updated._id, child_array, 'menu_id', 'submenu_id' );
-
-        if (updated) { return res.status(200).json({ message: '✅ Entry updated successfully', data: updated }); }
-      }
-
-      const newEntry = new SpatieMenu({
-        name: data.name,
-        media_id:media_id,
-        status: data.status,
-      });
-
-      await newEntry.save();
-    
-      await pivotEntry( MenuSubmenu, newEntry._id, child_array, 'menu_id', 'submenu_id' );
-
-      return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
-    } catch (error) { return log(error); }
-  }
-
-  export async function get_all_menus(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      const data = await SpatieMenu.find().populate([ { path: "submenusAttached", populate: { path: "submenu_id", model: "SpatieSubmenu", select: "_id name" } }, { path: 'media_id' } ]).exec();
-      return res.status(200).json({ message: 'Fetched all Menus', data });
-    } catch (error) { return log(error); }
-  }
-
-  export async function get_single_menu(req: NextApiRequest, res: NextApiResponse){
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-    
-    if (!id || !Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid or missing ID' });
-    }
-
-    const data = await SpatieMenu.findById(id).populate([ { path: "submenusAttached", populate: { path: "submenu_id", model: "SpatieSubmenu", select: "_id name" } }, { path: 'media_id' } ]).lean();
-
-    const menuSubmenu = await MenuSubmenu.find({ menu_id: id }).populate("submenu_id", "name").lean().exec();
-    const submenuIds = menuSubmenu?.map(rp => rp.submenu_id?._id).filter(Boolean);
-
-    if (!data) { return res.status(404).json({ message: `Entry with ID ${id} not found` }); }
-
-    return res.status(201).json({ message: 'Entry Fetched', data: { ...data, submenu_ids: submenuIds } });
-  };
-// Menu
-
-// Submenu
-  export async function create_update_submenu(req: ExtendedRequest, res: NextApiResponse) {
-    try {
-      if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-    
-      const data = req.body;
-      if ( !data?.name || !data?.status) { return res.status(400).json({ message: '❌ Required fields missing' }); }
-
-      const child_array = JSON.parse(data.menu);
-
-      const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
-      
-      let media_id: string | null = null;
-      if (data.media_id && isValidObjectId(data.media_id)) { media_id = data.media_id; }
-      const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
-      
-      media_id = data.media_id;
-      if (file) {
-        media_id = await uploadMedia({ file, name: data.name, pathType: data.path, media_id: data.media_id ?? null, user_id: null });
-      }
-
-      if (data._id) {
-        const updated = await SpatieSubmenu.findByIdAndUpdate(
-          data._id,
-          {
-            name: data.name,
-            url: data.url,
-            permission_id: data.permission_id,
-            media_id: media_id,
-            status: data.status,
-            displayOrder: data.displayOrder,
-            updatedAt: new Date(),
-          },
-          { new: true }
-        );
-        await pivotEntry( MenuSubmenu, data._id, child_array, 'submenu_id', 'menu_id' );
-
-        if (updated) { return res.status(200).json({ message: '✅ Entry updated successfully', data: updated }); }
-      }
-
-      const newEntry = new SpatieSubmenu({
-        name: data.name,
-        url: data.url,
-        permission_id: data.permission_id,
-        media_id: media_id,
-        status: data.status,
-        displayOrder: data.displayOrder,
-      });
-
-      await newEntry.save();
-
-      await pivotEntry( MenuSubmenu, newEntry._id, child_array, 'submenu_id', 'menu_id' );
-
-      return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
-    } catch (error) { return log(error); }
-  }
-
-  export async function get_all_submenus(req: NextApiRequest, res: NextApiResponse) {
-    try {
-      const data = await SpatieSubmenu.find().populate([ { path: 'menusAttached', populate: { path: 'menu_id', model: 'SpatieMenu', select: '_id name' } }, { path: "permissionAttached", model: "SpatiePermission", select: "name status", }, { path: 'media_id' } ]).exec();
-      return res.status(200).json({ message: 'Fetched all Submenus', data });
-    } catch (error) { return log(error); }
-  }
-
-  export async function get_single_submenu(req: NextApiRequest, res: NextApiResponse){
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-
-    if (!id || !Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid or missing ID' });
-    }
-    
-    const data = await SpatieSubmenu.findById(id).populate([ { path: "menusAttached", populate: { path: "menu_id", model: "SpatieMenu", select: "_id name" } }, { path: "permissionAttached", model: "SpatiePermission", select: "name status", }, { path: 'media_id' } ]).lean();
-    
-    const menuSubmenu = await MenuSubmenu.find({ submenu_id: id }).populate("menu_id", "name").lean().exec();
-    const menuIds = menuSubmenu?.map(rp => rp.menu_id?._id).filter(Boolean);
-
-    if (!data) { return res.status(404).json({ message: `Entry with ID ${id} not found` }); }
-
-    return res.status(201).json({ message: 'Entry Fetched', data: { ...data, menu_ids: menuIds } });
-  };
-// Submenu
-
-export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const user_id = getUserIdFromToken(req);
-
-    const userPermissions = await UserPermission.find({ user_id }).select("permission_id").lean();
-    const permissionIds = userPermissions?.map(up => up.permission_id);
-    const menus = await SpatieMenu.find({ status: true }).populate([ { path: "media_id", model: "Media", select: "path alt" }, { path: "submenusAttached", populate: { path: "submenu_id", model: "SpatieSubmenu", match: { status: true, permission_id: { $in: permissionIds } }, populate: [ { path: "media_id", model: "Media", select: "path alt" }, ] } }]).lean();
-
-    const adminLinks = menus
-      ?.map(menu => {
-        const children = (menu.submenusAttached || [])
-          ?.map((ms: SubmenuAttachedProps) => ms.submenu_id)
-          .filter((submenu: any): submenu is SubmenuProps => Boolean(submenu))
-          .map((sub: { name: any; url: any; media_id: { path: any; }; }) => ({
-            name: sub.name,
-            url: sub.url,
-            media: sub.media_id?.path || null,
-          }));
-
-        if (children.length === 0) return null;
-
-        return {
-          name: menu.name,
-          media: menu.media_id?.path || null,
-          children
-        };
-      }).filter(Boolean);
-
-
-      const userMenuRaw = await SpatieMenu.findOne({ name: 'User', status: true })
-      .populate([
-        { path: "media_id", model: "Media", select: "path alt" },
-        {
-          path: "submenusAttached",
-          populate: {
-            path: "submenu_id",
-            model: "SpatieSubmenu",
-            match: { status: true },
-            populate: [{ path: "media_id", model: "Media", select: "path alt" }],
-          }
-        }
-      ])
-      .lean();
-
-      const userMenu = userMenuRaw as unknown as SpatieMenuWithSubmenus;
-
-      let userSubmenus: SimpleSubmenu[] = [];
-      if (userMenu && userMenu.name) {
-        userSubmenus = (userMenu.submenusAttached || [])
-          .map(ms => ms.submenu_id)
-          .filter((submenu): submenu is { _id: string; name: string; url: string; media_id?: { path?: string } } => Boolean(submenu))
-          .map(sub => ({
-            _id: sub._id,
-            name: sub.name,
-            url: sub.url,
-            media: sub.media_id?.path || null,
-          }));
-      }
-
-      return res.status(200).json({ message: 'Fetched User Menus', data : { adminLinks, userSubmenus } });
-  } catch (error) { return log(error); }
-}
-
 export async function check_permission(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const user_id = getUserIdFromToken(req);
-    if (!user_id) return res.status(401).json({ message: 'Checked Permissions - Auth Missing', data: false });
+    const result = await checkPermissionLogic(req, req.query.url as string);
+    return res.status(result?.data ? 200 : 403).json(result);
+  } catch (error) { await logError(error, { function: "check_permission", payload: req.body }); return res.status(500).json({ message: "Internal Server Error", data: null }); }
+}
+
+export async function get_user_permissions(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const user_id = await getUserIdFromToken(req);
+    if (!user_id) { return res.status(401).json({ message: "Auth Missing", data: [] }); }
+    const user = await User.findById(user_id).populate({ path: "permissionsAttached", populate: { path: "permission_id", model: "SpatiePermission", select: "name" } })
+      .populate({ path: "rolesAttached", populate: { path: "role_id", model: "SpatieRole", select: "name" } }).lean<IPopulatedUser | null>();
+
+    const permissions = (user?.permissionsAttached || []).map((p) => p.permission_id?.name).filter(Boolean);
+    return res.status(200).json({ message: "Fetched User Permissions", data: permissions });
+  } catch (error) {
+    await logError(error, { function: "get_user_permissions", payload: req.body });
+    return res.status(500).json({ message: "Internal Server Error", data: [] });
+  }
+}
+
+export async function getScopedFilters<T extends Record<string, any>>(req: NextApiRequest, filters: T, options: ScopeOptions = {}): Promise<{ filters: T; user_id: string | null; unauthorized?: boolean }> {
+  try{
+    const { customFieldMap = {}, bypassRoles = [RoleName.OWNER, RoleName.ADMIN, RoleName.AMIT] } = options;
+  
+    const user_id = await getUserIdFromToken(req);
+    if (!user_id) { return { filters, user_id: null, unauthorized: true }; }
+  
+    const userRoleDocs = await UserRole.find({ user_id }).populate("role_id", "_id name").lean();
+    const userRoles: string[] = userRoleDocs.map((r: any) => r.role_id?.name).filter(Boolean);
     
-    const url = req.query.url as string;
-    if (!url) return res.status(400).json({ message: 'Checked Permissions - URL MIssing', data: false });
-    
-    if (url.includes('/user/')) {
-      return res.status(200).json({ message: 'Auto-allowed because of /user/', data: true });
+    const isBypassed = userRoles.some((role) => bypassRoles.includes(role));
+    if (isBypassed) { return { filters: { ...filters }, user_id }; }
+    const updatedFilters: Record<string, any> = { ...filters };
+  
+    for (const role of userRoles) {
+      const targetField = customFieldMap[role] || ROLE_QUERY_FIELD_MAP[role];
+      if (targetField) {
+        updatedFilters[targetField] = user_id;
+      }
     }
-    
-    const submenu = await SpatieSubmenu.findOne({ url });
-    if (!submenu) return res.status(404).json({ message: 'Checked Permissions - Menu MIssing', data: false });
+  
+    return { filters: updatedFilters as T, user_id };
+  } catch (error) {
+    await logError(error, { function: "getScopedFilters", payload: req.body });
+    return { filters, user_id: null, unauthorized: true };
+  }
+}
 
-    const hasPermission = await UserPermission.findOne({ user_id: user_id, permission_id: submenu.permission_id });
-    if (!hasPermission) { return res.status(403).json({ message: 'Permission Denied', data: false }); }
+const MODEL_REGISTRY: Record<string, AnyModel> = {
+};
 
-    return res.status(200).json({ message: 'Permission To Enter', data: true });
-  } catch (error) { log(error); return res.status(500).json({ allowed: false }); }
+export async function canUserAccessDocument(req: NextApiRequest, res: NextApiResponse, options: ScopeOptions = {}) {
+  try {
+    const { modelName, id } = req.body || {};
+    if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ allowed: false, message: "Invalid or missing ID" }); }
+
+    const targetModel = MODEL_REGISTRY[modelName];
+    if (!targetModel) { return res.status(400).json({ allowed: false, message: "Invalid model name" }); }
+
+    const { filters: scopedFilters, unauthorized } = await getScopedFilters(req, { _id: id }, options);
+    if (unauthorized) { return res.status(401).json({ allowed: false, message: "Unauthorized token" }); }
+
+    const count = await targetModel.countDocuments(scopedFilters);
+    if (count === 0) { return res.status(403).json({ allowed: false, message: "Access Denied" }); }
+
+    return res.status(200).json({ allowed: true, message: "Access Granted" });
+  } catch (error) {
+    await logError(error, { function: "canUserAccessDocument", payload: req.body });
+    return res.status(500).json({ allowed: false, message: "Internal Server Error" });
+  }
+}
+
+export async function getUsersIdByEmail(email: string): Promise<string> {
+  try{
+    const user = await User.findOne({ email: email }).lean<IUserProps>();  
+    return String(user?._id);
+  }catch (error) { await logError(error, { function: "getUsersIdByEmail", payload: { email } }); return ""; }
+}
+
+export async function get_filtered_user_by_role(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const roleArray = req.method === 'GET' ? req.query.role : req.body.role;
+
+    if (!Array.isArray(roleArray) || roleArray.length === 0) { 
+      return res.status(400).json({ message: 'Invalid or missing role array' }); 
+    }
+
+    const data = await getUsersWithRole(roleArray);
+
+    return res.status(200).json({ message: `Fetched users with roles`, data });
+  } catch (error) {
+    return await logError(error, { function: "get_filtered_user_by_role", payload: req.body });
+  }
 }
 
 export const functions: APIHandlers = {
-  create_update_role : { middlewares: [] },
-  get_all_roles : { middlewares: [] },
-  get_single_role : { middlewares: [] },
-
-  create_update_permission : { middlewares: [] },
-  get_all_permissions : { middlewares: [] },
-  get_single_permission : { middlewares: [] },
+  create_update_role : { middlewares: [ "checkUserId", "checkPostMethod", { name: "validateInput", options: { requiredFields: [ "name", "status" ] }} ] },
+  get_filtered_roles : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  get_all_roles : { middlewares: [ "checkUserId", ] },
+  get_selected_roles : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  get_single_role : { middlewares: [ "checkUserId", ] },
   
-  get_all_users : { middlewares: [] },
-  get_single_user : { middlewares: [] },
-  create_update_user : { middlewares: [] },
-
-  create_update_menu : { middlewares: [] },
-  get_all_menus : { middlewares: [] },
-  get_single_menu : { middlewares: [] },
-
-  create_update_submenu : { middlewares: [] },
-  get_all_submenus : { middlewares: [] },
-  get_single_submenu : { middlewares: [] },
-
-  get_admin_menu : { middlewares: [] },
-  check_permission : { middlewares: [] },
+  create_update_permission : { middlewares: [ "checkUserId", "checkPostMethod", { name: "validateInput", options: { requiredFields: [ "name", "status" ] }} ] },
+  get_all_permissions : { middlewares: [ "checkUserId", ] },
+  get_filtered_permissions : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  get_selected_permissions : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  get_single_permission : { middlewares: [ "checkUserId", ] },
+  
+  get_filtered_users : { middlewares: [ ] },
+  // "checkUserId", "checkPostMethod" 
+  get_single_user : { middlewares: [ "checkUserId", ] },
+  create_update_user : { middlewares: [ "checkUserId", "checkPostMethod", { name: "validateInput", options: { requiredFields: [ "name", "email", "phone" ] }} ] },
+  get_user_options : { middlewares: [ "checkUserId", ] },
+  
+  check_permission : { middlewares: [ "checkUserId",  ] },
+  get_user_permissions : { middlewares: [ "checkUserId",  ] },
+  canUserAccessDocument : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  get_filtered_user_by_role : { middlewares: ["checkUserId", "checkPostMethod"] },
 }
 
 export const spatieHandlers = {
   create_update_role,
+  get_filtered_roles,
   get_all_roles,
+  get_selected_roles,
   get_single_role,
 
   create_update_permission,
+  get_filtered_permissions,
   get_all_permissions,
   get_single_permission,
+  get_selected_permissions,
   
-  get_all_users,
+  get_filtered_users,
   get_single_user,
   create_update_user,
+  get_user_options,
 
-  create_update_menu,
-  get_all_menus,
-  get_single_menu,
-
-  create_update_submenu,
-  get_all_submenus,
-  get_single_submenu,
-
-  get_admin_menu,
   check_permission,
+  get_user_permissions,
+  canUserAccessDocument,
+  get_filtered_user_by_role,
 };
 
 export const config = { api: { bodyParser: false } };
-export default createApiHandler(functions);
+export default createApiHandler(functions, spatieHandlers);

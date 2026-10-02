@@ -1,0 +1,11 @@
+.card {
+  box-shadow: 1px 1px 5px #aaa;
+  transition: 0.5s all;
+}
+.card:hover {
+  box-shadow: 0 14px 28px rgba(191, 191, 191, 0.2509803922), 0 10px 10px rgba(132, 132, 132, 0.2196078431);
+}
+
+button {
+  cursor: pointer;
+}/*# sourceMappingURL=style.css.map */

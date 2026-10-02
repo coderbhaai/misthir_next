@@ -1,47 +1,36 @@
 import { Types } from 'mongoose';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Blogmeta from 'lib/models/blog/Blogmeta';
-import { upsertMeta } from '../basic/meta';
-import { log } from '../utils';
-import { slugify } from '@amitkk/basic/utils/utils';
+import { generateSitemap, slugify, upsertMeta } from '../basic/meta';
+import { logError } from '../utils';
 import { createApiHandler } from '../apiHandler';
-import { APIHandlers } from '../middleware';
+import { APIHandlers } from '../../../lib/server/middleware';
+import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
 
 export async function create_update_blog_meta(req: NextApiRequest, res: NextApiResponse) {
   try {
-    if (req.method !== 'POST') { return res.status(405).json({ message: 'Method Not Allowed' }); }
-  
     const data = req.body;
-    if (!data?.type || !data?.name || !data?.url) {
-      return res.status(400).json({ message: '❌ Required fields missing' });
-    }
-
     const modelId = (typeof data._id === 'string' || data._id instanceof Types.ObjectId) ? data._id : null;
     const slug = await slugify(data.url, Blogmeta, modelId);
 
     let meta_id: string | null = null;
-    meta_id = await upsertMeta({ meta_id: data.selected_meta_id ?? null, url: data.url, title: data.title, description: data.description });
+    meta_id = await upsertMeta({ meta_id: data.selected_meta_id ?? null, url: slug, title: data.title, description: data.description });
 
-    if (data._id) {
-      const updated = await Blogmeta.findByIdAndUpdate(
-        data._id,
-        {
+    if (modelId) {
+      const updated = await Blogmeta.findByIdAndUpdate(modelId, {
           type: data.type,
           name: data.name,
           url: slug,
           meta_id: meta_id,
           status: data.status,
           updatedAt: new Date(),
-        },
-        { new: true }
-      );
+        }, { new: true });
 
-      if (updated) {
-        return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
-      }
+        await generateSitemap();
+      return res.status(200).json({ message: '✅ Entry updated successfully', data: updated });
     }
 
-    const newMeta = new Blogmeta({
+    const newEntry = new Blogmeta({
       type: data.type,
       name: data.name,
       url: slug,
@@ -49,61 +38,47 @@ export async function create_update_blog_meta(req: NextApiRequest, res: NextApiR
       status: data.status ?? true,
     });
 
-    await newMeta.save();
+    await newEntry.save();
 
-    return res.status(201).json({ message: '✅ Entry created successfully', data: newMeta });
-  } catch (error) { return log(error); }
+    await generateSitemap();
+    return res.status(201).json({ message: '✅ Entry created successfully', data: newEntry });
+  } catch (error) { await logError(error, { function: "create_update_blog_meta", payload: req.body }); }
 }
 
-export async function get_all_blog_meta(req: NextApiRequest, res: NextApiResponse) {
+export async function get_filtered_blog_meta(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const data = await Blogmeta.find().populate([ { path: 'meta_id' } ]).exec();
-    return res.status(200).json({ message: 'Fetched all blog meta', data });
-  } catch (error) { return log(error); }
-}
+    const { filters = {}, page = 0, limit = 10 } = req.body || {};
+    const { matchQuery, skip, limit: safeLimit } = buildFilterQuery(filters, { page, limit, defaultLimit: 10, maxLimit: 100, searchableFields: ["name", "url"] });
+    const total = await Blogmeta.countDocuments(matchQuery);
 
-export async function get_category(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const data = await Blogmeta.find({ type: 'category' }).exec();
-    return res.status(200).json({ message: 'Fetched categories', data });
-  } catch (error) { return log(error); }
-}
-
-export async function get_tag(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const data = await Blogmeta.find({ type: 'tag' }).exec();
-    return res.status(200).json({ message: 'Fetched tags', data });
-  } catch (error) { return log(error); }
+    const data = await Blogmeta.find(matchQuery).populate([ { path: 'meta_id' } ]).skip(skip).limit(safeLimit).sort({ createdAt: -1 });
+    return res.status(200).json({ message: 'Fetched all blog meta', data, pagination: { total, page, limit: safeLimit, pages: Math.ceil(total / safeLimit) } });
+  } catch (error) { await logError(error, { function: "get_filtered_blog_meta", payload: req.body }); }
 }
 
 export async function get_single_blog_meta(req: NextApiRequest, res: NextApiResponse){
-  const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
-
-  if (!id || !Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid or missing ID' });
-  }
-
-  const data = await Blogmeta.findById(id).populate([ { path: 'meta_id' } ]).exec();
-  if (!data) { return res.status(404).json({ message: `Blog meta with ID ${id} not found` }); }
-
-  return res.status(200).json({ message: 'Fetched Single Blog', data });
+  try{
+    const id = (req.method === "GET" ? req.query.id : req.body.id) as string;
+    if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message:  'Invalid or missing ID' }); }
+  
+    const data = await Blogmeta.findById(id).populate([ { path: 'meta_id' } ]).exec();
+    if (!data) { return res.status(404).json({ message: `Blog meta with ID ${id} not found` }); }
+  
+    return res.status(200).json({ message: 'Fetched Single Blog', data });
+  } catch (error) { await logError(error, { function: "get_filtered_blog_meta", payload: req.body }); }
 };
 
 export const functions: APIHandlers = {
-  create_update_blog_meta : { middlewares: [] },
-  get_all_blog_meta : { middlewares: [] },
-  get_category : { middlewares: [] },
-  get_tag : { middlewares: [] },
-  get_single_blog_meta : { middlewares: [] },
+  create_update_blog_meta : { middlewares: [ "checkUserId", "checkPostMethod", { name: "validateInput", options: { requiredFields: ["type", "name", "url", "status" ] }} ], url: "/admin/blogmeta"  },
+  get_filtered_blog_meta : { middlewares: [ "checkUserId", "checkPostMethod" ], url: "/admin/blogmeta"  },
+  get_single_blog_meta : { middlewares: ["checkUserId", ], url: "/admin/blogmeta"  },
 }
 
 export const blogmetaHandlers = {
   create_update_blog_meta,
-  get_all_blog_meta,
-  get_category,
-  get_tag,
+  get_filtered_blog_meta,
   get_single_blog_meta,
 };
 
 export const config = { api: { bodyParser: false } };
-export default createApiHandler(functions);
+export default createApiHandler(functions, blogmetaHandlers);

@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 
-export interface IResetPasswordProps extends Document<Types.ObjectId> {
+export interface IResetPasswordDoc extends Document<Types.ObjectId> {
   email: string;
   otp: string;
   expiresAt: Date;
@@ -8,7 +8,7 @@ export interface IResetPasswordProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const ResetPasswordSchema = new Schema<IResetPasswordProps>({
+const ResetPasswordSchema = new Schema<IResetPasswordDoc>({
   email: { type: String, required: true },
   otp: { type: String, required: true, minlength: 4, maxlength: 8 },
   expiresAt: { type: Date, default: () => new Date(Date.now() + 5 * 60 * 1000), index: { expires: '5m' } },
@@ -16,5 +16,5 @@ const ResetPasswordSchema = new Schema<IResetPasswordProps>({
 
 ResetPasswordSchema.index({ email: 1, otp: 1 });
 
-const ResetPassword: Model<IResetPasswordProps> = mongoose.models.ResetPassword || mongoose.model<IResetPasswordProps>('ResetPassword', ResetPasswordSchema);
+const ResetPassword: Model<IResetPasswordDoc> = mongoose.models?.ResetPassword || mongoose.model<IResetPasswordDoc>('ResetPassword', ResetPasswordSchema);
 export default ResetPassword;

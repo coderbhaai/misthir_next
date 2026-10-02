@@ -1,9 +1,7 @@
-import { Schema, model, models, Types, Document } from "mongoose";
+import mongoose, { Schema, model, models, Types, Document } from "mongoose";
 
-export interface CartProps extends Document<Types.ObjectId> {
+export interface CartDoc extends Document<Types.ObjectId> {
   user_id?: string | Types.ObjectId;
-  email?: string;
-  whatsapp?: string;
   billing_address_id?: string | Types.ObjectId;
   shipping_address_id?: string | Types.ObjectId;
   paymode?: string;
@@ -16,104 +14,22 @@ export interface CartProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const cartSchema = new Schema<CartProps>({
+const cartSchema = new Schema<CartDoc>({
     user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     billing_address_id: { type: Schema.Types.ObjectId, ref: 'Address',  },
     shipping_address_id: { type: Schema.Types.ObjectId, ref: 'Address', },
-    email: { type: String },
-    whatsapp: { type: String },
     paymode: { type: String },
     weight: { type: Number },
-    total: { type: Schema.Types.Decimal128 },
-    payable_amount: { type: Schema.Types.Decimal128 },
+    total: { type: Number },
+    payable_amount: { type: Number },
     user_remarks: { type: String },
     admin_remarks: { type: String },
-  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-);
-
-export interface CartChargesProps extends Document<Types.ObjectId> {
-  cart_id: string | Types.ObjectId;
-  shipping_charges?: number;
-  shipping_chargeable_value?: number;
-  sales_discount?: number;
-  admin_discount?: number;
-  admin_discount_validity?: Date;
-  admin_discount_unit?: string;
-  admin_discount_validity_value?: number;
-  total_vendor_discount?: number;
-  cod_charges?: number;
-}
-
-const cartChargesSchema = new Schema<CartChargesProps>({
-    cart_id: { type: Schema.Types.ObjectId, required: true, ref: 'Cart', },
-    shipping_charges: { type: Schema.Types.Decimal128 },
-    shipping_chargeable_value: { type: Number },
-    sales_discount: { type: Number },
-    admin_discount: { type: Number },
-    admin_discount_validity: { type: Date, default: null },
-    admin_discount_unit: { type: String, default: null },
-    admin_discount_validity_value: { type: Number, default: null },
-    total_vendor_discount: { type: Number },
-    cod_charges: { type: Schema.Types.Decimal128 },
-  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-);
-
-export interface CartCouponProps extends Document<Types.ObjectId> {
-  cart_id: string | Types.ObjectId;
-  coupon_id?: string | Types.ObjectId;
-  admin_coupon_discount?: number;
-  vendor_coupon_discount?: number;
-  coupon_code?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const cartCouponSchema = new Schema<CartCouponProps>({
-    cart_id: { type: Schema.Types.ObjectId, required: true, ref: 'Cart', },
-    coupon_id: { type: Schema.Types.ObjectId, required: false, ref: 'Coupon', },
-    admin_coupon_discount: { type: Number, required: false, },
-    vendor_coupon_discount: { type: Number, required: false, },
-    coupon_code: { type: String, default: null },
-  }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-);
-
-export interface CartSkuProps extends Document<Types.ObjectId> {
-  cart_id: string | Types.ObjectId;
-  product_id: string | Types.ObjectId;
-  sku_id: string | Types.ObjectId;
-  vendor_id: Types.ObjectId;
-  quantity: number;
-  flavor_id?: string | Types.ObjectId;
-  vendor_discount?: number;
-  vendor_discount_validity?: Date;
-  vendor_discount_unit?: string;
-  vendor_discount_validity_value?: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const cartSkuSchema = new Schema<CartSkuProps>({
-    cart_id: { type: Schema.Types.ObjectId, ref: 'Cart', required: true },
-    product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-    sku_id: { type: Schema.Types.ObjectId, ref: 'Sku', required: true },
-    vendor_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    quantity: { type: Number, required: true },
-    vendor_discount: { type: Number, required: false },
-    vendor_discount_validity: { type: Date, default: null },
-    vendor_discount_unit: { type: String, default: null },
-    vendor_discount_validity_value: { type: Number, default: null },
-    flavor_id: { type: Schema.Types.ObjectId, ref: 'ProductFeature' },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 cartSchema.virtual('cartSkus', { ref: 'CartSku', localField: '_id', foreignField: 'cart_id', justOne: false });
 cartSchema.virtual('cartCharges', { ref: 'CartCharges', localField: '_id', foreignField: 'cart_id', justOne: true });
 cartSchema.virtual('cartCoupon', { ref: 'CartCoupon', localField: '_id', foreignField: 'cart_id', justOne: true });
-cartSkuSchema.virtual('product', { ref: 'Product', localField: 'product_id', foreignField: '_id', justOne: true, });
-cartSkuSchema.virtual('vendor', { ref: 'User', localField: 'vendor_id', foreignField: '_id', justOne: true, });
-cartSkuSchema.virtual('sku', { ref: 'Sku', localField: 'sku_id', foreignField: '_id', justOne: true, });
+cartSchema.virtual('cartConsent', { ref: 'CartConsent', localField: '_id', foreignField: 'cart_id', justOne: true });
 
-export const Cart = models.Cart || model<CartProps>("Cart", cartSchema);
-export const CartSku = models.CartSku || model<CartSkuProps>("CartSku", cartSkuSchema);
-export const CartCharges = models.CartCharges || model<CartChargesProps>("CartCharges", cartChargesSchema);
-export const CartCoupon = models.CartCoupon || model<CartCouponProps>("CartCoupon", cartCouponSchema);
+export default mongoose.models.Cart || mongoose.model<CartDoc>("Cart", cartSchema);

@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 
-export interface IPermissionProps extends Document<Types.ObjectId> {
+export interface IPermissionDoc extends Document<Types.ObjectId> {
   name: string;
   status: boolean;
   displayOrder?: number;
@@ -8,7 +8,7 @@ export interface IPermissionProps extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const spatiePermissionSchema = new Schema<IPermissionProps>({
+const spatiePermissionSchema = new Schema<IPermissionDoc>({
   name: { type: String, required: true, trim: true },
   status: { type: Boolean, required: true },
   displayOrder: { type: Number, required: false, },
@@ -19,4 +19,4 @@ spatiePermissionSchema.virtual("rolesAttached", { ref: "RolePermission", localFi
 spatiePermissionSchema.set("toObject", { virtuals: true });
 spatiePermissionSchema.set("toJSON", { virtuals: true });
 
-export default mongoose.models.SpatiePermission || mongoose.model<IPermissionProps>("SpatiePermission", spatiePermissionSchema);
+export default mongoose.models?.SpatiePermission || mongoose.model<IPermissionDoc>("SpatiePermission", spatiePermissionSchema);

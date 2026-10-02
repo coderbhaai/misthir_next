@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Box, Button, MenuItem, TextField } from "@mui/material";
+import { TextField } from "@amitkk/components/basic/TextField";
+import { Button } from "@amitkk/components/button/button";
 import CustomModal from "@amitkk/basic/static/CustomModal";
-import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/utils";
-import { CartSkuProps } from "@amitkk/ecom/types/ecom";
+import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/my-utils/admin-utils";
 
 type VendorDiscountModalProps = {
   open: boolean;
@@ -61,7 +61,7 @@ export default function VendorDiscountModal({ open, handleClose, cartSku, limit,
         }
       };
 
-      const res = await apiRequest("post", "ecom/ecom", payload);
+      await apiRequest("POST", ecom/ecom", payload);
       if (res?.status) {
         refreshCart();
         handleClose();
@@ -71,18 +71,16 @@ export default function VendorDiscountModal({ open, handleClose, cartSku, limit,
 
   return (
     <CustomModal open={open} handleClose={handleClose} title="Give Discount">
-      <form onSubmit={handleSubmit}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-          <TextField label={`Discount (Limit - ${limit})`} type="number" variant="outlined" value={formData.vendor_discount} name="vendor_discount" fullWidth onChange={handleChange} required slotProps={{ input: { inputProps: { min: 1 } } }}/>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <TextField label="Validity" type="number" variant="outlined" value={formData.vendor_discount_validity_value} name="vendor_discount_validity_value" onChange={handleChange} fullWidth required slotProps={{ input: { inputProps: { min: 1 } } }}/>
-            <TextField select label="Unit" variant="outlined" value={formData.vendor_discount_unit} name="vendor_discount_unit" onChange={handleChange} fullWidth required>
+      <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField label={`Discount (Limit - ${limit})`} type="number" value={formData.vendor_discount} name="vendor_discount" onChange={handleChange} required/>
+          <div className="flex gap-2">
+            <TextField label="Validity" type="number" value={formData.vendor_discount_validity_value} name="vendor_discount_validity_value" onChange={handleChange} required/>
+            <TextField select label="Unit" value={formData.vendor_discount_unit} name="vendor_discount_unit" onChange={handleChange} required>
               <MenuItem value="hours">Hours</MenuItem>
               <MenuItem value="days">Days</MenuItem>
             </TextField>
-          </Box>
-          <Button type="submit" variant="contained" color="primary">Save Discount</Button>
-        </Box>
+          </div>
+          <Button type="submit" color="primary">Save Discount</Button>
       </form>
     </CustomModal>
   );

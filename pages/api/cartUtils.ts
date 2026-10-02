@@ -1,10 +1,10 @@
 import cookie from 'cookie';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getUserIdFromToken } from './utils';
-import { Cart } from 'lib/models/ecom/Cart';
+import Cart from 'lib/models/ecom/Cart';
+import { getUserIdFromToken } from './basic/auth';
 
 export async function getCartIdFromRequest(req: NextApiRequest, res: NextApiResponse): Promise<string | null> {
-  const user_id = getUserIdFromToken(req);
+  const user_id = await getUserIdFromToken(req);
   const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
   let cartIdFromCookie = cookies.cartId || null;
 
@@ -21,8 +21,19 @@ export async function getCartIdFromRequest(req: NextApiRequest, res: NextApiResp
       return cartIdFromDb;
     }
   }
+  
+  if (cartIdFromCookie) {
+    const existingCart = await Cart.findById(cartIdFromCookie).exec();
 
-  return cartIdFromCookie;
+    if (!existingCart) {
+      setCookie(res, 'cartId', '');
+      return null;
+    }
+
+    return cartIdFromCookie;
+  }
+
+  return null;
 }
 
 interface CookieOptions {

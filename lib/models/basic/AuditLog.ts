@@ -15,7 +15,7 @@ export interface IAuditLog extends Document<Types.ObjectId> {
 
 const AuditLogSchema = new Schema<IAuditLog>({
     module: { type: String, required: true },
-    module_id: { type: Schema.Types.ObjectId, required: true },
+    module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", default: null },
     changes: [
       {
@@ -27,4 +27,4 @@ const AuditLogSchema = new Schema<IAuditLog>({
   },{ timestamps: true }
 );
 
-export const AuditLog: Model<IAuditLog> = mongoose.models.AuditLog || mongoose.model("AuditLog", AuditLogSchema);
+export default mongoose.models?.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);

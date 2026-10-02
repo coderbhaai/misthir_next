@@ -1,19 +1,19 @@
-import { BlogMetaProps } from "@amitkk/blog/types/blog";
-import { Box, Chip } from "@mui/material";
+import { BlogMetaProps } from "@amitkk/basic/types/shared";
 
 interface CategoryPillsProps {
   row?: BlogMetaProps[] | null;
+
   limit?: number | null;
 }
 
-export function CategoryPills({ row, limit = null }: CategoryPillsProps) {
-  const itemsToRender = row && limit !== null ? row.slice(0, limit) : row || [];
+export function CategoryPills({row, limit = null}: CategoryPillsProps) {
+  const items = row ? limit ? row.slice(0, limit) : row : [];
 
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, py: 2, zIndex: 2 }}>
-      {itemsToRender?.map((i) => (
-        <Chip key={ i._id } label={ i.name } size="small" component="a" href={`/category/${i.url}`} clickable sx={{ fontSize: '0.65rem', fontWeight: 600, py: 0.5, px: 1.5, color: 'common.white', backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', '&:hover': { backgroundColor: 'primary.main' } }}/>
+    <div className="flex flex-wrap gap-2 py-2">
+      {items.map((i) => (
+        <a key={i._id} href={`/category/${i.url}`} className="rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-primary">{i.name}</a>
       ))}
-    </Box>
+    </div>
   );
 }

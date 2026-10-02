@@ -1,75 +1,55 @@
-import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
-import { Box, List, ListItem, Card, Typography, Button, Divider } from "@mui/material";
-import { useEcom } from "contexts/EcomContext";
+import { Separator } from "@amitkk/components/ui/separator";
+import React from "react";
+import ChargeRow from "./ChargeRow";
+import { CartProps, OrderProps } from "../types";
 
 interface CartChargesProps {
-  itemCount: number;
-  total: number | string;
-  payableAmount: number | string;
-  cart_status:boolean;
-  cartCharges?: {
-    shipping_charges?: number | string;
-    cod_charges?: number | string;
-    sales_discount?: number | string;
-    admin_discount?: number | string;
-    total_vendor_discount?: number | string;
-  };
-
-  cartCoupon?: {
-    admin_coupon_discount?: number;
-    vendor_coupon_discount?: number;
-    coupon_code?: string;
-  };
+  cart?: CartProps | OrderProps;
+  cart_status?: boolean;
 }
 
-export default function CartCharges({ itemCount, total, payableAmount, cartCharges, cartCoupon, cart_status=true }: CartChargesProps) {
+const parseVal = (val: any): number => {
+  if (val == null) return 0;
+  if (typeof val === "object") {
+    return Number(val) || 0;
+  }
+  return Number(val) || 0;
+};
+
+export default function CartCharges({ cart, cart_status = true }: CartChargesProps) {
+  const data = cart as any;
+  const skus = data?.cartSkus ?? data?.orderSkus ?? [];
+  const itemCount = skus.reduce((acc: number, item: any) => acc + (parseVal(item?.quantity) || 0), 0);
+  const total = parseVal(data?.total);
+  const payableAmount = parseVal(data?.payable_amount ?? data?.paid); 
+  const charges = data?.cartCharges ?? data?.orderCharges;
+  const coupon = data?.cartCoupon;
+  const totalCouponDiscount = parseVal(coupon?.admin_coupon_discount) + parseVal(coupon?.vendor_coupon_discount);
+  const totalAdditionalDiscount = parseVal(charges?.admin_discount) + parseVal(charges?.total_vendor_discount);
+
   return (
+    <>
+      <Separator className="my-4" />
+      <div className="flex justify-between mb-2 text-sm">
+        <span>Subtotal · {itemCount} Items</span>
+        <span>₹{total}</span>
+      </div>
+
+      {charges && (
         <>
-            
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography>Subtotal · {itemCount} Items</Typography>
-                <Typography>₹{total}</Typography>
-            </Box>
-            {cartCharges && (
-                <>
-                    { cartCharges?.shipping_charges && (
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                            <Typography>Shipping Charges (Inc)</Typography>
-                            <Typography>₹{cartCharges?.shipping_charges}</Typography>
-                        </Box>
-                    )}
-                    { cartCharges?.cod_charges && (
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                            <Typography>COD Charges (Inc)</Typography>
-                            <Typography>₹{cartCharges?.cod_charges}</Typography>
-                        </Box>
-                    )}
-                    { cartCharges?.sales_discount && (
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                            <Typography>Sales Discount</Typography>
-                            <Typography>₹{cartCharges?.sales_discount}</Typography>
-                        </Box>
-                    )}                    
-                    {((Number(cartCoupon?.admin_coupon_discount) > 0) || (Number(cartCoupon?.vendor_coupon_discount) > 0)) && (
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                            <Typography>Coupon Discount</Typography>
-                            <Typography>₹{(cartCoupon?.admin_coupon_discount ?? 0) + (cartCoupon?.vendor_coupon_discount ?? 0)}</Typography>
-                        </Box>
-                    )}
-                    {((Number(cartCharges?.admin_discount) > 0) || (Number(cartCharges?.total_vendor_discount) > 0)) && (
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                            <Typography>Additional Discount</Typography>
-                            <Typography>₹{ (Number(cartCharges?.admin_discount) || 0) + (Number(cartCharges?.total_vendor_discount) || 0) }</Typography>
-                        </Box>
-                    )}
-                </>
-            )}
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                <Typography variant="h6">{cart_status? "Payable" : "Paid"}</Typography>
-                <Typography variant="h6">₹{payableAmount}</Typography>
-            </Box>
+          <ChargeRow label="Shipping Charges (Inc)" value={parseVal(charges?.shipping_charges)} />
+          <ChargeRow label="COD Charges (Inc)" value={parseVal(charges?.cod_charges)} />
+          <ChargeRow label="Sales Discount" value={parseVal(charges?.sales_discount)} />
+          <ChargeRow label="Coupon Discount" value={totalCouponDiscount} />
+          <ChargeRow label="Additional Discount" value={totalAdditionalDiscount} />
         </>
-    )
+      )}
+
+      <Separator className="my-4" />
+      <div className="flex justify-between text-base font-bold">
+        <span>{cart_status ? "Payable" : "Paid"}</span>
+        <span>₹{payableAmount}</span>
+      </div>
+    </>
+  );
 }

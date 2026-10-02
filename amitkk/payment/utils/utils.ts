@@ -1,5 +1,5 @@
-import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/utils";
-import { OrderProps } from "@amitkk/ecom/types/ecom";
+import { apiRequest, clo, hitToastr } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { OrderProps } from "@amitkk/ecom/types";
 import router from "next/router";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -20,7 +20,7 @@ export type PaymentGatewayName = 'razorpay' | 'phonepe' | 'mpesa';
 export const makePayment = async ({ module, module_id }: { module: string; module_id: string }) => {
   try{
 
-    const res = await apiRequest("get", `basic/basic?function=get_all_settings`);
+    const res = await apiRequest("GET", `payment/payment?function=get_all_settings`);
     if( !res?.data ){ hitToastr('errors', "Site Setting not found"); return; }
 
     const modeSetting = res.data.find((item: { module: string; }) => item.module === "Mode");
@@ -52,7 +52,7 @@ declare global {
 
 export const hitRazorpay = async (module: string, module_id: string) => {
   try {
-    const res = await apiRequest("post", "payment/payment", { module, module_id, payment_gateway: "Razorpay", function: "get_payment_data" });
+    const res = await apiRequest("POST", "payment/payment", { module, module_id, payment_gateway: "Razorpay", function: "get_payment_data" });
     if( !res?.data ){ hitToastr('errors', "Module Data not found"); return; }
 
     const { key_id, } = getPaymentConfig();
@@ -63,19 +63,19 @@ export const hitRazorpay = async (module: string, module_id: string) => {
     if( module == "Cart"){
       options = {
         key: key_id,
-        amount: res.data.payable_amount?.$numberDecimal * 100,
+        amount: res.data.payable_amount * 100,
         currency: 'INR',
-        name: res.data.billing_address_id?.first_name,
+        name: res.data.billing_address_id?.name,
         description: "Order on Misthir",
         order_id: res?.data?.response?.order_id,
         prefill: {
-          name: res.data.billing_address_id?.first_name,
+          name: res.data.billing_address_id?.name,
           email: res.data.billing_address_id?.email,
           contact: res.data.billing_address_id?.phone,
         },
         theme: { color: '#f19f40' },
         handler: async (response: any) => {
-          const res = await apiRequest("post", "payment/payment", { response, module, module_id, payment_gateway: "Razorpay", source: "Website", function: "payment_response" });
+          await apiRequest("POST", "payment/payment", { response, module, module_id, payment_gateway: "Razorpay", source: "Website", function: "payment_response" });
           
           if( res?.data?.order_id ){
             router.push(`/order/${res?.data?.order_id}`);
@@ -149,11 +149,11 @@ export function generateInvoice(order: OrderProps) {
 
   // --- Charges / Totals table ---
   const total = order.total && typeof order.total === "object"
-    ? Number((order.total as any).$numberDecimal)
+    ? Number((order.total as any))
     : Number(order.total);
 
   const paid = order.paid && typeof order.paid === "object"
-    ? Number((order.paid as any).$numberDecimal)
+    ? Number((order.paid as any))
     : Number(order.paid);
 
   const charges: any[] = [];

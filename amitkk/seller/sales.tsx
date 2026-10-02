@@ -1,52 +1,31 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-sales-table";
-import { useTable, emptyRows, AdminTableHead } from "@amitkk/basic/utils/AdminUtils";
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { useTableFilter, apiRequest, clo, withAuth } from "@amitkk/basic/utils/utils";
-import { useVendorId } from "hooks/useVendorId";
-import router from "next/router";
+import { useAdminPage } from "hooks/useAdminPage";
+import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-sales-table";
 
-export function SellerSales(){
-    const vendor_id = useVendorId();
-    const showCheckBox = false;
-    const table = useTable();
-    const [data, setData] = useState<DataProps[]>([]);
-    const [filterData, setFilterData] = useState("");
-    const dataFiltered = useTableFilter<DataProps>( data, table.order, table.orderBy as keyof DataProps, filterData, ["name"] );
+export function SellerSales() {
+    const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/sales", listFunction: "get_all_sales", addRoute: "/admin/add-update-blog" });
 
-    const initData = useCallback(async () => {
-        try {
-            const res = await apiRequest("get", `ecom/sales?function=get_all_sales&vendor_id=${vendor_id}`);
-            setData(res?.data ?? []);
+    const FILTER_CONFIG = [
+        { name: "SearchFilter", grid: "col-span-9", },
+        { name: "StatusFilter", grid: "col-span-3", },
+    ] as const;
 
-        } catch (error) { clo( error ); }
-    }, []);
-
-   useEffect(() => { if (!vendor_id) return; initData(); }, [vendor_id]);
-    
-    return(
-        <AdminTableLayout<DataProps>
-            title="Sales" addButtonLabel="New Sale" onAddNew={() => router.push("/seller/add-update-sales")}  filterData={filterData} onFilterData={setFilterData} table={{ ...table, emptyRows: (totalRows: number) => emptyRows(table.page, table.rowsPerPage, totalRows)  }} data={dataFiltered}
-            head={
-                <AdminTableHead showCheckBox={false} order={table.order} orderBy={table.orderBy} rowCount={dataFiltered.length} numSelected={table.selected.length} onSort={table.onSort} onSelectAllRows={(checked) => table.onSelectAllRows( checked, dataFiltered.map((i) => i._id.toString()) ) }
-                headLabel={[
+    const head: { id: string; label: string }[] = [
                     { id: "name", label: "Name" },
-                    { id: "validity", label: "Validity" },
-                    { id: "discount", label: "Discount" },
-                    { id: "product", label: "Products" },
-                    { id: "status", label: "Status" },
-                    { id: "date", label: "Date" },
+                    { id: "media", label: "Media" },
+                    { id: "tags", label: "Tags" },
+                    { id: "author", label: "Author" },
+                    { id: "meta", label: "Meta" },
                     { id: "", label: "" },
-                ]}/>
-            }
-            rows={dataFiltered.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
-                .map((i) => (
-                    <AdminDataTable key={i._id.toString()} row={i} selected={table.selected.includes(i._id.toString())} onSelectRow={() => table.onSelectRow(i._id.toString())} showCheckBox={false}/>
-                ))}>
+                ];
+
+    return (
+        <AdminTableLayout admin={admin} title="Sales" filters={FILTER_CONFIG} head={head} 
+            rows={admin.data.map((i: DataProps) => ( <AdminDataTable key={String(i._id)} row={i}/> ))}>
         </AdminTableLayout>
-    )
+    );
 }
 
-export default withAuth(SellerSales);
+export default SellerSales;

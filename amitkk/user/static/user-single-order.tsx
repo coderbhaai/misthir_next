@@ -1,107 +1,89 @@
 "use client";
 
-import { Grid, Box, Typography, RadioGroup, Paper, Radio, TextField, FormControl, Checkbox, FormControlLabel, Button, Divider, Card, List, ListItem, Container } from "@mui/material";
 import { useEffect, useState } from "react";
-import { apiRequest, clo } from "@amitkk/basic/utils/utils";
-import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
-import { OrderProps } from '@amitkk/ecom/types/ecom';
-import PaymentStatic from "@amitkk/ecom/static/PaymentStatic";
-import { ProductProps, SkuProps } from "@amitkk/product/types/product";
-import { ImageObject } from "@amitkk/basic/types/page";
-import { fullAddress } from "@amitkk/address/utils/addressUtils";
-import CartCharges from "@amitkk/ecom/static/CartCharges";
+import { apiRequest, clo } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { OrderProps } from '@amitkk/ecom/types';
+import { fullAddress, getMaskedAddress } from "@amitkk/address/utils/addressUtils";
 import SuggestBlogs from "@amitkk/blog/static/suggest-blog";
-import products from "@amitkk/product/products";
 import SuggestProducts from "@amitkk/product/static/suggest-products";
-import blogs from "pages/blogs";
 import { generateInvoice } from "@amitkk/payment/utils/utils";
+import { Button } from "@amitkk/components/button/button";
+import { AddressProps } from "@amitkk/address/types";
+import OrderList from "@amitkk/ecom/static/OrderList";
+import { useAuth } from "contexts/AuthContext";
 
 interface DataFormProps {
     order_id?: string;
 } 
 
 export const UserSingleOrder: React.FC<DataFormProps> = ({ order_id }) => {
+  const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<OrderProps | null>(null);
   const [blogs, setBlogs] = useState([]);
   const [products, setProducts] = useState([]);
-  const [cartItemCount, setCartItemCount] = useState(0);
   
+  const { user } = useAuth();
+  const currentUserId = user?._id;
+
   const fetchSingleEntry = async () => {
     if (!order_id) return;
+    setLoading(true);
 
     try {
-      const res = await apiRequest("post", `ecom/ecom`,{ function: "get_single_order", order_id});
+      const res = await apiRequest("POST", `ecom/ecom`,{ 
+        function: "get_single_order",
+        order_id
+      });
+
+      console.log("RES", order_id, res);
+      
       if (res?.data) {
         const orderData = res.data as OrderProps;
         setData(orderData);
-
-        const itemCount = (orderData.orderSkus || []).reduce( (sum, sku: any) => sum + (sku?.quantity || 0), 0 ); 
-        setCartItemCount(itemCount);
         setBlogs(res?.relatedContent?.blogs);
         setProducts(res?.relatedContent?.products);
       }
-    } catch (error) { clo(error); }
+    } catch (error) { clo(error); } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchSingleEntry(); }, [order_id]);
 
-  if( !data ){ return null; }
+  if (loading) { return <div>Loading order details...</div>; }
+  if (!data) { return null; }
+
+  const isOwner = currentUserId && data?.user_id === currentUserId;
+
+  const formatAddress = (address: AddressProps | string) => {
+    if (isOwner) {
+      return fullAddress(address as AddressProps);
+    } else {
+      return getMaskedAddress(address as AddressProps);
+    }
+  };
+
+  console.log("isOwner", isOwner)
 
   return (
     <>
-      <Container sx={{ py: 5}}>
-        <Grid container spacing={4}>
-          <Grid size={8}>          
-            {data?.shipping_address_id && "first_name" in data.shipping_address_id && (
-              <Typography variant="body2"><span style={{ fontWeight: 700}}>Shipping Address</span>{fullAddress(data.shipping_address_id)}</Typography>
-            )}
-            {data?.billing_address_id && "first_name" in data.billing_address_id && (
-              <Typography variant="body2" sx={{ my:3 }}><span style={{ fontWeight: 700}}>Billing Address</span> - {fullAddress(data.billing_address_id)}</Typography>
-            )}
-            {data?.user_remarks && (
-              <Typography variant="body2" sx={{ my:3 }}><span style={{ fontWeight: 700}}>Order Note</span> - {data?.user_remarks}</Typography>
-            )}
-            <Typography variant="body2" sx={{ my:3 }}><strong>Payment Method:</strong> {data.paymode}</Typography>
+      <div className="container py-5 md:py-12">
+        <div className="row">
+          <div className="col-span-12 md:col-span-8">
+            <h1 className="text-lg font-bold mb-3 text-foreground">My Order</h1>            
+            {data?.shipping_address_id && ( <p className="mb-3"><span style={{ fontWeight: 700 }}>Shipping Address: </span>{formatAddress(data.shipping_address_id)}</p> )}
+            {data?.billing_address_id && ( <p className="mb-3"><span style={{ fontWeight: 700 }}>Billing Address: </span>{formatAddress(data.billing_address_id)}</p> )}
+            {isOwner && data?.user_remarks && ( <p className="mb-3"><span style={{ fontWeight: 700 }}>Order Note: </span>{data?.user_remarks}</p> )}
+            <p className="mb-3"><strong>Payment Method:</strong> {data.paymode}</p>
+            
+            {isOwner && ( <Button onClick={() => { if (data) generateInvoice(data); }}>Download Invoice</Button> )}
+          </div>
 
-            <Button variant="contained" sx={{ mt: 2 }} onClick={() => { if (data) generateInvoice(data); }}>Download Invoice</Button>
-          </Grid>
-
-          <Grid size={4}>
-            <Divider orientation="vertical" flexItem />
-            <Box sx={{ borderRadius: 2, p: 2, position: "sticky", top: 20 }}>
-              <Box sx={{ flex: 1, overflowY: 'auto', width: '100%' }}>
-                  {data && (
-                    <List>
-                        {data?.orderSkus?.map((item) => {
-                          return (
-                            <ListItem key={item._id?.toString()} disablePadding sx={{ mb: 2 }}>
-                              <Card sx={{ width: "100%", p: 1, alignItems: "center" }} elevation={0}>
-                                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                                  <ImageWithFallback img={(item.product_id as ProductProps & { medias?: ImageObject[] })?.medias?.[0]} width={80} height={80}/>
-                                  <Box sx={{ flexGrow: 1, ml: 2 }}>
-                                    <Typography fontWeight="bold">{(item.sku_id as SkuProps)?.name}</Typography>
-                                  </Box>
-                                  <Typography fontWeight="bold">{item.quantity} @ ₹{(item.sku_id as SkuProps)?.price} = ₹{item.quantity * Number((item.sku_id as SkuProps)?.price ?? 0)}</Typography>
-                                </Box>
-                              </Card>
-                            </ListItem>
-                          );
-                        })}
-                    </List>
-                  )}
-              </Box>
-
-              <CartCharges itemCount={cartItemCount} total={data?.total?.$numberDecimal || 0} payableAmount={data?.paid?.$numberDecimal || 0} cartCharges={data?.orderCharges} cart_status={false}/>
-            </Box>
-          </Grid>
-        </Grid>
-        
-        <SuggestProducts products={products} />
-        <SuggestBlogs blogs={blogs}/>
-      </Container>
-
+          <OrderList order={data}/>
+        </div>
+      </div>
+      <SuggestProducts data={products} />
+      <SuggestBlogs data={blogs} />
     </>
   );
-}
+};
 
 export default UserSingleOrder;
