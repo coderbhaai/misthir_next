@@ -64,6 +64,10 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
     const [targetOptions, setTargetOptions] = useState<{ label: string; value: string }[]>([]);
     const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
 
+    const [productsData, setProductsData] = useState<any[]>([]);
+const [productBrandsData, setProductBrandsData] = useState<any[]>([]);
+const [productTypesData, setProductTypesData] = useState<any[]>([]);
+
     useEffect(() => {
         const fetchTargetOptions = async () => {
             if (!applicableOn.length) { 
@@ -78,11 +82,13 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
                     seller_id: formData.seller_id
                 });
 
-                const formatted = (res?.data || []).map((item: any) => ({ 
-                    label: item.name, 
-                    value: item._id || item.id 
-                }));
-                setTargetOptions(formatted);
+                console.log("RES", res)
+
+                // const formatted = (res?.data || []).map((item: any) => ({ 
+                //     label: item.name, 
+                //     value: item._id || item.id 
+                // }));
+                // setTargetOptions(formatted);
             } catch (error) { clo(error); }
         };
 
@@ -194,8 +200,6 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
                 <Textarea label="Description" value={formData.description} name="description" onChange={handleChange} rows={2}/>
                 <Button type="submit" color="primary" disabled={isSubmitting}>{title}</Button>
             </form>
-
-            {/* Place this underneath your grid layout, before the description or submit button */}
 
 {applicableOn.length > 0 && targetOptions.length > 0 && (
     <div className="mt-6 border rounded-xl p-4 bg-gray-50/50 space-y-4">

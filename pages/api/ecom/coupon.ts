@@ -139,10 +139,7 @@ export async function get_coupon_target_options(req: ExtendedRequest, res: NextA
     }
 
     if (modules.includes("Product Brand")) {
-      productBrandsPromise = ProductBrand.find({ ...sellerFilter, ...searchFilter })
-        .select("_id name")
-        .limit(50)
-        .lean();
+      productBrandsPromise = ProductBrand.find({ ...sellerFilter, ...searchFilter }).select("_id name").limit(50).lean();
     }
 
     if (modules.includes("Product Type")) {
@@ -153,17 +150,11 @@ export async function get_coupon_target_options(req: ExtendedRequest, res: NextA
 
         if (productIds.length === 0) return [];
 
-        const productMetas = await ProductProductmeta.find({ product_id: { $in: productIds } })
-          .select("productmeta_id")
-          .lean();
+        const productMetas = await ProductProductmeta.find({ product_id: { $in: productIds } }).select("productmeta_id").lean();
         const metaIds = [...new Set(productMetas.map((pm) => pm.productmeta_id))];
-
         if (metaIds.length === 0) return [];
 
-        return await Productmeta.find({ _id: { $in: metaIds }, module: "Type", ...searchFilter })
-          .select("_id name")
-          .limit(50)
-          .lean();
+        return await Productmeta.find({ _id: { $in: metaIds }, module: "Type", ...searchFilter }).select("_id name").limit(50).lean();
       })();
     }
 
