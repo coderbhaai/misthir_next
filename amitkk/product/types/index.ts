@@ -44,7 +44,7 @@ export interface ProductTypeProps {
   meta_id: string | MetaProps;
   createdAt: Date;
   updatedAt: Date;
-}3
+}
 
 export interface ProductBrandProps {
     _id: string;

@@ -92,6 +92,8 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
       try {
           const res = await apiRequest("GET", `product/product?function=get_single_product&id=${dataId}`);
 
+          console.log("RES.data", res.data)
+
           if (res?.data) {
               const product = res.data;
 
@@ -104,7 +106,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
                   status: product.status ?? true,
                   displayOrder: product.displayOrder || null,
                   dietary_type: product.dietary_type || "",
-                  seller_id: product.seller_id?._id || product.seller_id || '',
+                  seller_id: product.seller_id?._id || '',
                   tax_id: product.tax_id?._id || product.tax_id || '',
                   short_desc: product.short_desc || "",
                   long_desc: product.long_desc || "",
@@ -116,18 +118,15 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
               });
 
               setShortDesc(product.short_desc || "");
-              setLongDesc(product.long_desc || "");                
-              
-              setSelectedCategory(product?.metas?.filter((m: any) => m.module === "Category").map((m: any) => m._id) || []);
-              setSelectedTag(product?.metas?.filter((m: any) => m.module === "Tag").map((m: any) => m._id) || []);
-              setSelectedProductTypes(product?.metas?.filter((m: any) => m.module === "Type").map((m: any) => m._id) || []);
-              setSelectedBrand(product?.brands?.map((m: any) => m._id) || []);
-              setSelectedStorage(product?.features?.filter((m: any) => m.module === "Storage").map((m: any) => m._id) || []);
-              setSelectedIngridient(product?.ingridients?.map((m: any) => m._id) || []);
+              setLongDesc(product.long_desc || "");
+              setSelectedCategory( product?.productMeta?.filter((m: any) => m.productmeta_id?.module === "Category").map((m: any) => m.productmeta_id?._id || m.productmeta_id).filter(Boolean) || [] );
+              setSelectedTag( product?.productMeta?.filter((m: any) => m.productmeta_id?.module === "Tag").map((m: any) => m.productmeta_id?._id || m.productmeta_id).filter(Boolean) || [] );
+              setSelectedProductTypes( product?.productMeta?.filter((m: any) => m.productmeta_id?.module === "Type").map((m: any) => m.productmeta_id?._id || m.productmeta_id).filter(Boolean) || [] );
+              setSelectedBrand(product?.productBrand?.map((m: any) => m.productBrand_id?._id) || []);
+              setSelectedStorage(product?.productFeature?.filter((m: any) => m?.productFeature_id?.module === "Storage").map((m: any) => m?.productFeature_id?._id) || []);
+              setSelectedIngridient(product?.productIngridient?.map((m: any) => m?.ingridient_id?._id) || []);
               setSelectedMediaIds(product?.medias?.map((m: any) => m._id) || []);
-
-              // Fallback check: check both 'sku' and 'skus' keys from the API response
-              const incomingSkus = product?.sku || product?.skus || [];
+              const incomingSkus = product?.sku || [];
               setSkus(incomingSkus);
           }
       } catch (error) { 
@@ -162,7 +161,6 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
         event.preventDefault();
 
         if( !skus || !skus.length ){ hitToastr('success', 'SKUs are Required'); setOpenSkuModal(true); return; }
-        if( !selectedMediaIds || !selectedMediaIds.length ){ hitToastr('success', 'Images are Required'); mediaPanelRef.current?.open(); return; }
 
         if ( can("Edit Product") ) {
             setShortDescError(!short_desc ? "Short Description is required." : null);
@@ -177,7 +175,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
         try {
             const formDataToSend = new FormData();
             formDataToSend.append("function", "create_update_product");
-            formDataToSend.append("seller_id", seller_id as string);
+            formDataToSend.append("seller_id", (formData.seller_id || seller_id) as string);
             formDataToSend.append("path", "product");
             formDataToSend.append("module", "Product");
             formDataToSend.append("_id", formData._id);

@@ -15,10 +15,10 @@ export  function AdminCoupon(){
 
     const head: { id: string; label: string }[] = [
                     { id: "Seller", label: "Seller" },
-                    { id: "type", label: "Type" },
-                    { id: "name", label: "Name" },
-                    { id: "url", label: "URL" },
-                    { id: "meta", label: "Meta" },
+                    { id: "Details", label: "Details" },
+                    { id: "Validity", label: "Validity" },
+                    { id: "Media", label: "Media" },
+                    { id: "Discount", label: "Discount" },
                     { id: "", label: "" },
                 ];
     

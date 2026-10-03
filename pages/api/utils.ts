@@ -87,7 +87,9 @@ export async function pivotEntry(
     await model.deleteMany({ [parentKey]: parentObjectId });
 
     if (Array.isArray(childIds) && childIds.length > 0) {
-      const entries = childIds?.map((childId) => ({
+      const uniqueChildIds = Array.from(new Set(childIds.map(id => id.toString())));
+
+      const entries = uniqueChildIds.map((childId) => ({
         [parentKey]: parentObjectId,
         [childKey]: new mongoose.Types.ObjectId(childId),
         createdAt: new Date(),

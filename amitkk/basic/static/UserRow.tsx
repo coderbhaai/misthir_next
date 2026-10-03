@@ -6,7 +6,7 @@ type UserRowWithLabelProps = {
 };
 
 export default function UserRow({ row, label }: UserRowWithLabelProps) {
-  if (!row || typeof row === "string") return null; 
+  if (!row || typeof row === "string") return "-"; 
   const subText = [row.email, row.phone].filter(Boolean).join(" || ");
 
   return (

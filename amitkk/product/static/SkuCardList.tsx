@@ -23,6 +23,8 @@ export default function SkuCardList({
       {skus?.map((sku, index) => {
         const flavorNames = extractFeatureValues( sku?.flavors?.length ? sku.flavors : sku?.features, "Flavor", "name" ).join(", ");
         const colorNames = extractFeatureValues( sku?.colors?.length ? sku.colors : sku?.features, "Color", "name" ).join(", ");
+
+        console.log("sku.details", sku.details)
         return (
           <div key={sku._id?.toString() || index} className="p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors my-3">
             <div className="flex justify-between items-start gap-4 mb-3">
@@ -46,7 +48,7 @@ export default function SkuCardList({
                     {sku.item_code && ( <p><strong>Code:</strong> {sku.item_code}</p> )}
                     {sku.unit && ( <p><strong>Unit:</strong> {sku.unit}</p> )}
                     {sku.price_per_unit && ( <p><strong>Price Per Unit:</strong> {sku.price_per_unit}</p> )}
-                    {(sku.length || sku.width || sku.height) && ( <p><strong>Dimensions:</strong> {sku.length || 0}L ×{" "} {sku.width || 0}W × {sku.height || 0}H </p> )}
+                    {(sku?.details?.length || sku?.details?.width || sku?.details?.height) && ( <p><strong>Dimensions:</strong> {sku?.details?.length || 0}L ×{" "} {sku?.details?.width || 0}W × {sku?.details?.height || 0}H </p> )}
                   </div>
                 </div>
 
