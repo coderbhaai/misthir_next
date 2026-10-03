@@ -150,6 +150,9 @@ const MediaPanel = forwardRef<MediaPanelHandle, MediaPanelProps>(
       if (res?.data) {
         hitToastr("success", res.message);
         await initMedia();
+        if (onSelect) {
+          onSelect(selected);
+        }
       }
     } catch (err) { clo(err); }
   };

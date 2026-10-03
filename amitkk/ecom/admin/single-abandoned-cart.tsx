@@ -1,25 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
 import { CartProps } from '@amitkk/ecom/types';
 import PaymentStatic from "@amitkk/ecom/static/PaymentStatic";
-import { SingleProductItemProps, SkuProps } from "@amitkk/product/types";
 import { fullAddress } from "@amitkk/address/utils/addressUtils";
 import CartCharges from "@amitkk/ecom/static/CartCharges";
 import AdminAdditionalDiscountModal from "@amitkk/ecom/admin/admin-additional-discount-modal";
-import dayjs from "dayjs";
 import { apiRequest, clo } from "@amitkk/basic/utils/my-utils/admin-utils";
-import { TextField } from "@amitkk/components/basic/TextField";
 import { Button } from "@amitkk/components/button/button";
 import { Textarea } from "@amitkk/components/basic/textarea";
-import { Label } from "@amitkk/components/basic/label";
-import { Separator } from "@amitkk/components/ui/separator";
-import { Card, CardContent } from "@amitkk/components/ui/card";
-import { Minus, Plus } from "lucide-react";
-import { Checkbox } from "@amitkk/components/basic/checkbox";
 import { AddressProps } from "@amitkk/address/types";
-import OrderList from "../static/OrderList";
 import CouponForm from "../../coupon/static/CouponForm";
 import ContactInfoSection from "../static/ContactInfoSection";
 import SkuItemList from "../static/SkuItemList";
@@ -76,7 +66,7 @@ export const SingleAbandoneCart: React.FC<DataFormProps> = ({ dataId = "" }) => 
       <div className="col-span-12 md:col-span-5">
         <div className="rounded-2xl p-4 sticky top-5 space-y-4">
           <SkuItemList items={cart?.cartSkus ?? []} />
-          <CouponForm coupon_code={cart?.cartCoupon?.code}/>
+          <CouponForm coupon_code={cart?.cartCoupon?.coupon_code} allowed={false}/>
           <CartCharges cart={cart}/>
         </div>
       </div>

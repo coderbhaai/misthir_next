@@ -19,7 +19,7 @@ export const Search = models.Search || model<SearchDoc>("Search", searchSchema);
 
 export interface SearchResultDoc extends Document<Types.ObjectId> {
   search_id: Types.ObjectId;
-  module: "Blog" | "Destination" | "Product" | "Page";
+  module: string;
   module_id: Types.ObjectId;
   frequency: number;
   user_id?: Types.ObjectId | null;
@@ -29,7 +29,7 @@ export interface SearchResultDoc extends Document<Types.ObjectId> {
 
 const searchResultSchema = new Schema<SearchResultDoc>({
     search_id: { type: Schema.Types.ObjectId, ref: "Search", required: true },
-    module: { type: String, enum: ["Blog", "Destination", "Product", "Page"], required: true },
+    module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     frequency: { type: Number, default: 1 },
     user_id: { type: Schema.Types.ObjectId, ref: "User", default: null },

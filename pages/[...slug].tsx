@@ -34,7 +34,7 @@ export default function DynamicPage(props: any) {
     const ModuleComponent = MODULE_COMPONENT_MAP[moduleType];
     if (ModuleComponent) {
       pageContent = <ModuleComponent data={props.data} relatedContent={props.relatedContent} groupedBlocks={props.groupedBlocks} groupedDetails={props.groupedDetails} lang={lang} />;
-    } else if (resolvedModule === "Product" || props?.data?.skus) {
+    } else if (resolvedModule === "Product") {
       pageContent = (
         <SingleProductPage product={props?.data?.product || props?.data} relatedContent={props?.relatedContent} reviews={props?.reviews || []}/>
       );
@@ -84,8 +84,6 @@ export const getServerSideProps: GetServerSideProps = async ({ req, params, res 
       schema: apiRes?.schema || null,
       path: `/${slug}`
     };
-
-    // Extract product-specific fields if moduleType is Product
     const moduleType = apiRes.moduleType || apiRes.module || "Blog";
     let productProps = {};
 

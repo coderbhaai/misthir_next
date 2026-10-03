@@ -9,7 +9,7 @@ export interface CouponProps{
   discount_type: "Amount Based" | "Percent Based" | string;
   discount?: number;
   name: string;
-  code: string;
+  coupon_code: string;
   sales: string | number;
   status: boolean;
   valid_from: string | Date;

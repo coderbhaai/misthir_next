@@ -41,7 +41,7 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
         discount_type: '',
         discount : 0,
         name: '',
-        code: '',
+        coupon_code: '',
         sales: '',
         status: true,
         valid_from: formatDate(today),
@@ -82,10 +82,9 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
                     function: "get_coupon_target_options",
                     module: applicableOn,
                     seller_id: formData.seller_id,
-                    search: searchTerm
+                    search: searchTerm,
+                    selected_ids: selectedTargets
                 });
-
-                console.log("RES.data", res.data)
 
                 const { products = [], productBrands = [], productTypes = [] } = res?.data || {};
                 setProductsData(products);
@@ -112,7 +111,7 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
                     discount_type: res?.data?.entry?.discount_type || '',
                     discount: res?.data?.entry?.discount || 0,
                     name: res?.data?.entry?.name || "",
-                    code: res?.data?.entry?.code || "",
+                    coupon_code: res?.data?.entry?.coupon_code || "",
                     sales: res?.data?.entry?.sales || "",
                     status: res?.data?.entry?.status || true,
                     valid_from: formatDate(res?.data?.entry?.valid_from),
@@ -126,7 +125,8 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
                 });
 
                 if (res?.data?.targets && Array.isArray(res?.data?.targets)) {
-                    const uniqueModules = Array.from(new Set(res.data.targets.map((t: any) => t.module)));
+                    const normalizedModules = res.data.targets.map((t: any) => t.module === "Sku" ? "Product" : t.module);                    
+                    const uniqueModules = Array.from(new Set(normalizedModules));
                     setApplicableOn(uniqueModules as string[]);
                     setSelectedTargets(res.data.targets.map((t: any) => t.module_id));
                 }
@@ -150,7 +150,7 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
             formDataToSend.append("discount_type", formData.discount_type);
             formDataToSend.append("discount", String( formData.discount ));
             formDataToSend.append("name", formData.name);
-            formDataToSend.append("code", formData.code);
+            formDataToSend.append("coupon_code", formData.coupon_code);
             formDataToSend.append("sales", String(formData.sales));
             formDataToSend.append("status", String(formData.status));
             formDataToSend.append("valid_from", formatDate(formData.valid_from) );
@@ -159,21 +159,24 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
             formDataToSend.append("description", String(formData.description));
 
             const formattedTargets = selectedTargets.map((targetId) => {
-                // Determine which category this ID belongs to
-                let moduleType = "Product"; // default or check against your arrays
-                
+                let moduleType = "Product"; 
                 if (productBrandsData.some(b => (b._id || b.id) === targetId)) {
-                    moduleType = "ProductBrand"; // Matches your Mongoose schema enum
-                } else if (productTypesData.some(t => (t._id || t.id) === targetId)) {
-                    moduleType = "ProductBrand"; // or ProductType depending on your enum
-                } else {
-                    moduleType = "Product"; // Products or SKUs
+                    moduleType = "ProductBrand"; 
+                }else if (productTypesData.some(t => (t._id || t.id) === targetId)) {
+                    moduleType = "ProductType";
+                }else {
+                    const isSku = productsData.some(product => 
+                        (product.sku || product.skus || []).some((s: any) => (s._id || s.id) === targetId)
+                    );
+
+                    if (isSku) {
+                        moduleType = "Sku";
+                    } else {
+                        moduleType = "Product";
+                    }
                 }
 
-                return {
-                    module_id: targetId,
-                    module: moduleType
-                };
+                return { module_id: targetId, module: moduleType };
             });
             formDataToSend.append("selected_targets", JSON.stringify(formattedTargets));
 
@@ -188,8 +191,6 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
             hitToastr('success', res?.message);            
             if( dataId ){ return; }
             const recordId = res?.data?._id || res?.data?.id;
-
-            console.log("recordId", recordId)
             // if (hasAnyRole(["Seller", "Seller Staff"])) {
             //     router.replace(`/seller/add-update-coupon/${recordId}`);
             // } else {
@@ -208,12 +209,12 @@ const AddUpdateCouponForm: React.FC<DataFormProps> = ({ dataId = "", seller_id =
                     <OpenSelect name={String(formData.coupon_by)} label="Coupon By" value={formData.coupon_by} onChange={(value) => setFormData((prev) => ({...prev, coupon_by: value}))} options={["Seller", "Admin"].map((mod) => ({ label: mod, value: mod }))}/>
                     <SingleUserDropdown value={String(formData.seller_id)} onChange={(val) => handleChange("seller_id", val)} filters={{ role: ["Seller"] }}/>
                     <TextField type="text" label="Name" name="name" value={formData.name} onChange={handleChange} required/>
-                    <TextField type="text" label="Code" name="code" value={formData.code} onChange={handleChange} required/>
+                    <TextField type="text" label="Code" name="coupon_code" value={formData.coupon_code} onChange={handleChange} required/>
                     <StatusSelect value={formData.status} onChange={(value) => handleChange("status", value)}/>
                     <OpenSelect name={String(formData.usage_type)} label="Usage Type" value={formData.usage_type} onChange={(value) => setFormData((prev) => ({...prev, usage_type: value}))} options={usage_type_options.map((mod) => ({ label: mod, value: mod }))}/>
                     <TextField type="date" label="Valid From" name="valid_from" value={String(formData.valid_from)} onChange={handleChange} required/>
                     <TextField type="date" label="Valid To" name="valid_to" value={String(formData.valid_to)} onChange={handleChange} required/>
-                    <MultiSelectDropdown label="Applicable On" selected={applicableOn} onChange={(selectedIds) => setApplicableOn(selectedIds)} options={[ { _id: "Product", name: "Product" }, { _id: "Product Brand", name: "Product Brand" }, { _id: "Product Type", name: "Product Type" } ]}/>
+                    <MultiSelectDropdown label="Applicable On" selected={applicableOn} onChange={(selectedIds) => setApplicableOn(selectedIds)} options={[ { _id: "Product", name: "Product" }, { _id: "ProductBrand", name: "ProductBrand" }, { _id: "ProductType", name: "ProductType" } ]}/>
                     <TextField type="Number" label="Sales" name="sales" value={formData.sales} onChange={handleChange} required/>
                     <OpenSelect name={String(formData.discount_type)} label="Discount Type" value={formData.discount_type} onChange={(value) => setFormData((prev) => ({...prev, discount_type: value}))} options={["Amount Based", "Percent Based"].map((mod) => ({ label: mod, value: mod }))}/>
                     <TextField type="number" label={`Discount (${formData.discount_type === "Amount Based" ? "₹" : "%"})`} name="discount" value={formData.discount} onChange={handleChange} required/>

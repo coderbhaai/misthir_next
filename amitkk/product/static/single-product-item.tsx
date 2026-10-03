@@ -8,7 +8,7 @@ interface SingleProductItemProps {
 
 export function SingleProductItem({ row }: SingleProductItemProps) {
   const hasMultipleImages = row.mediaHubs && row.mediaHubs.length > 1;
-  const firstImage = row.mediaHubs?.[0]?.media_id?.path || "/default.jpg";
+  const firstImage = row.mediaHubs?.[0]?.media_id?.path || "/images/static/default.jpg";
   const secondImage = hasMultipleImages ? row.mediaHubs?.[1]?.media_id?.path : firstImage;
 
   return (

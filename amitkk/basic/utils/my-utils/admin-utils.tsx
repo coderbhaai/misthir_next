@@ -308,11 +308,7 @@ export const apiRequest = async (
 
     const isSuccess = res.status >= 200 && res.status < 300;
     const message = res.data?.message || (isSuccess ? "Operation successful" : "Something went wrong");
-
-    if (!isSuccess) {
-      hitToastr("error", message);
-      return { error: true, status: res.status, message };
-    }
+    if (!isSuccess) { return { error: true, status: res.status, message }; }
 
     return res.data;
   } catch (error) {

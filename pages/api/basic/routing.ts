@@ -219,6 +219,8 @@ import ErrorLog from 'lib/models/basic/ErrorLog';
       };
       await handler(req, mockRes as NextApiResponse);
 
+      capturedData.module = moduleType;
+
       return res.status(statusCode).send(capturedData);
     } catch (error) {
       await logError(error, {

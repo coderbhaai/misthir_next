@@ -91,6 +91,7 @@ import Coupon from "./coupon/Coupon";
 import CouponTarget from "./coupon/CouponTarget";
 import CartCoupon from "./coupon/CartCoupon";
 import OrderCoupon from "./coupon/OrderCoupon";
+import CouponUsageLog from "./coupon/CouponUsageLog";
 
 import { auditLoggerPlugin } from "lib/server/plugins/auditLogger";
 
@@ -128,7 +129,7 @@ const rawModels: Record<string, any> = {
   GenericBlock, TabBlock, BlockQuote, BlockDetail, 
 
   // Coupon
-  Coupon, CartCoupon, OrderCoupon, CouponTarget, 
+  Coupon, CartCoupon, OrderCoupon, CouponTarget, CouponUsageLog, 
 
 };
 

@@ -11,9 +11,10 @@ import { useState } from "react";
 type CouponFormProps = {
   function?: string;
   coupon_code?: string | null;
+  allowed?: boolean;
 }
 
-export default function CouponForm({ coupon_code }: CouponFormProps) {
+export default function CouponForm({ coupon_code, allowed=true }: CouponFormProps) {
   const { fetchCart } = useEcom();
   
   const initialFormData: CouponFormProps = {
@@ -35,11 +36,11 @@ export default function CouponForm({ coupon_code }: CouponFormProps) {
       try {
         setLoading(true);
 
-        const res = await apiRequest("POST", `ecom/ecom`, formData);
+        const res = await apiRequest("POST", `ecom/coupon`, formData);
   
         if( res ){
           await fetchCart();
-          hitToastr('success', res?.message);
+          hitToastr(res?.status ? "success" : "error", res?.message);
         }
         
         setLoading(false);
@@ -48,8 +49,8 @@ export default function CouponForm({ coupon_code }: CouponFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
-        <TextField label='Coupon' value={formData.coupon_code} name='coupon_code' onChange={handleChange} required/>
-        <Button type='submit' className="btn w-full mt-5">Apply Coupon</Button>
+        <TextField label='Coupon' value={formData.coupon_code} name='coupon_code' onChange={handleChange} required readOnly={!allowed}/>
+        <Button type='submit' className="btn w-full mt-5" disabled={!allowed}>Apply Coupon</Button>
     </form>
   );
 }

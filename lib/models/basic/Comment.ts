@@ -14,7 +14,7 @@ export interface ICommentModelDoc extends Document<Types.ObjectId> {
 }
 
 const commentModelSchema = new Schema<ICommentModelDoc>({
-    module: { type: String, enum: ["Blog", "Product", "Page"], required: true },
+    module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
     name: { type: String, required: true },

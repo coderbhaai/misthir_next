@@ -6,7 +6,7 @@ import SpatieRole from 'lib/models/spatie/SpatieRole';
 import RolePermission from 'lib/models/spatie/RolePermission';
 import UserRole from 'lib/models/spatie/UserRole';
 import UserPermission from 'lib/models/spatie/UserPermission';
-import User, { IUserProps } from 'lib/models/spatie/User';
+import User, { UserDoc } from 'lib/models/spatie/User';
 import { createApiHandler } from '../apiHandler';
 import { APIHandlers } from '../../../lib/server/middleware';
 import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
@@ -558,7 +558,7 @@ export async function canUserAccessDocument(req: NextApiRequest, res: NextApiRes
 
 export async function getUsersIdByEmail(email: string): Promise<string> {
   try{
-    const user = await User.findOne({ email: email }).lean<IUserProps>();  
+    const user = await User.findOne({ email: email }).lean<UserDoc>();  
     return String(user?._id);
   }catch (error) { await logError(error, { function: "getUsersIdByEmail", payload: { email } }); return ""; }
 }

@@ -2,7 +2,7 @@ import { IPermissionDoc} from 'lib/models/spatie/SpatiePermission';
 import { IRoleDoc } from 'lib/models/spatie/SpatieRole';
 import mongoose, { Schema, Types, Document } from 'mongoose';
 
-export interface IUserDoc extends Document<Types.ObjectId> {
+export interface UserDoc extends Document<Types.ObjectId> {
   name?: string;
   email?: string;
   password?: string;
@@ -14,7 +14,7 @@ export interface IUserDoc extends Document<Types.ObjectId> {
   updatedAt: Date;
 }
 
-const userSchema = new Schema<IUserDoc>({
+const userSchema = new Schema<UserDoc>({
     name: { type: String, required: false },
     email: { type: String, required: false },
     phone: { type: String, required: true, unique: true },
@@ -29,4 +29,4 @@ userSchema.virtual("permissionsAttached", { ref: "UserPermission", localField: "
 userSchema.set("toObject", { virtuals: true });
 userSchema.set("toJSON", { virtuals: true });
 
-export default mongoose.models?.User || mongoose.model<IUserDoc>("User", userSchema);
+export default mongoose.models?.User || mongoose.model<UserDoc>("User", userSchema);

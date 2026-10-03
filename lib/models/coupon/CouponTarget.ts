@@ -10,7 +10,7 @@ export interface CouponTargetDoc extends Document<Types.ObjectId> {
 
 const CouponTargetSchema = new Schema<CouponTargetDoc>({
     coupon_id: { type: Schema.Types.ObjectId, ref: "Coupon", required: true, index: true },
-    module: { type: String, enum: ["Product", "ProductBrand", "ProductType"], required: true, index: true },
+    module: { type: String, required: true, index: true },
     module_id: { type: Schema.Types.ObjectId, required: true, index: true },
 }, { timestamps: true });
 CouponTargetSchema.index({ coupon_id: 1, module: 1, module_id: 1 }, { unique: true });

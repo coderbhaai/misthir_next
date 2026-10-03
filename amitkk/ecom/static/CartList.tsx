@@ -24,6 +24,9 @@ export default function CartList() {
                     <ImageWithFallback img={item.product_id?.medias?.[0]} width={80} height={80}/>
                     <div className="flex-grow">
                       <p className="text-sm font-semibold">{item.product_id?.name}</p>
+                      {item.product_id?.seller_id && ( <small>By {item.product_id?.seller_id?.name}</small> 
+                      )}
+
                     </div>
                     <p className="text-sm font-bold">₹{item.sku_id.price}</p>
                   </div>
@@ -44,7 +47,7 @@ export default function CartList() {
         )}
       </div>
 
-      <CouponForm coupon_code={cart?.cartCoupon?.code}/>
+      <CouponForm coupon_code={cart?.cartCoupon?.coupon_code}/>
       <CartCharges cart={cart}/>
     </div>
   );

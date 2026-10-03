@@ -17,6 +17,7 @@ export function AdminAbandonedCart() {
                     { id: "total", label: "Payment" },
                     { id: "sku", label: "Products" },
                     { id: "charges", label: "Charges" },
+                    { id: "Coupon", label: "Coupon" },
                     { id: "", label: "" },
                 ];
 

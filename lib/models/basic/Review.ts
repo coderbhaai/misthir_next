@@ -14,7 +14,7 @@ export interface ReviewDoc extends Document<Types.ObjectId> {
 }
 
 const reviewSchema = new Schema<ReviewDoc>({
-    module: { type: String, required: true, enum: ["Blog", "Destination", "Product", "Page"] },
+    module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     review: { type: String, required: true },

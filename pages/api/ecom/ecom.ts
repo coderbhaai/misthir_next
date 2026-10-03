@@ -6,15 +6,15 @@ import { getCartIdFromRequest, setCookie } from '../cartUtils';
 import Sku from 'lib/models/product/Sku';
 import Product from 'lib/models/product/Product';
 import TaxCollected from 'lib/models/payment/TaxCollected';
-import { handleApplyCoupon, remove_coupon } from './coupon';
+import { handleApplyCoupon } from './coupon';
 import { getEffectiveSkuPrice } from './sales';
 import { initAction } from '../basic/action';
 import { APIHandlers } from 'lib/server/middleware';
 import { getUserIdFromToken } from '../basic/auth';
-import Cart from 'lib/models/ecom/Cart';
+import Cart, { CartDoc } from 'lib/models/ecom/Cart';
 import CartCharges from 'lib/models/ecom/CartCharges';
 import CartCoupon from 'lib/models/coupon/CartCoupon';
-import CartSku, { CartSkuProps } from 'lib/models/ecom/CartSku';
+import CartSku from 'lib/models/ecom/CartSku';
 import Order from 'lib/models/ecom/Order';
 import OrderCharges from 'lib/models/ecom/OrderCharges';
 import OrderCoupon from 'lib/models/coupon/OrderCoupon';
@@ -72,7 +72,12 @@ export async function create_cart(req: NextApiRequest, res: NextApiResponse) {
 export async function update_cart(req: NextApiRequest, cart_id: string): Promise<{ status: boolean; message: string }> {
   try {
     const data = req.body;
-    const sku = await Sku.findOne({ _id: data.sku_id }).populate('product_id').exec();
+    const sku = await Sku.findOne({ _id: data.sku_id })
+      .populate({
+        path: 'product_id',
+        populate: { path: 'seller_id' }
+      })
+      .exec();
     if (!sku) { return { status: false, message: 'SKU not found' }; }
     if (!sku.product_id){ return { status: false, message: 'SKU does not have a linked product' }; }
     if (!cart_id || !mongoose.Types.ObjectId.isValid(cart_id)) { return { status: false, message: 'Invalid cart_id' }; }
@@ -111,12 +116,13 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
       }
     } else {
       if (req.body.action === 'add_to_cart') {
+        const product = sku.product_id as any;
         const newCartSku = new CartSku({
           cart_id,
           sku_id: data.sku_id,
           quantity: data.quantity || 1,
-          product_id: sku.product_id._id,
-          seller_id: (sku.product_id as any).seller_id,
+          product_id: product._id,
+          seller_id: product.seller_id?._id,
         });
         const savedCartSku = await newCartSku.save();
 
@@ -184,7 +190,7 @@ export async function recalculateCart ( cart_id: string){
       }
     }
 
-    let totalVendorDiscount = updatedCart.cartSkus.reduce( (sum: number, cartSku: CartSkuProps) => {
+    let totalVendorDiscount = updatedCart.cartSkus.reduce( (sum: number, cartSku: CartDoc) => {
         let discount = 0;
         return sum + discount;
       },
@@ -221,7 +227,7 @@ export async function get_cart_data(req: NextApiRequest, res: NextApiResponse) {
     if( cartCoupon ){ await handleApplyCoupon(cart_id, cartCoupon.coupon_code); }
 
     const data = await Cart.findById(cart_id).populate([ 
-      { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }, 
+      { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'seller_id' }, { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }, 
       { path: 'cartCharges' }, 
       { path: 'cartCoupon' },
       { path: 'cartConsent' },
@@ -402,8 +408,6 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
     ]);
     if (!cart) { return { status: false, message: "Cart not found" }; }
   
-    console.log("CART", cart)
-  
     const newEntry = new Order({
       user_id: cart.user_id,
       billing_address_id: cart.billing_address_id,
@@ -498,7 +502,6 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
     }
   
     if (cart.cartCoupon && typeof cart.cartCoupon === 'object' && cart.cartCoupon.coupon_id) {
-      console.log("cart.cartCoupon", cart.cartCoupon)
       const coupon = cart.cartCoupon.coupon_id as any;
       
       await new OrderCoupon({
@@ -604,60 +607,68 @@ interface CartConsentProps {
 }
 
 async function handleConsent(order_id: Types.ObjectId | string, cartConsent?: CartConsentProps) {
-  if (!cartConsent) { return; }
+  try{
 
-  const { email, phone, user_id, city_id, state_id, country_id, emailConsent, phoneConsent } = cartConsent;
-  let orderConsentId: Types.ObjectId;
-  let emailDuplicateFlag = false;
-  let phoneDuplicateFlag = false;
+    if (!cartConsent) { return; }
   
-  const [existingByEmail, existingByPhone] = await Promise.all([
-    email ? OrderConsent.findOne({ email }) : null,
-    phone ? OrderConsent.findOne({ phone }) : null,
-  ]);
-
-  if (existingByEmail && existingByPhone) {
-    orderConsentId = existingByEmail._id;
-    emailDuplicateFlag = true;
-    phoneDuplicateFlag = true;
-  } else if (existingByEmail) {
-    orderConsentId = existingByEmail._id;
-    emailDuplicateFlag = true;
-    phoneDuplicateFlag = false;
-  } else if (existingByPhone) {
-    orderConsentId = existingByPhone._id;
-    emailDuplicateFlag = false;
-    phoneDuplicateFlag = true;
-  } else {
-    const newConsent = await new OrderConsent({
-      user_id,
-      email,
-      phone,
-      city_id,
-      state_id,
-      country_id,
-      emailConsent,
-      phoneConsent,
-      email_duplicate: false,
-      phone_duplicate: false,
-    }).save();
-
-    orderConsentId = newConsent._id;
-    await new OrderOrderConsent({ order_id, orderConsent_id: orderConsentId }).save();
-  }
-
-  if (emailDuplicateFlag || phoneDuplicateFlag) {
-    await OrderConsent.updateOne({ _id: orderConsentId }, { 
-        $set: { 
-          email_duplicate: emailDuplicateFlag, 
-          phone_duplicate: phoneDuplicateFlag 
-        }});
-  }
+    const { email, phone, user_id, city_id, state_id, country_id, emailConsent, phoneConsent } = cartConsent;
+    let orderConsentId: Types.ObjectId;
+    let emailDuplicateFlag = false;
+    let phoneDuplicateFlag = false;
+    
+    const [existingByEmail, existingByPhone] = await Promise.all([
+      email ? OrderConsent.findOne({ email }) : null,
+      phone ? OrderConsent.findOne({ phone }) : null,
+    ]);
+  
+    if (existingByEmail && existingByPhone) {
+      orderConsentId = existingByEmail._id;
+      emailDuplicateFlag = true;
+      phoneDuplicateFlag = true;
+    } else if (existingByEmail) {
+      orderConsentId = existingByEmail._id;
+      emailDuplicateFlag = true;
+      phoneDuplicateFlag = false;
+    } else if (existingByPhone) {
+      orderConsentId = existingByPhone._id;
+      emailDuplicateFlag = false;
+      phoneDuplicateFlag = true;
+    } else {
+      const newConsent = await new OrderConsent({
+        user_id,
+        email,
+        phone,
+        city_id,
+        state_id,
+        country_id,
+        emailConsent,
+        phoneConsent,
+        email_duplicate: false,
+        phone_duplicate: false,
+      }).save();
+  
+      orderConsentId = newConsent._id;
+      await new OrderOrderConsent({ order_id, orderConsent_id: orderConsentId }).save();
+    }
+  
+    if (emailDuplicateFlag || phoneDuplicateFlag) {
+      await OrderConsent.updateOne({ _id: orderConsentId }, { 
+          $set: { 
+            email_duplicate: emailDuplicateFlag, 
+            phone_duplicate: phoneDuplicateFlag 
+          }});
+    }
+  } catch (error) { return await logError(error, { function: "handleConsent", payload: { order_id, cartConsent } }); }
 }
 
 export async function get_filtered_abandoned_carts(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const data = await Cart.find().populate([ { path: 'cartCharges' }, { path: 'user_id' }, { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]);
+    const data = await Cart.find().populate([ 
+      { path: 'cartCharges' },
+      { path: 'cartCoupon', populate: { path: 'coupon_id' } },
+      { path: 'user_id' },
+      { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }
+    ]);
 
     return res.status(200).json({ message: 'Cart Fetched', data });
   } catch (error) { return await logError(error, { function: "get_filtered_abandoned_carts", payload: req.body }); }
@@ -669,7 +680,7 @@ export async function get_single_abdandoned_cart(req: NextApiRequest, res: NextA
     if ( !id ) { return res.status(400).json({ message: 'Invalid or missing Id' }); }
 
     const data = await Cart.findById(id).populate([ 
-      { path: 'cartCharges' }, { path: 'cartConsent' }, { path: 'billing_address_id' }, { path: 'shipping_address_id' }, 
+      { path: 'cartCharges' }, { path: 'cartCoupon' }, { path: 'cartConsent' }, { path: 'billing_address_id' }, { path: 'shipping_address_id' }, 
       { path: 'cartSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ] }
     ]).exec();
 
@@ -863,24 +874,6 @@ export async function get_user_orders(req: NextApiRequest, res: NextApiResponse)
   } catch (error) { return await logError(error, { function: "get_user_orders", payload: req.body }); }
 }
 
-export async function apply_coupon(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const cart_id = await getCartIdFromRequest(req, res);
-    if (!cart_id) { return res.status(400).json({ message: "Cart not found", data: null }); }
-
-    const { coupon_code } = req.body;
-    if (!coupon_code) {
-      await remove_coupon(cart_id);
-      return res.status(400).json({ message: "Coupon code is required", data: null });
-    }
-
-    const result = await handleApplyCoupon(cart_id, coupon_code);
-    if (!result.success) { return res.status(400).json({ message: result.message, data: null }); }
-
-    return res.status(200).json({ message: result.message, data: null });
-  } catch (error) { await logError(error, { function: "apply_coupon", payload: req.body }); }
-}
-
 export const functions: APIHandlers = {
   add_to_cart : { middlewares: ["checkPostMethod"] },
   get_cart_data : { middlewares: [] },
@@ -902,7 +895,6 @@ export const functions: APIHandlers = {
   get_single_order : { middlewares: ["checkPostMethod"] },
 
   get_user_orders : { middlewares: [] },
-  apply_coupon : { middlewares: [] },
 }
 
 export const ecomHandlers = {
@@ -925,7 +917,6 @@ export const ecomHandlers = {
   get_single_order,
 
   get_user_orders,
-  apply_coupon
 };
 
 export const config = { api: { bodyParser: false } };

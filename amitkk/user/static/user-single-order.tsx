@@ -34,8 +34,6 @@ export const UserSingleOrder: React.FC<DataFormProps> = ({ order_id }) => {
         function: "get_single_order",
         order_id
       });
-
-      console.log("RES", order_id, res);
       
       if (res?.data) {
         const orderData = res.data as OrderProps;
@@ -60,8 +58,6 @@ export const UserSingleOrder: React.FC<DataFormProps> = ({ order_id }) => {
       return getMaskedAddress(address as AddressProps);
     }
   };
-
-  console.log("isOwner", isOwner)
 
   return (
     <>

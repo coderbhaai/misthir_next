@@ -58,7 +58,7 @@ export default function SingleBlog(props: DynamicPageBlogProps) {
     });
   }
 
-  const imagePath = (blogPayload?.media_id as any)?.path || "/default.jpg";
+  const imagePath = (blogPayload?.media_id as any)?.path || "/images/static/default.jpg";
   const imageAlt = (blogPayload?.media_id as any)?.alt || "Inspiration Image";
 
   return (

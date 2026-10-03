@@ -12,7 +12,7 @@ export default function SimpleDisplayItem({ name, url, image }: SimpleDisplayIte
   return (
     <div className="rounded-md border overflow-hidden p-3 text-center">
       <Link href={`${url}`}>
-        <Image src={image || "/default.jpg"} alt={name} width={80} height={80} style={{ height: "60px", width: "auto", margin: "0 auto" }}/>
+        <Image src={image || "/images/static/default.jpg"} alt={name} width={80} height={80} style={{ height: "60px", width: "auto", margin: "0 auto" }}/>
         <p className="mt-3">{name}</p>
       </Link>
     </div>

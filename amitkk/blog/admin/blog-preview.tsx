@@ -40,7 +40,7 @@ export const PageForm: React.FC<BlogFormProps> = ({ selectedDataURL = '' }) => {
 
     if( !blog ){ return null; }
 
-    const imagePath = (blog?.media_id as any)?.path || "/default.jpg";
+    const imagePath = (blog?.media_id as any)?.path || "/images/static/default.jpg";
     const imageAlt = (blog?.media_id as any)?.alt || "Inspiration Image";
     
     return(

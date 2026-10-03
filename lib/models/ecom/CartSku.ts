@@ -15,7 +15,7 @@ const cartSkuSchema = new Schema<CartSkuDoc>({
     cart_id: { type: Schema.Types.ObjectId, ref: 'Cart', required: true },
     product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     sku_id: { type: Schema.Types.ObjectId, ref: 'Sku', required: true },
-    seller_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    seller_id: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     quantity: { type: Number, required: true },
     flavor_id: { type: Schema.Types.ObjectId, ref: 'ProductFeature' },
   }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

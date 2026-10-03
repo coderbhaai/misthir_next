@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface UserBrowsingHistoryDoc extends Document<Types.ObjectId> {
-  module: "Blog" | "Destination" | "Page" | "Product";
+  module: string;
   module_id: string | Types.ObjectId;
   user_id?: Types.ObjectId;
   frequency?: number;
@@ -10,7 +10,7 @@ export interface UserBrowsingHistoryDoc extends Document<Types.ObjectId> {
 }
 
 const userBrowsingHistorySchema = new Schema<UserBrowsingHistoryDoc>({
-    module: { type: String, enum: ["Blog", "Destination", "Page", "Product"], required: true },
+    module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     frequency: { type: Number, default: 1, required: true, },

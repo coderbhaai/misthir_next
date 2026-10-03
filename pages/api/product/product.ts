@@ -257,12 +257,12 @@ export async function create_update_product(req: ExtendedRequest, res: NextApiRe
     await pivotEntry( ProductIngridient, newEntry._id, ingridients, 'product_id', 'ingridient_id' );
     await pivotEntry( ProductProductBrand, newEntry._id, brands, 'product_id', 'productBrand_id' );
     
-    // if (Array.isArray(skus)) {
-    //   for (const skuData of skus) {
-    //     await upsertSku({ ...skuData, product_id: newEntry._id });
-    //   }
-    // }
-    // await generateSitemap();
+    if (Array.isArray(skus)) {
+      for (const skuData of skus) {
+        await upsertSku({ ...skuData, product_id: newEntry._id });
+      }
+    }
+    await generateSitemap();
     
     return res.status(201).json({ message: 'Entry created successfully', data: newEntry });
   } catch (error) { await logError(error, { function: "create_update_product", payload: req.body }); }

@@ -3,7 +3,7 @@ import { AuthorProps } from "../types/shared";
 export default function AuthorCard({ row }: { row?: Partial<AuthorProps> | string; }) {
   if ( !row || typeof row === "string" ) return null;
 
-  const imagePath = (row?.media_id as any)?.path || "/default.jpg";
+  const imagePath = (row?.media_id as any)?.path || "/images/static/default.jpg";
   const imageAlt = (row?.media_id as any)?.alt || "Inspiration Image";
   return(
     <div className="flex">

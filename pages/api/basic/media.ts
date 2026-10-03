@@ -4,10 +4,11 @@ import sharp from 'sharp';
 import Media from 'lib/models/basic/Media';
 import { v4 as uuidv4 } from 'uuid';
 import { type File } from 'formidable';
-import mongoose, { isValidObjectId, Types } from 'mongoose';
-import { logError, sanitizeText } from '../utils';
+import mongoose, { isValidObjectId, Model, Types } from 'mongoose';
+import {logError, safeParse, sanitizeText } from '../utils';
 import { NextApiRequest, NextApiResponse } from 'next';
-import MediaHub, { MediaHubProps } from 'lib/models/basic/MediaHub';
+// import { uploadMediaToS3 } from 'services/uploadMediaToS3';
+import MediaHub, { MediaHubDoc } from 'lib/models/basic/MediaHub';
 import { createApiHandler } from '../apiHandler';
 import { APIHandlers } from '../../../lib/server/middleware';
 import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
@@ -34,12 +35,11 @@ export const getPaths = (type: string) => {
     author: { folder: 'author', small: [100, 100], thumbnail: [200, 150] },
     banner: { folder: 'banner', small: [1920, 500], thumbnail: [1920, 500] },
     blocks: { folder: 'blocks', small: [], thumbnail: [] },
-    service: { folder: 'service', small: [], thumbnail: [] },
-    technology: { folder: 'technology', small: [], thumbnail: [] },
-    website: { folder: 'portfolio/website', small: [], thumbnail: [] },
-    graphics: { folder: 'portfolio/graphics', small: [], thumbnail: [] },
-    logo: { folder: 'portfolio/logo', small: [], thumbnail: [] },
-    catalogue: { folder: 'portfolio/catalogue', small: [], thumbnail: [] },
+    product: { folder: 'product', small: [], thumbnail: [] },
+    product_brand: { folder: 'product/brand', small: [], thumbnail: [] },
+    product_meta: { folder: 'product/meta', small: [], thumbnail: [] },
+    product_type: { folder: 'product/type', small: [], thumbnail: [] },
+    review: { folder: 'review', small: [], thumbnail: [] },
     uploads: { folder: 'uploads', small: [], thumbnail: [] },
   };
   return paths[type as keyof typeof paths] ?? paths.uploads;
@@ -147,7 +147,6 @@ export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null
 
     let entry;
     const storagePath = `/storage/${folder}/${filename}`;  
-    const resolvedName = name ? name : "AMITKKAE";
 
     if (file && media_id && isValidObjectId(media_id)) {
       entry = await Media.findByIdAndUpdate(
@@ -156,7 +155,7 @@ export const uploadMediaToLocal = async ({ file, name, pathType, media_id = null
         { new: true }
       );
     } else {
-      entry = await Media.create({ media: filename, alt: resolvedName, path: storagePath, user_id : user_id });
+      entry = await Media.create({ media: filename, alt: name, path: storagePath, user_id : user_id });
     }
 
     return entry._id.toString(); 
@@ -186,14 +185,13 @@ export async function get_filtered_media(req: NextApiRequest, res: NextApiRespon
 
 export async function get_all_media(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { seller_id, limit } = req.query;
+    const { seller_id, mediaLimit } = req.body;
     const filter: any = {};
     if (seller_id && seller_id !== "null" && mongoose.isValidObjectId(seller_id)) {
       filter.user_id = new mongoose.Types.ObjectId(seller_id as string);
     }
-    const parsedLimit = typeof limit === "string" && !isNaN(Number(limit)) ? Math.min(Number(limit), 200) : 50;
 
-    const data = await Media.find(filter).populate('user_id').limit(parsedLimit).exec();
+    const data = await Media.find(filter).populate('user_id').sort({ createdAt: -1 }).limit(mediaLimit).exec();
     return res.status(200).json({ message: 'Fetched all Media', data })
 
   } catch (error) { await logError(error, { function: "get_all_media", payload: req.body }); }
@@ -240,6 +238,8 @@ export async function create_update_media(req: ExtendedRequest, res: NextApiResp
 
 export async function create_update_media_library(req: ExtendedRequest, res: NextApiResponse) { 
   try {
+    if (req.method !== "POST") { return res.status(405).json({ message: "Method Not Allowed" }); }
+
     const data = req.body;
     const files = Array.isArray(req.files?.["images[]"]) ? req.files?.["images[]"] : req.files?.image ? [req.files.image] : [];
     if (!files.length) { return res.status(400).json({ message: "No files uploaded" }); }
@@ -261,7 +261,7 @@ export async function get_selected_media(req: ExtendedRequest, res: NextApiRespo
     let { module, module_id } = req.body;
     if( !module || !module_id ){ return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); }
 
-    const hubData = await MediaHub.find({ module, module_id, status: true }).populate({ path: "media_id", model: "Media" }).sort({ displayOrder: 1, createdAt: -1 }).lean<MediaHubProps[]>().exec();
+    const hubData = await MediaHub.find({ module, module_id, status: true }).populate({ path: "media_id", model: "Media" }).sort({ displayOrder: 1, createdAt: -1 }).lean<MediaHubDoc[]>().exec();
     const media = hubData.map((item: { media_id?: any }) => item.media_id).filter(Boolean);
     return res.status(200).json({ message: "Media fetched successfully", data: media });    
   } catch (error) { await logError(error, { function: "get_selected_media", payload: req.body }); return res.status(500).json({ message: "Server error", error });}
@@ -274,16 +274,18 @@ interface SyncMediaHubOptions {
 }
 
 export async function syncMediaHub({ module, module_id, mediaArray }: SyncMediaHubOptions) {
-  if (!Array.isArray(mediaArray)) { throw new Error("mediaArray must be an array"); }
-
-  for (const [index, i] of mediaArray.entries()) {
-    await MediaHub.findOneAndUpdate({ module, module_id, media_id: i },
-      { $setOnInsert: { primary: index === 0, status: true, displayOrder: index, }, },
-      { upsert: true, new: true }
-    );
-  }
-
-  await MediaHub.deleteMany({ module, module_id, media_id: { $nin: mediaArray } });
+  try{
+    if (!Array.isArray(mediaArray)) { throw new Error("mediaArray must be an array"); }
+  
+    for (const [index, i] of mediaArray.entries()) {
+      await MediaHub.findOneAndUpdate({ module, module_id, media_id: i },
+        { $setOnInsert: { primary: index === 0, status: true, displayOrder: index, }, },
+        { upsert: true, new: true }
+      );
+    }
+  
+    await MediaHub.deleteMany({ module, module_id, media_id: { $nin: mediaArray } });
+  }catch (error) { await logError(error, { function: "syncMediaHub", payload: { module, module_id, mediaArray } }); }
 }
 
 export async function uploadFileLocal( file: FormidableFile, folder: string, oldFilePath?: string ) {
@@ -359,6 +361,144 @@ export async function downloadFile(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
+export async function attach_media(req: NextApiRequest, res: NextApiResponse) {
+  try {
+      const data = req.body;
+      if( !data.module || !data.module_id ){ return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); }
+
+      const mediaArray: string[] = safeParse(data.mediaArray || [] );
+      await syncMediaHub({ module: data.module, module_id: data.module_id, mediaArray });
+
+      return res.status(200).json({ message: "Media Updated", data: true });
+    } catch (error) { await logError(error, { function: "attach_media", payload: req.body }); }
+}
+
+export async function detach_media(req: NextApiRequest, res: NextApiResponse) {
+  try {
+      const data = req.body;
+      if( !data.module || !data.module_id ){ return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); }
+
+      const mediaArray: string[] = safeParse(data.mediaArray || [] );
+      await syncMediaHub({ module: data.module, module_id: data.module_id, mediaArray });
+
+      return res.status(200).json({ message: "Media Updated", data: true });
+    } catch (error) { await logError(error, { function: "attach_media", payload: req.body }); }
+}
+
+export async function attach_media_to_module(req: NextApiRequest, res: NextApiResponse) {
+  console.log("➡️ [DEBUG] Incoming request body:", JSON.stringify(req.body, null, 2));
+
+  try {
+    const { module, module_id } = req.body;
+    
+    // Check 1: Inspect raw media_ids type and value
+    console.log("🔍 [DEBUG] raw req.body.media_ids:", req.body.media_ids, typeof req.body.media_ids);
+
+    const rawMediaIds = typeof req.body.media_ids === "string" 
+      ? safeParse(req.body.media_ids) 
+      : req.body.media_ids;
+    console.log("🔍 [DEBUG] parsed rawMediaIds:", rawMediaIds, "Is Array?", Array.isArray(rawMediaIds));
+
+    if (!module || !module_id || !Array.isArray(rawMediaIds)) { 
+      console.warn("⚠️ [DEBUG] Validation failed: Missing module, module_id, or media_ids is not an array");
+      return res.status(400).json({ message: "module, module_id and media_ids[] are required" }); 
+    }
+
+    const objectModuleId = typeof module_id === "string" ? new Types.ObjectId(module_id) : module_id;
+    
+    // Convert media IDs to ObjectIds and log them
+    const mediaIds = rawMediaIds.map((id: string) => {
+      const converted = typeof id === "string" ? new Types.ObjectId(id) : id;
+      return converted;
+    });
+    console.log("🔍 [DEBUG] Converted mediaIds ObjectIds:", mediaIds);
+
+    // Check 2: DeleteMany execution
+    const deleteResult = await MediaHub.deleteMany({
+      module,
+      module_id: objectModuleId,
+      media_id: { $nin: mediaIds },
+    });
+    console.log("🗑️ [DEBUG] deleteMany result count deleted:", deleteResult.deletedCount);
+
+    // Check 3: Upsert execution
+    const upsertResults = await Promise.all(
+      mediaIds.map((mediaId, index) => {
+        console.log(`🔄 [DEBUG] Upserting media_id: ${mediaId} at index ${index}`);
+        return MediaHub.findOneAndUpdate(
+          {
+            module,
+            module_id: objectModuleId,
+            media_id: mediaId,
+          },
+          {
+            $set: {
+              status: true,
+              primary: index === 0,
+              displayOrder: index + 1,
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+            },
+          },
+          { upsert: true, new: true, runValidators: true } // Added runValidators to catch Schema issues early
+        );
+      })
+    );
+
+    console.log("✅ [DEBUG] Successfully upserted media docs:", upsertResults.length);
+    return res.status(200).json({ message: 'Media Attached to Module', data: true });
+
+  } catch (error) { 
+    console.error("❌ [DEBUG] Error caught in attach_media_to_module:", error);
+    await logError(error, { function: "attach_media_to_module", payload: req.body }); 
+    return res.status(500).json({ 
+      message: "Internal Server Error", 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+  }
+}
+
+export async function detach_media_to_module(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { module, module_id } = req.body;
+    if (!module || !module_id ) { return res.status(400).json({ message: "module, module_id are required" }); }
+
+    const objectModuleId = typeof module_id === "string" ? new Types.ObjectId(module_id) : module_id;
+    await MediaHub.deleteMany({ module, module_id: objectModuleId });
+
+    return res.status(200).json({ message: 'Media Detached to Module', data: true })
+  } catch (error) { await logError(error, { function: "get_filtered_video", payload: req.body }); }
+}
+
+export async function detach_single_media_to_module(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { module, module_id, media_id } = req.body;
+    if (!module || !module_id ) { return res.status(400).json({ message: "module, module_id and mdeia_id are required" }); }
+
+    const objectModuleId = typeof module_id === "string" ? new Types.ObjectId(module_id) : module_id;
+    await MediaHub.deleteMany({ module, module_id: objectModuleId, media_id });
+
+    return res.status(200).json({ message: 'Media Detached to Module', data: true })
+  } catch (error) { await logError(error, { function: "get_filtered_video", payload: req.body }); }
+}
+
+export const deleteLocalFile = async (filePath: string) => {
+  try {
+    if (!filePath) return;
+
+    const absolutePath = path.isAbsolute(filePath)? path.join(process.cwd(), filePath) : path.join(process.cwd(), filePath);
+
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+    }
+
+  } catch (error) {
+    console.error("❌ File delete failed:", error);
+  }
+};
+
 export const functions: APIHandlers = {
   get_all_media : { middlewares: [ "checkUserId" ] },
   get_filtered_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
@@ -366,7 +506,13 @@ export const functions: APIHandlers = {
   create_update_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
   create_update_media_library : { middlewares: [ "checkUserId", "checkPostMethod" ] },
   get_selected_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  attach_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  detach_media : { middlewares: [ "checkUserId", "checkPostMethod" ] },
   downloadFile : { middlewares: [ "checkPostMethod" ] },
+
+  attach_media_to_module : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  detach_media_to_module : { middlewares: [ "checkUserId", "checkPostMethod" ] },
+  detach_single_media_to_module : { middlewares: [ "checkUserId", "checkPostMethod" ] },
 }
 
 export const mediaHandlers = {
@@ -376,7 +522,13 @@ export const mediaHandlers = {
   create_update_media,
   create_update_media_library,
   get_selected_media,
+  attach_media,
+  detach_media,
   downloadFile,
+
+  attach_media_to_module,
+  detach_media_to_module,
+  detach_single_media_to_module,
 };
 
 export const config = { api: { bodyParser: false } };

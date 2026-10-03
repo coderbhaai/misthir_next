@@ -23,8 +23,6 @@ export default function SkuCardList({
       {skus?.map((sku, index) => {
         const flavorNames = extractFeatureValues( sku?.flavors?.length ? sku.flavors : sku?.features, "Flavor", "name" ).join(", ");
         const colorNames = extractFeatureValues( sku?.colors?.length ? sku.colors : sku?.features, "Color", "name" ).join(", ");
-
-        console.log("sku.details", sku.details)
         return (
           <div key={sku._id?.toString() || index} className="p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors my-3">
             <div className="flex justify-between items-start gap-4 mb-3">

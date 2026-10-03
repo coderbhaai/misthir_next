@@ -15,7 +15,7 @@ export default function OurClients({ data }: any) {
       
       <div className="row">
         {filteredData?.map?.((row) => {
-          const imagePath = typeof row.media_id === "string" ? "/default.jpg" : (row.media_id as any)?.path || "/default.jpg";
+          const imagePath = typeof row.media_id === "string" ? "/images/static/default.jpg" : (row.media_id as any)?.path || "/images/static/default.jpg";
           const imageAlt = typeof row.media_id === "string" ? row.name || "Inspiration Image" : (row.media_id as any)?.alt || "Inspiration Image";
 
           return (

@@ -16,6 +16,9 @@ import ProductBrand from 'lib/models/product/ProductBrand';
 import ProductProductmeta from 'lib/models/product/ProductProductmeta';
 import Productmeta from 'lib/models/product/Productmeta';
 import CouponTarget from 'lib/models/coupon/CouponTarget';
+import { getCartIdFromRequest } from '../cartUtils';
+import CouponUser from 'lib/models/coupon/CouponUser';
+import CouponUsageLog from 'lib/models/coupon/CouponUsageLog';
 
 export async function get_filtered_coupon(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -49,7 +52,7 @@ export async function get_single_coupon(req: NextApiRequest, res: NextApiRespons
 export async function create_update_coupon(req: ExtendedRequest, res: NextApiResponse) {
   try {
     const data = req.body;  
-    if ( !data?.usage_type || !data?.discount_type  || !data?.name || !data?.code || !data?.sales || !data?.status || !data?.valid_from || !data?.valid_to ) { 
+    if ( !data?.usage_type || !data?.discount_type  || !data?.name || !data?.coupon_code || !data?.sales || !data?.status || !data?.valid_from || !data?.valid_to ) { 
       return res.status(400).json({ message: 'Required fields missing' }); 
     }
     
@@ -60,7 +63,7 @@ export async function create_update_coupon(req: ExtendedRequest, res: NextApiRes
     const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
     if (file) { media_id = await uploadMedia({ file, name: data.name, pathType: "Coupon", media_id: data.media_id ?? null, user_id: null }); }    
     
-    let code = data.code.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    let coupon_code = data.coupon_code.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     
     let coupon: any;
 
@@ -72,7 +75,7 @@ export async function create_update_coupon(req: ExtendedRequest, res: NextApiRes
       discount_type: data.discount_type,
       discount: data.discount,
       name: data.name,
-      code,
+      coupon_code,
       sales: data.sales,
       status: data.status,
       valid_from: data.valid_from,
@@ -121,11 +124,17 @@ export async function create_update_coupon(req: ExtendedRequest, res: NextApiRes
 
 export async function get_coupon_target_options(req: ExtendedRequest, res: NextApiResponse) {
   try {
-    const { module, seller_id, search } = req.body || req.query;
+    const { module, seller_id, search, selected_ids } = req.body || req.query;
 
     const modules: string[] = Array.isArray(module) ? module : [module].filter(Boolean);
+    const selectedIdsArray: string[] = Array.isArray(selected_ids) 
+      ? selected_ids 
+      : (selected_ids ? [selected_ids] : []);
+
+    const selectedObjectIds = selectedIdsArray
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
     
-    // Only apply search regex if search string is non-empty
     const searchFilter = search && search.trim() !== "" ? { name: { $regex: search, $options: "i" } } : {};
     const sellerFilter = seller_id ? { seller_id: new Types.ObjectId(seller_id) } : {};
 
@@ -134,17 +143,54 @@ export async function get_coupon_target_options(req: ExtendedRequest, res: NextA
     let productTypesPromise: Promise<any[]> = Promise.resolve([]);
 
     if (modules.includes("Product")) {
-      productsPromise = Product.find({ ...sellerFilter, ...searchFilter })
-        .populate([{ path: "skus" }])
-        .limit(50)
-        .lean();
+      productsPromise = (async () => {
+        // 1. Fetch matching search/seller filter
+        const searchResults = await Product.find({ ...sellerFilter, ...searchFilter })
+          .populate([{ path: "skus" }])
+          .limit(50)
+          .lean();
+
+        // 2. Fetch explicitly selected products if any are missing from search results
+        const searchResultIds = new Set(searchResults.map((p: any) => p._id.toString()));
+        const missingSelectedIds = selectedObjectIds.filter((id) => !searchResultIds.has(id.toString()));
+
+        let forcedProducts: any[] = [];
+        if (missingSelectedIds.length > 0) {
+          forcedProducts = await Product.find({ _id: { $in: missingSelectedIds } })
+            .populate([{ path: "skus" }])
+            .lean();
+        }
+
+        // Combine and ensure uniqueness by ID
+        const combined = [...forcedProducts, ...searchResults];
+        const uniqueMap = new Map();
+        combined.forEach((item) => uniqueMap.set(item._id.toString(), item));
+        return Array.from(uniqueMap.values());
+      })();
     }
 
     if (modules.includes("Product Brand")) {
-      productBrandsPromise = ProductBrand.find({ ...searchFilter }) // Add sellerFilter here too if ProductBrand has a seller_id field
-        .select("_id name")
-        .limit(50)
-        .lean();
+      productBrandsPromise = (async () => {
+        const searchResults = await ProductBrand.find({ ...searchFilter })
+          .select("_id name")
+          .limit(50)
+          .lean();
+
+        const searchResultIds = new Set(searchResults.map((b: any) => b._id.toString()));
+        const missingSelectedIds = selectedObjectIds.filter((id) => !searchResultIds.has(id.toString()));
+
+        let forcedBrands: any[] = [];
+        if (missingSelectedIds.length > 0) {
+          forcedBrands = await ProductBrand.find({ _id: { $in: missingSelectedIds } })
+            .select("_id name")
+            .lean();
+        }
+
+        const combined = [...forcedBrands, ...searchResults];
+        const uniqueMap = new Map();
+        combined.forEach((item) => uniqueMap.set(item._id.toString(), item));
+        return Array.from(uniqueMap.values());
+      })();
     }
 
     if (modules.includes("Product Type")) {
@@ -152,20 +198,34 @@ export async function get_coupon_target_options(req: ExtendedRequest, res: NextA
         const sellerProducts = await Product.find(sellerFilter).select("_id").lean();
         const productIds = sellerProducts.map((p) => p._id);
 
-        if (productIds.length === 0) return [];
-
-        const productMetas = await ProductProductmeta.find({ product_id: { $in: productIds } })
-          .select("productmeta_id")
-          .lean();
+        const productMetas = productIds.length > 0 
+          ? await ProductProductmeta.find({ product_id: { $in: productIds } }).select("productmeta_id").lean()
+          : [];
         
         const metaIds = [...new Set(productMetas.map((pm) => pm.productmeta_id))];
-        if (metaIds.length === 0) return [];
 
-        return await Productmeta.find({ 
+        const searchResults = metaIds.length > 0 ? await Productmeta.find({ 
           _id: { $in: metaIds }, 
           module: "Type", 
           ...searchFilter 
-        }).select("_id name").limit(50).lean();
+        }).select("_id name").limit(50).lean() : [];
+
+        // Also fetch forced selected metadata types if not in search
+        const searchResultIds = new Set(searchResults.map((t: any) => t._id.toString()));
+        const missingSelectedIds = selectedObjectIds.filter((id) => !searchResultIds.has(id.toString()));
+
+        let forcedTypes: any[] = [];
+        if (missingSelectedIds.length > 0) {
+          forcedTypes = await Productmeta.find({
+            _id: { $in: missingSelectedIds },
+            module: "Type"
+          }).select("_id name").lean();
+        }
+
+        const combined = [...forcedTypes, ...searchResults];
+        const uniqueMap = new Map();
+        combined.forEach((item) => uniqueMap.set(item._id.toString(), item));
+        return Array.from(uniqueMap.values());
       })();
     }
 
@@ -189,14 +249,26 @@ export async function get_coupon_target_options(req: ExtendedRequest, res: NextA
   }
 }
 
-export async function validateCoupon( code: string ): Promise<{ valid: boolean; message: string; coupon?: any }> {
-  const coupon = await Coupon.findOne({ code: code }).exec();
-  if (!coupon) { return { valid: false, message: "Coupon not found" }; }
-  if (!coupon.status) { return { valid: false, message: "Coupon is inactive" }; }
+export async function validateCoupon(coupon_code: string, user_id?: string) {
+  const coupon = await Coupon.findOne({ coupon_code, status: true }).populate("seller_id").exec();
+  if (!coupon) return { valid: false, message: "Invalid or inactive coupon code" };
 
   const now = new Date();
-  if (coupon.valid_from && now < coupon.valid_from) { return { valid: false, message: "Coupon not yet valid" }; }
-  if (coupon.valid_to && now > coupon.valid_to) { return { valid: false, message: "Coupon has expired" }; }
+  if (now < new Date(coupon.valid_from) || now > new Date(coupon.valid_to)) { return { valid: false, message: "Coupon has expired or is not yet active" }; }
+  
+  if (user_id) {
+    if (coupon.usage_type === "Single Usage") {
+      const priorUsageCount = await CouponUsageLog.countDocuments({ coupon_id: coupon._id, user_id });
+      if (priorUsageCount > 0) { return { valid: false, message: "This single-usage coupon has already been used by you." }; }
+    }
+
+    if (coupon.usage_type === "Specific Users") {
+      const isAllowed = await CouponUser.findOne({ coupon_id: coupon._id, user_id });
+      if (!isAllowed) { return { valid: false, message: "You are not authorized to use this coupon." }; }
+    }
+  } else if (coupon.usage_type === "Single Usage" || coupon.usage_type === "Specific Users") {
+    return { valid: false, message: "Please login to use this coupon." };
+  }
 
   return { valid: true, message: "Coupon is valid", coupon };
 }
@@ -220,58 +292,140 @@ export async function upsertCartCoupon( cart_id: string | Types.ObjectId, data: 
 
 export async function handleApplyCoupon(cart_id: string, coupon_code: string) {
   const cart = await Cart.findById(cart_id).populate([
-    { path: "cartSkus", populate: [{ path: "sku_id" }, { path: "product_id" }] },
     { path: "cartCharges" },
+    { 
+      path: "cartSkus", 
+      populate: [
+        { path: "sku_id" }, 
+        { path: "product_id", 
+          populate: [
+            { path: "seller_id" },
+            { path: "brands", populate: { path: "productBrand_id" } }
+          ] 
+        }
+      ] 
+    },
   ]).exec();
+  if (!cart) return { success: false, message: "Cart not found" };
 
-  const { valid, message, coupon } = await validateCoupon(coupon_code);
-  if (!valid) {
+  const userId = cart.user_id?.toString();
+  const { valid, message, coupon } = await validateCoupon(coupon_code, userId);
+  if (!valid || !coupon) { await remove_coupon(cart_id); return { success: false, message }; }
+
+  const coupon_seller_id = String(coupon?.seller_id?._id);
+  const targets = await CouponTarget.find({ coupon_id: coupon._id }).lean();
+  const hasTargets = targets.length > 0;
+  const targetSkus = new Set(targets.filter(t => t.module === "Sku").map(t => t.module_id.toString()));
+  const targetProducts = new Set(targets.filter(t => t.module === "Product").map(t => t.module_id.toString()));
+  const targetBrands = new Set(targets.filter(t => t.module === "Product Brand").map(t => t.module_id.toString()));
+  const targetTypes = new Set(targets.filter(t => t.module === "Product Type").map(t => t.module_id.toString()));
+
+  let productTypeMap = new Set<string>();
+  if (targetTypes.size > 0) {
+    const allProductIds = cart.cartSkus.map((item: any) => item.product_id?._id || item.product_id);
+    const metas = await ProductProductmeta.find({ 
+      product_id: { $in: allProductIds }, 
+      productmeta_id: { $in: Array.from(targetTypes) } 
+    }).lean();
+    metas.forEach(m => productTypeMap.add(m.product_id.toString()));
+  }
+
+  let totalEligibleAmount = 0;
+
+  for (const item of cart.cartSkus) {
+    const sku = item.sku_id;
+    const quantity = item.quantity ?? 0;
+    if (!sku) continue;
+
+    const product = item.product_id;
+    const productId = product?._id?.toString() || product?.toString();
+    const skuId = sku._id?.toString();
+    const itemSellerId = item.seller_id?.toString();
+
+    if (coupon_seller_id) {
+      if (itemSellerId !== coupon_seller_id) continue;
+    }
+
+    if (hasTargets) {
+      let isEligible = false;
+
+      // Check if product belongs to any of the target brands via the `brands` virtual array
+      const productBrandIds = product?.brands?.map((b: any) => 
+        b.productBrand_id?._id?.toString() || b.productBrand_id?.toString()
+      ) || [];
+      const matchesBrand = productBrandIds.some((bId: string) => targetBrands.has(bId));
+
+      if (skuId && targetSkus.has(skuId)) {
+        isEligible = true;
+      } else if (productId && targetProducts.has(productId)) {
+        isEligible = true;
+      } else if (targetBrands.size > 0 && matchesBrand) {
+        isEligible = true;
+      } else if (productId && productTypeMap.has(productId)) {
+        isEligible = true;
+      }
+
+      if (!isEligible) continue;
+    }
+
+    totalEligibleAmount += (sku.price || 0) * quantity;
+  }
+  
+  if (coupon.sales && totalEligibleAmount < coupon.sales) {
     await remove_coupon(cart_id);
+    const sellerName = coupon?.seller_id?.name;
+
+    const message = coupon?.seller_id
+      ? `To apply this coupon, your eligible purchases from **${sellerName}** must reach at least ₹${coupon.sales}. Current eligible amount is ₹${totalEligibleAmount}.`
+      : `Minimum eligible order amount must be ₹${coupon.sales} to apply this coupon. Current eligible amount is ₹${totalEligibleAmount}.`;
+
     return { success: false, message };
   }
 
-  let total = 0;
-  for (const cartSku of cart.cartSkus) {
-    const sku = cartSku.sku_id;
-    const quantity = cartSku.quantity ?? 0;
-    if (!sku) continue;
-
-    const effectivePrice = await getEffectiveSkuPrice(sku, cartSku.seller_id);
-    if (coupon.coupon_by === "Vendor") {
-      if (cartSku.seller_id?.toString() === coupon.seller_id.toString()) {
-        total += effectivePrice * quantity;
-      }
-    } else {
-      total += effectivePrice * quantity;
-    }
-  }
-
-  if (coupon.sales && total < coupon.sales) {
+  if (totalEligibleAmount <= 0) {
     await remove_coupon(cart_id);
-    return { success: false, message: `Coupon valid only for sales up to ${coupon.sales}` };
+    return { success: false, message: "No eligible items in cart for this coupon." };
   }
 
-  let discount_amount = coupon.usage_type === "Percent Based" ? (total * coupon.discount) / 100 : coupon.discount;
-
-  let admin_coupon_discount = 0;
-  let vendor_coupon_discount = 0;
-
-  if (coupon.coupon_by === "Vendor") {
-    vendor_coupon_discount = discount_amount;
-  } else {
-    admin_coupon_discount = discount_amount;
-  }
+  let discount_amount = coupon.discount_type === "Percent Based" ? (totalEligibleAmount * (coupon.discount || 0)) / 100 : (coupon.discount || 0);
+  let admin_coupon_discount = coupon.coupon_by === "Seller" ? 0 : discount_amount;
+  let vendor_coupon_discount = coupon.coupon_by === "Seller" ? discount_amount : 0;
 
   await upsertCartCoupon(cart_id, {
-    coupon_id: coupon.id,
+    coupon_id: coupon._id,
     admin_coupon_discount,
     vendor_coupon_discount,
     coupon_code,
   });
 
-  await recalculateCart(cart_id);
+  if (userId) {
+    await CouponUsageLog.create({
+      coupon_id: coupon._id,
+      user_id: userId,
+      module: "Cart",
+      module_id: cart._id,
+      discount_applied: discount_amount,
+    });
+  }
 
+  await recalculateCart(cart_id);
   return { success: true, message: "Coupon Applied Successfully" };
+}
+
+export async function apply_coupon(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const cart_id = await getCartIdFromRequest(req, res);
+    if (!cart_id) { return res.status(400).json({ status: false, message: "Cart not found", data: null }); }
+
+    const { coupon_code } = req.body;
+    if (!coupon_code) {
+      await remove_coupon(cart_id);
+      return res.status(400).json({ status: false, message: "Coupon code is required", data: null });
+    }
+
+    const result = await handleApplyCoupon(cart_id, coupon_code);
+    return res.status(200).json({ status: result?.success, message: result?.message, data: null });
+  } catch (error) { await logError(error, { function: "apply_coupon", payload: req.body }); }
 }
 
 export const functions: APIHandlers = {
@@ -279,6 +433,7 @@ export const functions: APIHandlers = {
   get_filtered_coupon : { middlewares: ["checkUserId", "checkPostMethod" ] },
   get_coupon_target_options : { middlewares: ["checkUserId", "checkPostMethod" ] },
   get_single_coupon : { middlewares: [] },
+  apply_coupon : { middlewares: ["checkPostMethod"] },
 }
 
 export const couponHandlers = {
@@ -286,6 +441,7 @@ export const couponHandlers = {
   get_filtered_coupon,
   get_coupon_target_options,
   get_single_coupon,
+  apply_coupon,
 };
 
 export const config = { api: { bodyParser: false } };

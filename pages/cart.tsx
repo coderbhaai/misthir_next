@@ -11,13 +11,10 @@ import router from "next/router";
 import { useEcom } from "contexts/EcomContext";
 import { AddressProps } from "@amitkk/address/types";
 import { Textarea } from "@amitkk/components/basic/textarea";
-import { TextField } from "@amitkk/components/basic/TextField";
 import { SiteSettingProps } from "@amitkk/payment/types";
 import { BooleanRadioGroup } from "@amitkk/components/basic/BooleanRadioGroup";
 import BackOrdersList from "@amitkk/ecom/static/BackOrdersList";
 import CreateUpdateAddressModal from "@amitkk/address/static/create-address-modal";
-import { Label } from "@amitkk/components/basic/label";
-import { Checkbox } from "@amitkk/components/basic/checkbox";
 import ContactInfoSection from "@amitkk/ecom/static/ContactInfoSection";
 
 export default function CheckoutPage() {
@@ -233,8 +230,6 @@ export default function CheckoutPage() {
         });
 
         await fetchCart();
-
-        console.log("RES", res)
         if (res?.data?.status) {
           router.push(`/order/${res?.data?.order_id}`);
         }
@@ -313,8 +308,7 @@ export default function CheckoutPage() {
                     setTimeout(() => {
                       isTogglingRef.current = false;
                     }, 1000);
-                  }}
-                />
+                  }}/>
               </div>
 
               {!same_as_shipping && (

@@ -6,6 +6,7 @@ import CartSkuDetails from './CartSkuDetails';
 import AdminRowActions from '@amitkk/components/admin/AdminRowActions';
 import { ActionCell } from '@amitkk/components/basic/ActionCell';
 import { UserRowProps } from '@amitkk/basic/types/user';
+import CartCouponDetails from '@amitkk/coupon/static/CartCouponDetails';
 
 export interface DataProps extends CartProps{
 }
@@ -26,6 +27,7 @@ export function AdminDataTable({ row }: Props) {
 
         <TableCell><CartSkuDetails skus={row.cartSkus}/></TableCell>
         <TableCell><CartChargesDetails charges={row.cartCharges}/></TableCell>
+        <TableCell><CartCouponDetails coupon={(row as any).cartCoupon}/></TableCell>
         <ActionCell row={row} show_status={false} usePopover/>
       </TableRow>
 

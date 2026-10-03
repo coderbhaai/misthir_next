@@ -33,7 +33,7 @@ export function renderGrid( items: any[], heading?: string ) {
   html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4">`;
 
   for (const item of items) {
-    const img = item?.media_id?.path ?? "/default.jpg";
+    const img = item?.media_id?.path ?? "/images/static/default.jpg";
     const alt = item?.media_id?.alt ?? item?.name ?? "Image";
 
     html += `

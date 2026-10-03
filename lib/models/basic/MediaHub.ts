@@ -12,7 +12,7 @@ export interface MediaHubDoc extends Document<Types.ObjectId> {
 }
 
 const mediaHubSchema = new Schema<MediaHubDoc>({
-    module: { type: String, enum: ["Blog", "Destination", "Product", "Page"], required: true },
+    module: { type: String, required: true },
     module_id: { type: Schema.Types.ObjectId, required: true, refPath: "module" },
     media_id: { type: Schema.Types.ObjectId, ref: 'Media' },
     primary: { type: Boolean, required: true, default: false },

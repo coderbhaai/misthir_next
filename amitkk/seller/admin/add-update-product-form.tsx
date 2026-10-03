@@ -92,8 +92,6 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
       try {
           const res = await apiRequest("GET", `product/product?function=get_single_product&id=${dataId}`);
 
-          console.log("RES.data", res.data)
-
           if (res?.data) {
               const product = res.data;
 
@@ -125,7 +123,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
               setSelectedBrand(product?.productBrand?.map((m: any) => m.productBrand_id?._id) || []);
               setSelectedStorage(product?.productFeature?.filter((m: any) => m?.productFeature_id?.module === "Storage").map((m: any) => m?.productFeature_id?._id) || []);
               setSelectedIngridient(product?.productIngridient?.map((m: any) => m?.ingridient_id?._id) || []);
-              setSelectedMediaIds(product?.medias?.map((m: any) => m._id) || []);
+              setSelectedMediaIds(product?.medias_ids?.map((m: any) => m._id) || []);
               const incomingSkus = product?.sku || [];
               setSkus(incomingSkus);
           }
@@ -161,6 +159,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
         event.preventDefault();
 
         if( !skus || !skus.length ){ hitToastr('success', 'SKUs are Required'); setOpenSkuModal(true); return; }
+        if( !selectedMediaIds || !selectedMediaIds.length ){ hitToastr('success', 'Images are Required'); mediaPanelRef.current?.open(); return; }
 
         if ( can("Edit Product") ) {
             setShortDescError(!short_desc ? "Short Description is required." : null);
@@ -243,7 +242,7 @@ export const SellerProductForm: React.FC<DataFormProps> = ({ dataId = "" }) => {
               </div>
 
               {can("Edit Product") && ( <MetaInput title={formData.title} description={formData.description} onChange={handleChange}/> )}
-              <MediaPanel ref={mediaPanelRef} module="Product" module_id={dataId}/>
+              <MediaPanel ref={mediaPanelRef} module="Product" module_id={dataId} selectedMediaIds={selectedMediaIds} onSelect={(mediaIds) => setSelectedMediaIds(mediaIds)}/>
 
               <div className="mt-3">
                 <Button type="button" onClick={() => { setEditingSkuIndex(null); setOpenSkuModal(true); }}>Add SKU</Button>
