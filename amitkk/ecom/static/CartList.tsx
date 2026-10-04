@@ -13,7 +13,7 @@ export default function CartList() {
     const handleDelete = (id: any) => { sendAction("delete_cart_item", { action: "delete_cart_item", cart_sku_id: id }); }
 
     return (
-    <div className="rounded-2xl p-4 sticky top-5 space-y-4">
+    <div className="rounded-2xl sticky top-5 space-y-4">
       <div className="flex-1 overflow-y-auto w-full space-y-3">
         {cart && (
           <ul className="space-y-3 p-0 m-0 list-none">
@@ -28,7 +28,14 @@ export default function CartList() {
                       )}
 
                     </div>
-                    <p className="text-sm font-bold">₹{item.sku_id.price}</p>
+                    {item.sale && item.sale < item.price ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500 line-through">₹{item.price}</p>
+                        <p className="text-sm font-bold text-red-600">₹{item.sale}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-bold">₹{item.price}</p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between bg-muted/40 p-2 rounded-md">
@@ -37,7 +44,15 @@ export default function CartList() {
                       <span className="text-sm font-medium">{item.quantity}</span>
                       <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleIncrease(item._id)}>+</Button>
                     </div>
-                    <p className="text-sm font-bold">₹{item.quantity * item.sku_id.price}</p>
+                    {item.sale && item.sale < item.price ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500 line-through">₹{item.quantity * item.price}</p>
+                        <p className="text-sm font-bold text-red-600">₹{item.quantity * item.sale}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-bold">₹{item.quantity * item.price}</p>
+                    )}
+  
                   </div>
                   <Iconify icon="Trash" className="h-5 w-5 text-xs absolute top-2 right-2 cursor-pointer" onClick={() => handleDelete(item._id)}/>
                 </Card>

@@ -10,6 +10,7 @@ import { Plus, ShoppingCart, X } from "lucide-react";
 import { Card } from "@amitkk/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@amitkk/components/ui/sheet";
 import { Textarea } from "@amitkk/components/basic/textarea";
+import CustomModal from "@amitkk/basic/static/CustomModal";
 
 export default function CartSidebar() {
   const { sendAction, cart, cartItemCount, relatedProducts } = useEcom();
@@ -35,28 +36,20 @@ export default function CartSidebar() {
 
   return (
     <>
-      <div className="border-b border-border mb-4" />
+      <div className="border-b border-border mb-4"/>
       {cartItemCount > 0 && (
         <div className="fixed bottom-5 left-4 z-[1000]">
-          <Button
-            size="icon"
-            onClick={() => setOpen(true)}
-            className="relative bg-[#5a3825] hover:bg-[#7a5230] text-white w-14 h-14 rounded-full shadow-lg"
-          >
+          <Button size="icon" onClick={() => setOpen(true)} className="relative bg-[#5a3825] hover:bg-[#7a5230] text-white w-14 h-14 rounded-full shadow-lg">
             <ShoppingCart className="h-6 w-6" />
-            <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-xs font-bold min-w-6 h-6 px-1 rounded-full flex items-center justify-center shadow-md">
-              {cartItemCount}
-            </span>
+            <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-xs font-bold min-w-6 h-6 px-1 rounded-full flex items-center justify-center shadow-md">{cartItemCount}</span>
           </Button>
         </div>
       )}
 
-      {/* Main Drawer Layout Wrapper */}
-      <div className="flex relative">
-        {/* Related Products Sidebar (Appears on the left side of the right drawer) */}
+      <div className="flex relative bg-white">
         {open && (
-          <div className="w-[200px] h-screen overflow-y-auto border-r border-border fixed top-0 right-[400px] bg-background z-[1500] shadow-lg">
-            <div className="flex justify-between items-center p-4 bg-[#d6d6d6] text-zinc-900 font-semibold text-sm">
+          <div className="w-[200px] h-screen overflow-y-auto border-r border-border fixed top-0 right-[400px] shadow-lg">
+            <div className="flex justify-between items-center p-4  text-zinc-900 font-semibold text-sm">
               <p>Other Products</p>
             </div>
 
@@ -75,31 +68,17 @@ export default function CartSidebar() {
               ))}
             </div>
           </div>
-        )}
+        )}  
 
-        {/* Shadcn Sheet (Drawer) */}
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="right" className="w-[400px] sm:max-w-[400px] flex flex-col p-0 z-[1500]">
-            <SheetHeader className="flex flex-row justify-between items-center p-4 bg-[#d6d6d6] text-zinc-900 space-y-0">
-              <SheetTitle className="text-base font-semibold m-0 text-zinc-900">My Cart</SheetTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8 p-0" onClick={() => setOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </SheetHeader>
-
-            <div className="flex-1 overflow-y-auto">
-              <CartList />
+        <CustomModal open={open} handleClose={() => setOpen(false)} title="My Cart">
+          <div className="flex-1 overflow-y-auto bg-white pb-4">
+              <CartList/>
             </div>
 
-            <div className="p-4 border-t border-border bg-background space-y-4">
+            <div className="border-t border-border bg-white space-y-4">
               {showNoteBox && (
                 <div className="space-y-2">
-                  <Textarea
-                    placeholder="Add a note"
-                    rows={3}
-                    value={orderNote}
-                    onChange={(e) => setOrderNote(e.target.value)}
-                  />
+                  <Textarea placeholder="Add a note" rows={3} value={orderNote} onChange={(e) => setOrderNote(e.target.value)}/>
                   <div className="flex items-center justify-between">
                     <Button size="sm" onClick={handleAddOrderToCart}>Save</Button>
                     <Button size="sm" variant="ghost" onClick={() => setShowNoteBox(false)}>Cancel</Button>
@@ -108,7 +87,7 @@ export default function CartSidebar() {
               )}
 
               {!showNoteBox && (
-                <Button variant="outline" className="w-full" onClick={() => setShowNoteBox(true)}>
+                <Button variant="outline" className="w-full my-5" onClick={() => setShowNoteBox(true)}>
                   <Plus className="h-4 w-4 mr-2" /> Add Order to Cart
                 </Button>
               )}
@@ -118,16 +97,13 @@ export default function CartSidebar() {
                 <p>All orders received post 10 AM Friday to 10 AM Monday will be shipped on Monday.</p>
               </div>
 
-              {cart?.total && (
+              {cart?.payable_amount && (
                 <Button asChild className="w-full bg-primary text-primary-foreground">
-                  <Link href="/cart">
-                    Checkout - ₹{cart?.total}
-                  </Link>
+                  <Link href="/cart">Checkout - ₹{cart?.payable_amount}</Link>
                 </Button>
               )}
-            </div>
-          </SheetContent>
-        </Sheet>
+            </div>          
+        </CustomModal>
       </div>
     </>
   );

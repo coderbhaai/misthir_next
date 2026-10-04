@@ -20,6 +20,6 @@
       "@amitkk/*": ["amitkk/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", "amitkk/generateComponentMap.js", "amitkk/basic/components/ProductSlider.jsx", "amitkk/basic/components/CustomSlider.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", "amitkk/generateComponentMap.js", "amitkk/basic/components/ProductSlider.jsx", "amitkk/basic/components/CustomSlider.tsx", "lib/models/sales/SaleUpsell.ts"],
   "exclude": ["node_modules"]
 }

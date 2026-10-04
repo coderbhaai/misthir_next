@@ -76,8 +76,6 @@ import CartSkuDetail from "./ecom/CartSkuDetail";
 import Order from "./ecom/Order";
 import OrderCharges from "./ecom/OrderCharges";
 import OrderSku from "./ecom/OrderSku";
-import Sale from "./sales/Sale";
-import SaleTarget from "./sales/SaleTarget";
 import OrderConsent from "./ecom/OrderConsent";
 import OrderOrderConsent from "./ecom/OrderOrderConsent";
 import CartConsent from "./ecom/CartConsent";
@@ -92,6 +90,10 @@ import CouponTarget from "./coupon/CouponTarget";
 import CartCoupon from "./coupon/CartCoupon";
 import OrderCoupon from "./coupon/OrderCoupon";
 import CouponUsageLog from "./coupon/CouponUsageLog";
+
+import Sale from "./sales/Sale";
+import SaleTarget from "./sales/SaleTarget";
+import SaleUpsell from "./sales/SaleUpsell";
 
 import { auditLoggerPlugin } from "lib/server/plugins/auditLogger";
 
@@ -131,7 +133,7 @@ const rawModels: Record<string, any> = {
   Coupon, CartCoupon, OrderCoupon, CouponTarget, CouponUsageLog, 
 
   // Sales
-  Sale, SaleTarget,
+  Sale, SaleTarget, SaleUpsell, 
 };
 
 export type AnyModel = mongoose.Model<any, any, any, any, any, any>;

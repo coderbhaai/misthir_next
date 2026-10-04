@@ -1,7 +1,7 @@
 import mongoose, { isValidObjectId, Types } from 'mongoose';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
-import Sale from 'lib/models/sales/Sale';
+import Sale, { SaleDoc } from 'lib/models/sales/Sale';
 import Product from 'lib/models/product/Product';
 import SkuProps from 'lib/models/product/Sku';
 import { APIHandlers } from 'lib/server/middleware';
@@ -10,6 +10,8 @@ import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
 import SaleTarget from 'lib/models/sales/SaleTarget';
 import BuyOneGetOne from 'lib/models/ecom/BuyOneGetOne';
 import { uploadMedia } from '../basic/media';
+import CartSku from 'lib/models/ecom/CartSku';
+import SaleUpsell from 'lib/models/sales/SaleUpsell';
 
 export async function get_filtered_sales(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -170,6 +172,159 @@ export async function getEffectiveSkuPrice(sku: SkuProps, vendorId: Types.Object
   }
 
   return parseFloat(finalPrice.toFixed(2));
+}
+
+export async function applySalesAndGetUpsells(cart_id: string) {
+  try {
+    // NOTE: Do NOT use .lean() here so we can call item.save() later
+    const cartSkus = await CartSku.find({ cart_id }).populate({
+      path: 'product_id',
+      populate: [{ path: 'brands' }]
+    }).populate('sku_id').exec();
+
+    if (!cartSkus || cartSkus.length === 0) {
+      console.log("[Sales Debug] Cart is empty or not found for cart_id:", cart_id);
+      return { totalCartSubtotal: 0, totalCartSavings: 0, upsellMessage: null };
+    }
+
+    const now = new Date();
+    // 1. Fetch active sales
+    const activeSales = await Sale.find({
+      status: true,
+      valid_from: { $lte: now },
+      valid_to: { $gte: now }
+    }).lean() as unknown as Array<SaleDoc & { _id: Types.ObjectId; discount: number; discount_type: string; name: string }>;
+
+    console.log(`[Sales Debug] Found ${activeSales.length} active sales.`);
+
+    const saleIds = activeSales.map(s => s._id);
+
+    // 2. Fetch targets and upsells concurrently
+    const [allTargets, allUpsells] = await Promise.all([
+      SaleTarget.find({ sale_id: { $in: saleIds } }).lean(),
+      SaleUpsell.find({ sale_id: { $in: saleIds } }).lean()
+    ]);
+
+    console.log(`[Sales Debug] Fetched ${allTargets.length} total targets and ${allUpsells.length} total upsells.`);
+
+    const targetsBySale = new Map<string, any[]>();
+    for (const t of allTargets) {
+      const sId = t.sale_id.toString();
+      if (!targetsBySale.has(sId)) targetsBySale.set(sId, []);
+      targetsBySale.get(sId)!.push(t);
+    }
+
+    let totalCartSubtotal = 0;
+    let totalCartSavings = 0;
+    let totalCartQuantity = cartSkus.reduce((acc, item) => acc + (item.quantity || 0), 0);
+
+    for (const item of cartSkus) {
+      const product = item.product_id as any;
+      const sku = item.sku_id as any;
+      
+      if (!sku) {
+        console.log(`[Sales Debug] Warning: CartSku item missing sku_id reference.`);
+        continue;
+      }
+
+      const originalPrice = sku.price || 0;
+      const quantity = item.quantity || 1;
+      totalCartSubtotal += originalPrice * quantity;
+
+      let bestDiscountedPrice = originalPrice;
+      let appliedSale: any = null;
+
+      const productBrandIds = (product?.brands || []).map((b: any) => 
+        (b.productBrand_id?._id || b.productBrand_id || b._id)?.toString()
+      ).filter(Boolean);
+
+      const productTypeId = product?.type_id?._id?.toString() || product?.type_id?.toString() || null;
+      const skuId = sku._id?.toString();
+      const productId = product?._id?.toString();
+
+      // Priority Order: Sku > Product > ProductBrand > ProductType
+      const levels = [
+        { module: 'Sku', ids: [skuId] },
+        { module: 'Product', ids: [productId] },
+        { module: 'ProductBrand', ids: productBrandIds },
+        { module: 'ProductType', ids: [productTypeId] }
+      ];
+
+      console.log(`[Sales Debug] Evaluating Item -> SKU ID: ${skuId}, Product ID: ${productId}, Original Price: ${originalPrice}`);
+
+      for (const level of levels) {
+        if (!level.ids || level.ids.length === 0) continue;
+
+        for (const sale of activeSales) {
+          const saleIdStr = sale._id.toString();
+          const targets = targetsBySale.get(saleIdStr) || [];
+          
+          const matchedTarget = targets.find(
+            t => t.module === level.module && level.ids.includes(t.module_id.toString())
+          );
+
+          if (matchedTarget) {
+            console.log(`[Sales Match Found!] Sale Name: "${sale.name}" matched via Module: ${level.module} (Target ID: ${matchedTarget.module_id})`);
+            console.log(`[Discount Details] Type: ${sale.discount_type}, Value: ${sale.discount}`);
+
+            const dtype = String(sale.discount_type).trim().toLowerCase();
+
+            if (dtype === 'percent based' || dtype === 'percentage') {
+              bestDiscountedPrice = originalPrice - (originalPrice * sale.discount) / 100;
+            } else if (dtype === 'amount based' || dtype === 'flat' || dtype === 'amount') {
+              bestDiscountedPrice = Math.max(0, originalPrice - sale.discount);
+            }
+
+            appliedSale = sale;
+            break; 
+          }
+        }
+        if (appliedSale) break;
+      }
+
+      const finalSalePrice = Number(bestDiscountedPrice.toFixed(2));
+      const itemSavings = (originalPrice - finalSalePrice) * quantity;
+      totalCartSavings += itemSavings;
+
+      console.log(`[Price Update] SKU ${skuId} | Original: ${originalPrice} | Sale Price: ${finalSalePrice}`);
+
+      // Assign values and persist using Mongoose model instance
+      item.price = originalPrice;
+      item.sale = finalSalePrice;
+      await item.save();
+    }
+
+    // 3. Evaluate Upsell Suggestions
+    let bestUpsellMessage: string | null = null;
+    let smallestGap = Infinity;
+
+    for (const upsell of allUpsells) {
+      if (upsell.min_spend && totalCartSubtotal < upsell.min_spend) {
+        const gap = upsell.min_spend - totalCartSubtotal;
+        if (gap < smallestGap) {
+          smallestGap = gap;
+          bestUpsellMessage = `Add $${gap.toFixed(2)} more to ${upsell.message}`;
+        }
+      }
+
+      if (upsell.min_quantity && totalCartQuantity < upsell.min_quantity) {
+        const qtyGap = upsell.min_quantity - totalCartQuantity;
+        if (qtyGap * 10 < smallestGap) { 
+          smallestGap = qtyGap * 10;
+          bestUpsellMessage = `Add ${qtyGap} more item(s) to ${upsell.message}`;
+        }
+      }
+    }
+
+    return {
+      totalCartSubtotal,
+      totalCartSavings,
+      upsellMessage: bestUpsellMessage
+    };
+  } catch (error) {
+    console.error("Error in applySalesAndGetUpsells:", error);
+    return { totalCartSubtotal: 0, totalCartSavings: 0, upsellMessage: null };
+  }
 }
 
 export const functions: APIHandlers = {

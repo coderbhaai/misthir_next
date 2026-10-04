@@ -7,7 +7,7 @@ import Sku from 'lib/models/product/Sku';
 import Product from 'lib/models/product/Product';
 import TaxCollected from 'lib/models/payment/TaxCollected';
 import { handleApplyCoupon } from './coupon';
-import { getEffectiveSkuPrice } from './sales';
+import { applySalesAndGetUpsells, getEffectiveSkuPrice } from './sales';
 import { initAction } from '../basic/action';
 import { APIHandlers } from 'lib/server/middleware';
 import { getUserIdFromToken } from '../basic/auth';
@@ -25,14 +25,14 @@ import CartConsent from 'lib/models/ecom/CartConsent';
 import OrderConsent from 'lib/models/ecom/OrderConsent';
 import OrderOrderConsent from 'lib/models/ecom/OrderOrderConsent';
 
-export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
+export async function add_to_cart(req: any, res: any) {
   try {
     let cart_id = await getCartIdFromRequest(req, res);
 
-    if( !cart_id ){
+    if (!cart_id) {
       cart_id = await create_cart(req, res);
     }
-    if( !cart_id ){ return res.status(200).json({ status: false, message: 'Cart not found' }); }
+    if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
 
     const cartSkuResponse = await update_cart(req, cart_id);
 
@@ -41,11 +41,10 @@ export async function add_to_cart(req: NextApiRequest, res: NextApiResponse) {
     } else {
       return res.status(400).json({ ...cartSkuResponse });
     }
-
   } catch (error) { return await logError(error, { function: "add_to_cart", payload: req.body }); }
-}
+} 
 
-export async function create_cart(req: NextApiRequest, res: NextApiResponse) {
+export async function create_cart(req: any, res: any) {
   try {
     const data = req.body;
     const user_id = await getUserIdFromToken(req);
@@ -69,15 +68,10 @@ export async function create_cart(req: NextApiRequest, res: NextApiResponse) {
   } catch (error) { return await logError(error, { function: "create_cart", payload: req.body }); }
 }
 
-export async function update_cart(req: NextApiRequest, cart_id: string): Promise<{ status: boolean; message: string }> {
+export async function update_cart(req: any, cart_id: string): Promise<{ status: boolean; message: string; upsell_message?: string }> {
   try {
     const data = req.body;
-    const sku = await Sku.findOne({ _id: data.sku_id })
-      .populate({
-        path: 'product_id',
-        populate: { path: 'seller_id' }
-      })
-      .exec();
+    const sku = await Sku.findOne({ _id: data.sku_id }).populate({ path: 'product_id', populate: { path: 'seller_id' } }).exec();
     if (!sku) { return { status: false, message: 'SKU not found' }; }
     if (!sku.product_id){ return { status: false, message: 'SKU does not have a linked product' }; }
     if (!cart_id || !mongoose.Types.ObjectId.isValid(cart_id)) { return { status: false, message: 'Invalid cart_id' }; }
@@ -101,9 +95,9 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
     let message = "";
 
     if (cartSku) {
-      if (req.body.action === 'add_to_cart') {
+      if (data.action === 'add_to_cart') {
         cartSku.quantity += data.quantity || 1;
-      } else if (req.body.action === 'remove_from_cart') {
+      } else if (data.action === 'remove_from_cart') {
         cartSku.quantity -= 1;
       }
 
@@ -111,11 +105,11 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
         await cartSku.remove();
         message = 'Cart SKU entry removed as quantity became 0';
       } else {
-        const updated = await cartSku.save();
+        await cartSku.save();
         message = "Cart Updated";
       }
     } else {
-      if (req.body.action === 'add_to_cart') {
+      if (data.action === 'add_to_cart') {
         const product = sku.product_id as any;
         const newCartSku = new CartSku({
           cart_id,
@@ -123,6 +117,8 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
           quantity: data.quantity || 1,
           product_id: product._id,
           seller_id: product.seller_id?._id,
+          price: sku?.price,
+          sale: sku?.price,
         });
         const savedCartSku = await newCartSku.save();
 
@@ -130,11 +126,11 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
         const module = 'ProductFeature';
 
         if (flavor_id) {
-          detailPromises.push( CartSkuDetail.create({ cart_id, cart_sku_id: savedCartSku._id, module, module_id: flavor_id }) );
+          detailPromises.push(CartSkuDetail.create({ cart_id, cart_sku_id: savedCartSku._id, module, module_id: flavor_id }));
         }
 
         if (color_id) {
-          detailPromises.push( CartSkuDetail.create({ cart_id, cart_sku_id: savedCartSku._id, module, module_id: color_id }) );
+          detailPromises.push(CartSkuDetail.create({ cart_id, cart_sku_id: savedCartSku._id, module, module_id: color_id }));
         }
 
         await Promise.all(detailPromises);
@@ -143,39 +139,32 @@ export async function update_cart(req: NextApiRequest, cart_id: string): Promise
         return { status: false, message: 'Cannot remove from cart; entry does not exist' };
       }
     }
-    await recalculateCart(cart_id);
 
-    return { status: true, message };
-  } catch (error) { await logError(error, { function: "update_cart", payload: req.body }); return {status: false, message: "" } }
+    await recalculateCart(cart_id);
+    const cartCharges = await CartCharges.findOne({ cart_id }).lean();
+    const upsell_message = (cartCharges as any)?.upsell_message || null;
+
+    return { status: true, message, upsell_message };
+  } catch (error) { 
+    await logError(error, { function: "update_cart", payload: req.body }); 
+    return { status: false, message: "Error updating cart" }; 
+  }
 }
 
-export async function recalculateCart ( cart_id: string){
-  try{
-    const updatedCart = await Cart.findById(cart_id).populate([ { path: 'cartSkus', populate: { path: 'sku_id', model: 'Sku' } }, { path: 'cartCharges' }, { path: 'cartCoupon' } ]).exec();
-    
-    let total = 0;
-    let sales_discount = 0;
-    for (const cartSku of updatedCart.cartSkus) {
-      const sku = cartSku.sku_id;
-      const quantity = cartSku.quantity ?? 0;
-    
-      if (sku) {
-        const originalPrice = sku.price ? Number(sku.price) : 0;
-        const effectivePrice = await getEffectiveSkuPrice(sku, cartSku.seller_id);
-        total += originalPrice * quantity;
+export async function recalculateCart(cart_id: string) {
+  try {
+    const salesResult = await applySalesAndGetUpsells(cart_id);
 
-        if (originalPrice > effectivePrice) {
-          sales_discount += (originalPrice - effectivePrice) * quantity;
-        }
-      }
-    }
+    const updatedCart = await Cart.findById(cart_id).populate([ { path: 'cartCoupon' }, { path: 'cartCharges' }, { path: 'cartSkus', populate: { path: 'sku_id', model: 'Sku' } } ]).exec();
+    if (!updatedCart) return;
 
-    await upsertCartCharges(updatedCart._id, { sales_discount });
+    let total = salesResult.totalCartSubtotal;
+    let sales_discount = salesResult.totalCartSavings;
+
+    await upsertCartCharges(updatedCart._id, { sales_discount, upsell_message: salesResult.upsellMessage });
 
     let charges = updatedCart.cartCharges || {};
     let admin_discount = Number(charges.admin_discount || 0);
-
-    const chargesUpdates: any = {};
 
     if (charges.admin_discount_validity) {
       const now = new Date();
@@ -183,39 +172,28 @@ export async function recalculateCart ( cart_id: string){
 
       if (expiry.getTime() < now.getTime()) {
         admin_discount = 0;
-        chargesUpdates.admin_discount = 0;
-        chargesUpdates.admin_discount_validity = null;
-        chargesUpdates.admin_discount_unit = null;
-        chargesUpdates.admin_discount_validity_value = null;
       }
     }
 
-    let totalVendorDiscount = updatedCart.cartSkus.reduce( (sum: number, cartSku: CartDoc) => {
-        let discount = 0;
-        return sum + discount;
-      },
-      0
+    let totalVendorDiscount = updatedCart.cartSkus.reduce((sum: number, cartSku: any) => {
+      let discount = 0;
+      return sum + discount;
+    }, 0 );
+
+    const shippingCharges = Number(charges.shipping_charges || 0);
+    const codCharges = Number(charges.cod_charges || 0);
+    const adminCoupon = Number(updatedCart.cartCoupon?.admin_coupon_discount || 0);
+    const vendorCoupon = Number(updatedCart.cartCoupon?.vendor_coupon_discount || 0);
+
+    const payable_amount = total + shippingCharges + codCharges - (
+      sales_discount + admin_discount + totalVendorDiscount + adminCoupon + vendorCoupon
     );
-
-    chargesUpdates.total_vendor_discount = totalVendorDiscount;
-
-    if (Object.keys(chargesUpdates).length > 0) {
-      await upsertCartCharges(updatedCart._id, chargesUpdates);
-    }
-    
-    const finalCharges = await CartCharges.findOne({ cart_id: updatedCart._id }).lean() || charges;
-
-    const shippingCharges = Number(finalCharges.shipping_charges || charges.shipping_charges || 0);
-    const salesDiscount = Number(finalCharges.sales_discount || charges.sales_discount || 0);
-    const codCharges = Number(finalCharges.cod_charges || charges.cod_charges || 0);
-
-    const payable_amount = total + shippingCharges + codCharges - (salesDiscount + admin_discount + totalVendorDiscount + Number(updatedCart.cartCoupon?.admin_coupon_discount || 0) + Number(updatedCart.cartCoupon?.vendor_coupon_discount || 0));
     
     updatedCart.total = total;
-    updatedCart.payable_amount = payable_amount;
+    updatedCart.payable_amount = Math.max(0, payable_amount);
 
     await updatedCart.save();
-  }catch (error) { await logError(error, { function: "recalculateCart", payload: { cart_id } }); }
+  } catch (error) { await logError(error, { function: "recalculateCart", payload: { cart_id } }); }
 }
 
 export async function get_cart_data(req: NextApiRequest, res: NextApiResponse) {
