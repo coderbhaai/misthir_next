@@ -4,9 +4,10 @@ import { UserProps } from "@amitkk/basic/types/user";
 export interface CouponProps{
   _id: string;
   seller_id?: string | UserProps;
+  media_id: string | MediaProps;
   coupon_by: string;
   usage_type: string;
-  discount_type: "Amount Based" | "Percent Based" | string;
+  discount_type: string;
   discount?: number;
   name: string;
   coupon_code: string;
@@ -19,7 +20,6 @@ export interface CouponProps{
   createdAt: Date;
   updatedAt: Date;
   media: string | MediaProps;
-  media_id: string | MediaProps;
   bogo_items?: BuyOneGetOneProps[];
 }
 

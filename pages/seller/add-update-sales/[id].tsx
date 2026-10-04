@@ -1,4 +1,4 @@
-import SellerSalesForm from '@amitkk/seller/admin/add-update-sales';
+import SellerSalesForm from '@amitkk/sales/admin/add-update-sales';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 

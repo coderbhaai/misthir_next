@@ -1,204 +1,124 @@
 import mongoose, { isValidObjectId, Types } from 'mongoose';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
-import Sale from 'lib/models/ecom/Sale';
-import SaleSku from 'lib/models/ecom/SaleSku';
+import Sale from 'lib/models/sales/Sale';
 import Product from 'lib/models/product/Product';
 import SkuProps from 'lib/models/product/Sku';
 import { APIHandlers } from 'lib/server/middleware';
 import { logError } from '../utils';
+import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
+import SaleTarget from 'lib/models/sales/SaleTarget';
+import BuyOneGetOne from 'lib/models/ecom/BuyOneGetOne';
+import { uploadMedia } from '../basic/media';
 
-export async function get_all_sales(req: NextApiRequest, res: NextApiResponse) {
+export async function get_filtered_sales(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { seller_id } = req.query;
-    const filter: Record<string, any> = {};
+    const { filters = {}, page = 0, limit = 10 } = req.body || {};
+    const { matchQuery, skip, limit: safeLimit } = buildFilterQuery(filters, { page, limit, defaultLimit: 10, maxLimit: 100, searchableFields: ["name", "url"] });
+    const total = await Sale.countDocuments(matchQuery);
+    
+    const data = await Sale.find(matchQuery).populate([ 
+      { path: "media_id" }, 
+      { path: "seller_id", select: "_id name email phone" }, 
+      { path: "bogo_items", populate: [ { path: "buy_id", select: "_id sku name" }, { path: "get_id", select: "_id sku name" }, ] } 
+    ]).skip(skip).limit(safeLimit).sort({ createdAt: -1 });
 
-    if (seller_id && mongoose.Types.ObjectId.isValid(seller_id as string)) {
-      filter.seller_id = new mongoose.Types.ObjectId(seller_id as string);
-    }
+    return res.status(200).json({ message: "Fetched all Sales", data, pagination: { total, page, limit: safeLimit, pages: Math.ceil(total / safeLimit) } });
 
-    const data = await Sale.find(filter)
-      .populate([
-        { path: "seller_id" },
-        {
-          path: "saleSkus",
-          populate: [
-            { path: "sku_id" },
-            {
-              path: "product_id",
-              populate: [
-                {
-                  path: "mediaHubs",
-                  populate: { path: "media_id" },
-                },
-              ],
-            },
-          ],
-        },
-      ])
-      .exec();
-
-    const salesWithCounts = data.map((sale) => {
-      const totalSkus = sale.saleSkus?.length || 0;
-
-      // filter out null product_ids before toString
-      const productIds = new Set(
-        sale.saleSkus
-          .map(
-            (sku: { product_id?: { toString: () => string } | null }) =>
-              sku.product_id ? sku.product_id.toString() : null
-          )
-          .filter((id: string | null): id is string => id !== null)
-      );
-
-      const totalProducts = productIds.size;
-
-      return {
-        ...sale.toObject(),
-        totalSkus,
-        totalProducts,
-      };
-    });
-
-    return res.status(200).json({ message: "Sales Fetched", data: salesWithCounts });
-  } catch (error) { return await logError(error, { function: "get_all_sales", payload: req.body }); }
+  } catch (error) { await logError(error, { function: "get_filtered_sales", payload: req.body }); }
 }
 
 export async function get_single_sale(req: NextApiRequest, res: NextApiResponse){
   try{
-    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;  
+    const id = (req.method === 'GET' ? req.query.id : req.body.id) as string;
     if (!id || !Types.ObjectId.isValid(id)) { return res.status(400).json({ message: 'Invalid or missing ID' }); }
-
-    const { seller_id } = req.query;
-    const filter: Record<string, any> = {};
-
-    filter._id = new mongoose.Types.ObjectId(id);
-    if (seller_id && mongoose.Types.ObjectId.isValid(seller_id as string)) {
-      filter.seller_id = new mongoose.Types.ObjectId(seller_id as string);
-    }
-
-    const data = await Sale.findOne(filter)
-      .populate([ { path: 'seller_id' }, { path: 'saleSkus', populate: [ { path: 'sku_id' }, { path: 'product_id', populate: [ { path: 'mediaHubs', populate: { path: 'media_id' } } ] } ]  }]).lean(false).exec();
   
-    if (!data) { return res.status(404).json({ message: `Sales with ID ${id} not found` }); }
-    return res.status(200).json({ message: 'Fetched Single Sale', data });
-  }catch (error) { return await logError(error, { function: "get_single_sale", payload: req.body }); }
+    const entry = await Sale.findById(id).populate([ { path: "media_id" }, { path: "seller_id", select: "_id name email phone" }, { path: "bogo_items", populate: [ { path: "buy_id", select: "_id sku name" }, { path: "get_id", select: "_id sku name" }, ] } ]).exec();
+    if (!entry) { return res.status(404).json({ message: `Sale with ID ${id} not found` }); }
+  
+    const targets = await SaleTarget.find({ sale_id: entry._id }).lean();
+    return res.status(200).json({ message: '✅ Single Entry Fetched', data: { entry, targets }});
+  } catch (error) { await logError(error, { function: "get_single_sale", payload: req.body }); }
 };
 
 export async function create_update_sale(req: ExtendedRequest, res: NextApiResponse) {
   try {
-    const data = req.body;
-    if ( !data?.name || !data?.seller_id || !data?.valid_from || !data?.valid_to || !data?.type || !data?.discount || !data?.status  ) { 
-      return res.status(400).json({ message: 'Required fields missing' });
+    const data = req.body;  
+    if ( !data?.name || !data?.discount_type || !data?.discount || !data?.sales || !data?.status || !data?.valid_from || !data?.valid_to ) { 
+      return res.status(400).json({ message: 'Required fields missing' }); 
     }
-
+    
     const modelId = typeof data._id === 'string' || data._id instanceof Types.ObjectId ? data._id : null;
-    const {name, seller_id, valid_from, valid_to, type, discount, status } = data;
 
-    const skus = JSON.parse(data.skus || []);
+    let media_id: string | null = null;
+    if (data.media_id && isValidObjectId(data.media_id)) { media_id = data.media_id; }
+    const file = Array.isArray(req.files?.image) ? req.files.image[0] : req.files?.image;
+    if (file) { media_id = await uploadMedia({ file, name: data.name, pathType: "Sale", media_id: data.media_id ?? null, user_id: null }); }
+
+    let sale: any;
+
+    const payload = {
+      seller_id: data.seller_id,
+      media_id: media_id,
+      discount_type: data.discount_type,
+      discount: Number(data.discount),
+      name: data.name,
+      sales: data.sales,
+      status: data.status,
+      valid_from: data.valid_from,
+      valid_to: data.valid_to,
+      buy_one: data.buy_one,
+      description: data.description,
+      updatedAt: new Date(),
+    };
 
     if (modelId && isValidObjectId(modelId)) {
-      try {
-        const updated = await Sale.findByIdAndUpdate( modelId, {
-          seller_id: data.seller_id,
-          name: data.name,
-          valid_from: data.valid_from,
-          valid_to: data.valid_to,
-          type: data.type,
-          discount: data.discount ? Number(data.discount) : 0,
-          status: data.status,
-          updatedAt: new Date(),
-        }, { new: true } );
-
-        if (Array.isArray(skus)) {
-          for (const skuData of skus) {
-            await upsertSaleSku({ ...skuData, sale_id: updated._id });
-          }
-        }
-
-        if (updated) {
-          return res.status(200).json({ message: 'Entry updated successfully', data: updated });
-        } else {
-          return res.status(404).json({ message: 'Entry not found for update' });
-        }
-      } catch (error) { await logError(error, { function: "create_update_sale", payload: req.body }); }
+      sale = await Sale.findByIdAndUpdate(modelId, payload, { new: true });
+    } else {
+      sale = new Sale({ ...payload, createdAt: new Date() });
+      await sale.save();
     }
 
-    const newEntry = new Sale({
-        seller_id: data.seller_id,
-        name: data.name,
-        valid_from: data.valid_from,
-        valid_to: data.valid_to,
-        type: data.type,
-        discount: data.discount ? Number(data.discount) : 0,
-        status: data.status,
-        createdAt: new Date(),
-    });
-    await newEntry.save();
+    if (data.selected_targets) {
+      let targets = [];
+      targets = typeof data.selected_targets === "string" ? JSON.parse(data.selected_targets) : data.selected_targets;
 
-    if (Array.isArray(skus)) {
-      for (const skuData of skus) {
-        await upsertSaleSku({ ...skuData, sale_id: newEntry._id });
+      await SaleTarget.deleteMany({ sale_id: sale._id });
+
+      if (Array.isArray(targets) && targets.length > 0) {
+        const targetDocs = targets.map((t: any) => ({ 
+          sale_id: sale._id, 
+          module: t.module,
+          quantity: Number(t.quantity),
+          module_id: new Types.ObjectId(t.module_id) 
+        }));
+
+        await SaleTarget.insertMany(targetDocs, { ordered: false }).catch(() => {});
       }
     }
+    
+    if (Array.isArray(data.bogo_items)) {
+      await BuyOneGetOne.deleteMany({ sale_id: sale._id });
+      await BuyOneGetOne.insertMany(
+        data.bogo_items.map((item: any) => ({
+          sale_id: sale._id,
+          buy_id: item.buy_id,
+          get_id: item.get_id,
+        }))
+      );
+    }
 
-    return res.status(200).json({ message: 'Entry Created successfully', data: newEntry });
-
-  } catch (error) { await logError(error, { function: "create_update_sale", payload: req.body }); }
-}
-
-interface UpsertSaleInput {
-  _id?: string;
-  sale_id: string | Types.ObjectId;
-  sku_id: string | Types.ObjectId;
-  product_id: string | Types.ObjectId;
-  quantity: number;
-  discount: number;
-}
-
-export async function upsertSaleSku(data: UpsertSaleInput) {
-  try {
-    const filter = {
-      sale_id: data.sale_id,
-      product_id: data.product_id,
-      sku_id: data.sku_id,
-    };
-
-    const update = {
-      $set: {
-        quantity: data.quantity,
-        discount: data.discount,
-        updatedAt: new Date(),
-      },
-    };
-
-    const options = { new: true, upsert: true };
-
-    const sku = await SaleSku.findOneAndUpdate(filter, update, options);
-    return sku;
-  } catch (error) { await logError(error, { function: "upsertSaleSku", payload: {data} }); throw error; }
-}
-
-interface MediaProps {
-  _id: Types.ObjectId | string;
-  path: string;
-  alt?: string;
+    return res.status(modelId ? 200 : 201).json({ message: modelId ? "✅ Sales updated successfully" : "✅ Sales created successfully", data: sale });
+  } catch (error) { 
+    await logError(error, { function: "create_update_sale", payload: req.body }); 
+    return res.status(500).json({ message: "Server error", error });
+  }
 }
 
 interface SkuProps {
   _id: Types.ObjectId | string;
   name: string;
   price: number;
-}
-
-interface ProductSaleProps {
-  _id: Types.ObjectId | string;
-  name: string;
-  url: string;
-  mediaHubs?: {
-    media_id: MediaProps;
-  }[];
-  sku: SkuProps[];
 }
 
 export async function get_product_sale_modules(req: NextApiRequest, res: NextApiResponse) {
@@ -253,14 +173,14 @@ export async function getEffectiveSkuPrice(sku: SkuProps, vendorId: Types.Object
 }
 
 export const functions: APIHandlers = {
-  get_all_sales : { middlewares: ["checkUserId", "checkPostMethod" ] },
+  get_filtered_sales : { middlewares: ["checkUserId", "checkPostMethod" ] },
   get_single_sale : { middlewares: [] },
   create_update_sale : { middlewares: ["checkUserId", "checkPostMethod" ] },
   get_product_sale_modules : { middlewares: ["checkUserId", "checkPostMethod" ] },
 }
 
 export const salesHandlers = {
-  get_all_sales,
+  get_filtered_sales,
   get_single_sale,
   create_update_sale,
   get_product_sale_modules,

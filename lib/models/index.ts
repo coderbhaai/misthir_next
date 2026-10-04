@@ -76,8 +76,8 @@ import CartSkuDetail from "./ecom/CartSkuDetail";
 import Order from "./ecom/Order";
 import OrderCharges from "./ecom/OrderCharges";
 import OrderSku from "./ecom/OrderSku";
-import Sale from "./ecom/Sale";
-import SaleSku from "./ecom/SaleSku";
+import Sale from "./sales/Sale";
+import SaleTarget from "./sales/SaleTarget";
 import OrderConsent from "./ecom/OrderConsent";
 import OrderOrderConsent from "./ecom/OrderOrderConsent";
 import CartConsent from "./ecom/CartConsent";
@@ -116,8 +116,7 @@ const rawModels: Record<string, any> = {
   Address, City, Country, State,
 
   // Ecom
-  Cart, CartSku, CartCharges, CartSkuDetail, Order, OrderSku, OrderCharges, Sale, SaleSku,
-  CartConsent, OrderConsent, OrderOrderConsent, 
+  Cart, CartSku, CartCharges, CartSkuDetail, Order, OrderSku, OrderCharges, CartConsent, OrderConsent, OrderOrderConsent, 
 
   // Product
   BankDetail, Commission, Documentation, Ingridient, Product, ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, Sku, SkuDetail, SkuProductFeature, Vendor, ProductFilter, 
@@ -131,6 +130,8 @@ const rawModels: Record<string, any> = {
   // Coupon
   Coupon, CartCoupon, OrderCoupon, CouponTarget, CouponUsageLog, 
 
+  // Sales
+  Sale, SaleTarget,
 };
 
 export type AnyModel = mongoose.Model<any, any, any, any, any, any>;

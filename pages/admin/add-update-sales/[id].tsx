@@ -1,10 +1,8 @@
-"use client"
-
-import SingleSales from '@amitkk/ecom/admin/single-sales';
+import AddUpdateSaleForm from '@amitkk/sales/admin/add-update-sales';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
-const SingleSaleIdPage = () => {
+const EditAdminSaleId = () => {
   const router = useRouter();
   const { id } = router.query;
 
@@ -15,7 +13,7 @@ const SingleSaleIdPage = () => {
 
   if (!id) return <div>Error: No ID found</div>;
 
-  return <SingleSales dataId={id as string} />;
+  return <AddUpdateSaleForm dataId={id as string} />;
 };
 
-export default SingleSaleIdPage;
+export default EditAdminSaleId;

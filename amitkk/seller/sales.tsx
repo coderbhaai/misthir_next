@@ -5,7 +5,7 @@ import { useAdminPage } from "hooks/useAdminPage";
 import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-sales-table";
 
 export function SellerSales() {
-    const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/sales", listFunction: "get_all_sales", addRoute: "/admin/add-update-blog" });
+    const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/sales", listFunction: "get_filtered_sales", addRoute: "/admin/add-update-blog" });
 
     const FILTER_CONFIG = [
         { name: "SearchFilter", grid: "col-span-9", },

@@ -57,8 +57,7 @@ export interface CartSkuProps{
   vendor_discount_validity_value?: number;
   createdAt: Date;
   updatedAt: Date;
-
-  // Virtuals
+  
   product: { name: string; price?: number }
   vendor: { name: string };
   sku: { price: number };
@@ -139,28 +138,6 @@ export interface OrderChargesProps{
   admin_discount?: number;
   total_vendor_discount?: number;
   cod_charges?: number;
-}
-
-export interface SaleProps{
-  _id: string;
-  name: string;
-  valid_from: string | Date;
-  valid_to: string | Date;
-  type: "Amount Based" | "Percent Based" | string; 
-  discount: number | "";
-  status: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  saleSkus?: SaleSkuProps[];
-  seller_id?: string | { _id: string; name?: string };
-}
-
-export interface SaleSkuProps {
-  sale_id: string;
-  sku_id: string | { _id: string; name?: string; price?: number };
-  product_id: string | { _id: string; name?: string };
-  quantity: number;
-  discount: number | "";
 }
 
 export interface BulkProps{

@@ -1,12 +1,12 @@
 import { TableCell, TableRow } from '@amitkk/components/basic/table';
 import MediaImage from '@amitkk/components/admin/table-image';
 import { CouponProps } from '@amitkk/coupon/types';
-import DateTimeFormat from '@amitkk/components/admin/date-format';
 import { ActionCell } from '@amitkk/components/basic/ActionCell';
 import { MediaProps } from '@amitkk/basic/types/media';
 import UserRow from '@amitkk/basic/static/UserRow';
 import { UserRowProps } from '@amitkk/basic/types/user';
 import { DiscountDisplay } from '../static/DiscountDisplay';
+import { DateRangeDisplay } from '@amitkk/components/basic/DateRangeBadge';
 
 export interface DataProps extends CouponProps {
   selectedDataId: string | number | object | null;
@@ -24,11 +24,11 @@ export function AdminDataTable({ row, onEdit }: Props) {
       <TableRow>
         <TableCell><UserRow row={row.seller_id as UserRowProps}/></TableCell>
         <TableCell>
-          {row.name} - {row.code}<br/>
+          {row.name} - {row.coupon_code}<br/>
           Coupon By - {row.coupon_by}<br/>
           Usage Type - {row.usage_type}<br/>
         </TableCell>
-        <TableCell><DateTimeFormat value={row.valid_from}/>- <DateTimeFormat value={row.valid_to}/></TableCell>
+        <TableCell><DateRangeDisplay validFrom={row.valid_from} validTo={row.valid_to}/></TableCell>
         <TableCell><MediaImage media={row.media_id as MediaProps}/></TableCell>
         <TableCell>
           Discount Type - {row.discount_type}<br/>
