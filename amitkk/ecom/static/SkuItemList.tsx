@@ -1,10 +1,10 @@
 import React from "react";
-import { SkuItem } from "../types";
+import { CartSkuProps } from "../types";
 import ImageWithFallback from "@amitkk/basic/static/ImageWithFallback";
 import { Card } from "@amitkk/components/ui/card";
 
 interface SkuItemListProps {
-  items: SkuItem[];
+  items: CartSkuProps[];
 }
 
 export default function SkuItemList({ items = [] }: SkuItemListProps) {
@@ -14,11 +14,7 @@ export default function SkuItemList({ items = [] }: SkuItemListProps) {
     <div className="flex-1 overflow-y-auto w-full space-y-3">
       <ul className="space-y-3 p-0 m-0 list-none">
         {items.map((item) => {
-          const sku = item.sku_id as any;
           const product = item.product_id as any;
-          const price = Number(sku?.price ?? 0);
-          const quantity = Number(item.quantity ?? 0);
-          const totalItemPrice = quantity * price;
 
           return (
             <li key={item._id?.toString()} className="">
@@ -26,14 +22,28 @@ export default function SkuItemList({ items = [] }: SkuItemListProps) {
                 <div className="flex items-center gap-3">
                   <ImageWithFallback img={product?.medias?.[0]} width={80} height={80} />
                   <div className="flex-grow">
-                    <p className="text-sm font-semibold">{product?.name ?? sku?.name}</p>
+                    <p className="text-sm font-semibold">{product?.name}</p>
                   </div>
-                  <p className="text-sm font-bold">₹{price}</p>
+                  {item.sale && item.sale < item.price ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-gray-500 line-through">₹{item.price}</p>
+                      <p className="text-sm font-bold text-red-600">₹{item.sale}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-bold">₹{item.price}</p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between bg-muted/40 p-2 rounded-md">
-                  <p className="text-xs text-muted-foreground">Qty: {quantity}</p>
-                  <p className="text-sm font-bold">₹{totalItemPrice}</p>
+                  <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                  {item.sale && item.sale < item.price ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500 line-through">₹{item.quantity * item.price}</p>
+                        <p className="text-sm font-bold text-red-600">₹{item.quantity * item.sale}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-bold">₹{item.quantity * item.price}</p>
+                    )}
                 </div>
               </Card>
             </li>

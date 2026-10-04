@@ -24,10 +24,9 @@ export default function CartList() {
                     <ImageWithFallback img={item.product_id?.medias?.[0]} width={80} height={80}/>
                     <div className="flex-grow">
                       <p className="text-sm font-semibold">{item.product_id?.name}</p>
-                      {item.product_id?.seller_id && ( <small>By {item.product_id?.seller_id?.name}</small> 
-                      )}
-
+                      { item.product_id?.seller_id && ( <small>By {item.product_id?.seller_id?.name}</small> )}
                     </div>
+                    
                     {item.sale && item.sale < item.price ? (
                       <div className="flex items-center gap-2">
                         <p className="text-xs text-gray-500 line-through">₹{item.price}</p>

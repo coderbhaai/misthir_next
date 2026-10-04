@@ -51,6 +51,8 @@ export interface CartSkuProps{
   seller_id: string | UserRowProps;
   quantity: number;
   flavor_id?: string;
+  price: number;
+  sale: number;
   vendor_discount?: number;
   vendor_discount_validity?: Date;
   vendor_discount_unit?: string;
