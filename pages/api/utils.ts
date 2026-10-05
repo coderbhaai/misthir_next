@@ -185,12 +185,30 @@ export function toObjectId(id: string | mongoose.Types.ObjectId | null | undefin
   }catch (error) { logError(error, { function: 'toObjectId', payload: {id} }); return null; }
 }
 
-export const safeParse = (value: any) => {
-  try {
-    return typeof value === "string" ? JSON.parse(value) : [];
-  } catch {
-    return [];
+export const safeParse = (value: any): Types.ObjectId[] => {
+  if (!value) return [];
+  
+  let rawArray: string[] = [];
+  if (Array.isArray(value)) {
+    rawArray = value;
+  } else if (typeof value === "string") {
+    if (value.length === 24 && /^[0-9a-fA-F]{24}$/.test(value)) {
+      rawArray = [value];
+    } else {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) rawArray = parsed;
+        else if (parsed) rawArray = [parsed];
+      } catch {
+        rawArray = [value];
+      }
+    }
   }
+
+  // Convert valid string IDs to MongoDB ObjectIds to prevent type-mismatch issues in $in queries
+  return rawArray
+    .filter((id) => Types.ObjectId.isValid(id))
+    .map((id) => new Types.ObjectId(id));
 };
 
 export function getDuplicateKeyErrorMessage(error: any): string | null {

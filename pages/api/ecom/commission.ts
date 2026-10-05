@@ -2,12 +2,13 @@ import mongoose, { isValidObjectId, Types } from 'mongoose';
 import { createApiHandler, ExtendedRequest } from '../apiHandler';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { APIHandlers } from 'lib/server/middleware';
-import { logError } from '../utils';
+import { logError, safeParse } from '../utils';
 import Commission from 'lib/models/product/Commission';
 import { buildFilterQuery } from 'lib/server/plugins/buildFilterQuery';
 import Product from 'lib/models/product/Product';
 import ProductBrand from 'lib/models/product/ProductBrand';
 import Productmeta from 'lib/models/product/Productmeta';
+import SellerServiceArea from 'lib/models/ecom/SellerServiceArea';
 
 export async function get_all_commission_modules(req: ExtendedRequest, res: NextApiResponse) {
   try {
@@ -156,12 +157,54 @@ export async function create_update_seller_commission(req: ExtendedRequest, res:
   }
 }
 
+// Service Area
+  export async function get_all_seller_service_area(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      const { seller_id } = req.body;
+      if (!seller_id) { return res.status(400).json({ message: "Missing seller_id" }); }
+
+      const data = await SellerServiceArea.find({ seller_id }).populate('module_id');
+      return res.status(200).json({ message: "Fetched Seller Service Areas", data });
+    } catch (error) { return await logError(error, { function: "get_all_seller_service_area", payload: req.body }); }
+  }
+
+  export async function create_update_seller_service_area(req: ExtendedRequest, res: NextApiResponse) {
+    try {
+      const { seller_id } = req.body;
+      const country_ids = safeParse(req.body.country_ids);
+      const state_ids = safeParse(req.body.state_ids);
+      const city_ids = safeParse(req.body.city_ids);
+      const recordsToInsert: any[] = [];
+      
+      if (Array.isArray(country_ids)) { 
+        country_ids.forEach((id: any) => { recordsToInsert.push({ seller_id, module: 'Country', module_id: id.toString(), status: true }); }); 
+      }
+      if (Array.isArray(state_ids)) { 
+        state_ids.forEach((id: any) => { recordsToInsert.push({ seller_id, module: 'State', module_id: id.toString(), status: true }); }); 
+      }
+      if (Array.isArray(city_ids)) { 
+        city_ids.forEach((id: any) => { recordsToInsert.push({ seller_id, module: 'City', module_id: id.toString(), status: true }); }); 
+      }
+      
+      await SellerServiceArea.deleteMany({ seller_id });      
+      if (recordsToInsert.length > 0) {
+        await SellerServiceArea.insertMany(recordsToInsert);
+      }
+      
+      return res.status(200).json({ message: "✅ Service Areas Updated Successfully", data: true });
+    } catch (error) { return await logError(error, { function: "create_update_seller_service_area", payload: req.body }); }
+  }
+// Service Area
+
 export const functions: APIHandlers = {
   get_filtered_commissions : { middlewares: ["checkUserId", "checkPostMethod"] },
   get_single_commission : { middlewares: [] },
   create_update_commission : { middlewares: ["checkUserId", "checkPostMethod"] },
   create_update_seller_commission : { middlewares: [] },
   get_all_commission_modules : { middlewares: ["checkUserId", "checkPostMethod"] },
+
+  get_all_seller_service_area : { middlewares: ["checkUserId", "checkPostMethod"] },
+  create_update_seller_service_area : { middlewares: ["checkUserId", "checkPostMethod"] },
 }
 
 export const commissionHandlers = {
@@ -170,6 +213,9 @@ export const commissionHandlers = {
   create_update_commission,
   create_update_seller_commission,
   get_all_commission_modules,
+
+  get_all_seller_service_area,
+  create_update_seller_service_area,
 };
 
 export const config = { api: { bodyParser: false } };

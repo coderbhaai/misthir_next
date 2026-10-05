@@ -79,6 +79,7 @@ import OrderSku from "./ecom/OrderSku";
 import OrderConsent from "./ecom/OrderConsent";
 import OrderOrderConsent from "./ecom/OrderOrderConsent";
 import CartConsent from "./ecom/CartConsent";
+import SellerServiceArea from "./ecom/SellerServiceArea";
 
 import SiteSetting from "./payment/SiteSetting";
 import Tax from "./payment/Tax";
@@ -118,7 +119,7 @@ const rawModels: Record<string, any> = {
   Address, City, Country, State,
 
   // Ecom
-  Cart, CartSku, CartCharges, CartSkuDetail, Order, OrderSku, OrderCharges, CartConsent, OrderConsent, OrderOrderConsent, 
+  Cart, CartSku, CartCharges, CartSkuDetail, Order, OrderSku, OrderCharges, CartConsent, OrderConsent, OrderOrderConsent, SellerServiceArea, 
 
   // Product
   BankDetail, Commission, Documentation, Ingridient, Product, ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, Sku, SkuDetail, SkuProductFeature, Vendor, ProductFilter, 

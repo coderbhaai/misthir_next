@@ -176,7 +176,6 @@ export async function getEffectiveSkuPrice(sku: SkuProps, vendorId: Types.Object
 
 export async function applySalesAndGetUpsells(cart_id: string) {
   try {
-    // NOTE: Do NOT use .lean() here so we can call item.save() later
     const cartSkus = await CartSku.find({ cart_id }).populate({
       path: 'product_id',
       populate: [{ path: 'brands' }]

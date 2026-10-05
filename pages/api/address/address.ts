@@ -167,38 +167,30 @@ import { getUsersIdByEmail } from '../basic/spatie';
 
   export async function get_state_options(req: NextApiRequest, res: NextApiResponse) {
     try {
-      let { parent_id = [], search = "", limit = 20 } = req.body as {
-        parent_id?: string[] | string;
+      let { parent_id = [], search = "", limit = 1000 } = req.body as {
+        parent_id?: any;
         search?: string;
         limit?: number;
       };
 
-      if (typeof parent_id === "string") {
-        try {
-          parent_id = JSON.parse(parent_id);
-        } catch {
-          parent_id = [];
-        }
-      }
-      
-      if (!Array.isArray(parent_id)) {
-        parent_id = [];
-      }
-
+      const country_ids = safeParse(parent_id);
       const query: Record<string, any> = {};
 
-      if (parent_id.length > 0) {
-        query.country_id = { $in: parent_id };
+      if (country_ids.length > 0) {
+        query.country_id = { $in: country_ids };
       }
 
       if (search) {
         query.name = { $regex: search, $options: "i" };
       }
 
-      const data = await State.find(query).select("_id name").limit(Number(limit) || 20).lean();
-      return res.status(200).json({ message: "Fetched Cities", data });
-    } catch (error) { await logError(error, { function: "get_state_options", payload: req.body }); }
-  }
+      const data = await State.find(query).select("_id name").limit(Number(limit) || 1000).lean();
+      return res.status(200).json({ message: "Fetched States", data });
+    } catch (error) { 
+      await logError(error, { function: "get_state_options", payload: req.body }); 
+      return res.status(500).json({ data: [] });
+    }
+}
 
   export async function get_states_of_country(req: NextApiRequest, res: NextApiResponse) {
     try {
@@ -310,32 +302,32 @@ import { getUsersIdByEmail } from '../basic/spatie';
 
   export async function get_city_options(req: NextApiRequest, res: NextApiResponse) {
     try {
-      let { countries, states, search = "", limit = 20, } = req.body;
+      let { countries, states, search = "", limit = 1000 } = req.body;
 
       const country_ids = safeParse(countries);
       const state_ids = safeParse(states);
 
-      const query: any = {
-        status: true,
-      };
+      const query: any = { status: true };
 
       if (state_ids.length) {
-        query.state_id = { $in: state_ids };
+        const stateIdStrings = state_ids.map((id: any) => id.toString());
+        const combinedSearchIds = [...state_ids, ...stateIdStrings];
+        query.state_id = { $in: combinedSearchIds };
       } else if (country_ids.length) {
-        query.country_id = { $in: country_ids };
+        const matchingStates = await State.find({ country_id: { $in: country_ids } }).select('_id').lean();
+        const stateIdsFromCountries = matchingStates.map(s => s._id);        
+        const stateIdStrings = stateIdsFromCountries.map((id: any) => id.toString());
+        query.state_id = { $in: [...stateIdsFromCountries, ...stateIdStrings] };
       }
 
       if (search) {
         query.name = { $regex: search, $options: "i" };
       }
 
-      if (!state_ids.length && !country_ids.length && !search) {
-        return res.status(200).json({ data: [] });
-      }
+      if (!state_ids.length && !country_ids.length && !search) { return res.status(200).json({ data: [] }); }
 
-      const data = await City.find(query).select("_id name state_id country_id").sort({ displayOrder: 1, name: 1 }).limit(limit).lean();
+      const data = await City.find(query).select("_id name state_id").sort({ displayOrder: 1, name: 1 }).limit(Number(limit) || 1000).lean();
       return res.status(200).json({ data });
-
     } catch (error) {
       await logError(error, { function: "get_city_options", payload: req.body });
       return res.status(500).json({ data: [] });

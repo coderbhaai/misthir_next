@@ -17,8 +17,6 @@ type Props = {
 };
 
 export function AdminDataTable({ row }: Props) {
-
-  console.log("ROW", row)
   return (
     <>
       <TableRow>

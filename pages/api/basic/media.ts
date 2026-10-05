@@ -363,41 +363,49 @@ export async function downloadFile(req: NextApiRequest, res: NextApiResponse) {
 
 export async function attach_media(req: NextApiRequest, res: NextApiResponse) {
   try {
-      const data = req.body;
-      if( !data.module || !data.module_id ){ return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); }
+    const data = req.body;
+    if (!data.module || !data.module_id) { 
+      return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); 
+    }
 
-      const mediaArray: string[] = safeParse(data.mediaArray || [] );
-      await syncMediaHub({ module: data.module, module_id: data.module_id, mediaArray });
+    const parsedMedia = safeParse(data.mediaArray || []);
+    const mediaArray: string[] = parsedMedia.map((id: any) => id.toString());
 
-      return res.status(200).json({ message: "Media Updated", data: true });
-    } catch (error) { await logError(error, { function: "attach_media", payload: req.body }); }
+    await syncMediaHub({ module: data.module, module_id: data.module_id, mediaArray });
+
+    return res.status(200).json({ message: "Media Updated", data: true });
+  } catch (error) { 
+    await logError(error, { function: "attach_media", payload: req.body }); 
+    return res.status(500).json({ message: "Internal Server Error", data: false });
+  }
 }
 
 export async function detach_media(req: NextApiRequest, res: NextApiResponse) {
   try {
-      const data = req.body;
-      if( !data.module || !data.module_id ){ return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); }
+    const data = req.body;
+    if (!data.module || !data.module_id) { 
+      return res.status(200).json({ message: "Module or ModuleId Not Found", data: true }); 
+    }
 
-      const mediaArray: string[] = safeParse(data.mediaArray || [] );
-      await syncMediaHub({ module: data.module, module_id: data.module_id, mediaArray });
+    const parsedMedia = safeParse(data.mediaArray || []);
+    const mediaArray: string[] = parsedMedia.map((id: any) => id.toString());
 
-      return res.status(200).json({ message: "Media Updated", data: true });
-    } catch (error) { await logError(error, { function: "attach_media", payload: req.body }); }
+    await syncMediaHub({ module: data.module, module_id: data.module_id, mediaArray });
+
+    return res.status(200).json({ message: "Media Updated", data: true });
+  } catch (error) { 
+    // Fixed log function name to match detach_media
+    await logError(error, { function: "detach_media", payload: req.body }); 
+    return res.status(500).json({ message: "Internal Server Error", data: false });
+  }
 }
 
 export async function attach_media_to_module(req: NextApiRequest, res: NextApiResponse) {
-  console.log("➡️ [DEBUG] Incoming request body:", JSON.stringify(req.body, null, 2));
-
   try {
     const { module, module_id } = req.body;
-    
-    // Check 1: Inspect raw media_ids type and value
-    console.log("🔍 [DEBUG] raw req.body.media_ids:", req.body.media_ids, typeof req.body.media_ids);
-
     const rawMediaIds = typeof req.body.media_ids === "string" 
       ? safeParse(req.body.media_ids) 
       : req.body.media_ids;
-    console.log("🔍 [DEBUG] parsed rawMediaIds:", rawMediaIds, "Is Array?", Array.isArray(rawMediaIds));
 
     if (!module || !module_id || !Array.isArray(rawMediaIds)) { 
       console.warn("⚠️ [DEBUG] Validation failed: Missing module, module_id, or media_ids is not an array");
@@ -405,26 +413,20 @@ export async function attach_media_to_module(req: NextApiRequest, res: NextApiRe
     }
 
     const objectModuleId = typeof module_id === "string" ? new Types.ObjectId(module_id) : module_id;
-    
-    // Convert media IDs to ObjectIds and log them
+
     const mediaIds = rawMediaIds.map((id: string) => {
       const converted = typeof id === "string" ? new Types.ObjectId(id) : id;
       return converted;
     });
-    console.log("🔍 [DEBUG] Converted mediaIds ObjectIds:", mediaIds);
 
-    // Check 2: DeleteMany execution
     const deleteResult = await MediaHub.deleteMany({
       module,
       module_id: objectModuleId,
       media_id: { $nin: mediaIds },
     });
-    console.log("🗑️ [DEBUG] deleteMany result count deleted:", deleteResult.deletedCount);
-
-    // Check 3: Upsert execution
+    
     const upsertResults = await Promise.all(
       mediaIds.map((mediaId, index) => {
-        console.log(`🔄 [DEBUG] Upserting media_id: ${mediaId} at index ${index}`);
         return MediaHub.findOneAndUpdate(
           {
             module,
@@ -442,22 +444,12 @@ export async function attach_media_to_module(req: NextApiRequest, res: NextApiRe
               createdAt: new Date(),
             },
           },
-          { upsert: true, new: true, runValidators: true } // Added runValidators to catch Schema issues early
+          { upsert: true, new: true, runValidators: true }
         );
       })
     );
-
-    console.log("✅ [DEBUG] Successfully upserted media docs:", upsertResults.length);
     return res.status(200).json({ message: 'Media Attached to Module', data: true });
-
-  } catch (error) { 
-    console.error("❌ [DEBUG] Error caught in attach_media_to_module:", error);
-    await logError(error, { function: "attach_media_to_module", payload: req.body }); 
-    return res.status(500).json({ 
-      message: "Internal Server Error", 
-      error: error instanceof Error ? error.message : String(error) 
-    });
-  }
+  } catch (error) { await logError(error, { function: "attach_media_to_module", payload: req.body }); }
 }
 
 export async function detach_media_to_module(req: NextApiRequest, res: NextApiResponse) {
