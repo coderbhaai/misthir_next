@@ -27,7 +27,6 @@ export interface WishlistCartProps {
   updatedAt: Date;
 }
 
-
 export interface GrievanceProps {
   _id: string;
   user_id?: string | UserProps;

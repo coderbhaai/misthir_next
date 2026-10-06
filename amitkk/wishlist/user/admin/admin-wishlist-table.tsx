@@ -1,6 +1,6 @@
 import { WishlistProps } from '@amitkk/wishlist/types';
-import { WishlistTableRow } from '@amitkk/wishlist/static/WishlistTableRow';
-import { WishlistCardView } from '@amitkk/wishlist/static/WishlistCardView';
+import { UserWishlistTableRow } from '@amitkk/wishlist/static/UserWishlistTableRow';
+import { UserWishlistCardView } from '@amitkk/wishlist/static/UserWishlistCardView';
 
 export interface DataProps extends WishlistProps {}
 
@@ -11,8 +11,8 @@ type Props = {
 
 export function AdminDataTable({ row, viewMode = "table" }: Props) {
   if (viewMode === "grid") {
-    return <WishlistCardView row={row} />;
+    return <UserWishlistCardView row={row} />;
   }
 
-  return <WishlistTableRow row={row} />;
+  return <UserWishlistTableRow row={row} />;
 }

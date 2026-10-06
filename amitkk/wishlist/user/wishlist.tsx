@@ -1,14 +1,11 @@
 "use client";
 
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { AdminDataTable } from "@amitkk/wishlist/admin/admin-wishlist-table";
+import { AdminDataTable } from "@amitkk/wishlist/user/admin/admin-wishlist-table";
 import { useAdminPage } from "hooks/useAdminPage";
 import { WishlistProps } from "@amitkk/wishlist/types";
-import { Button } from "@amitkk/components/button/button";
-import { useState } from "react";
-import ExportModal from "@amitkk/basic/admin/excel/export-modal";
 
-export function AdminWishlist() {
+export function UserWishlist() {
     const admin =   useAdminPage<WishlistProps>({ listEndpoint: "ecom/wishlist", listFunction: "get_filtered_wishlist" });
 
     const FILTER_CONFIG = [
@@ -17,27 +14,17 @@ export function AdminWishlist() {
     ] as const;
 
     const head: { id: string; label: string }[] = [
-                    { id: "user", label: "User" },
                     { id: "Products", label: "Products" },
                     { id: "Remarks", label: "Remarks" },
                     { id: "Status", label: "Status" },
                     { id: "date", label: "Date" },
                 ];
 
-    const [openExport, setOpenExport] = useState(false);
-    const handleExportClose = () => { setOpenExport(false); }
-    const exportProps = { open: openExport, handleClose: handleExportClose, type: "Admin Wishlist", change_type: false };
-
     return (
         <AdminTableLayout admin={admin} title="Wishlist" viewMode="grid" showViewModeSwitch={true} filters={FILTER_CONFIG} head={head} 
-            rows={admin.data.map((i: WishlistProps) => ( <AdminDataTable key={String(i._id)} row={i}/> ))} actionsAboveFilters={
-                <>
-                    <Button className="w-fit" onClick={() => setOpenExport(true)}>Export</Button>
-                </>
-            }>
-            <ExportModal {...exportProps}/>
+            rows={admin.data.map((i: WishlistProps) => ( <AdminDataTable key={String(i._id)} row={i}/> ))}>
         </AdminTableLayout>
     );
 }
 
-export default AdminWishlist;
+export default UserWishlist;
