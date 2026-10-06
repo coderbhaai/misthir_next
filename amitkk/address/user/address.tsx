@@ -21,10 +21,12 @@ export function UserAddress(){
     
     return(
         <AdminTableLayout admin={admin} title="Address" addButtonLabel="New Address" viewMode="grid" showViewModeSwitch={true} filters={FILTER_CONFIG} head={head} 
-        rows={(viewMode) => admin.data.map((i: AddressProps) => ( <AdminDataTable key={String(i._id)} row={i} viewMode={viewMode} onEdit={(row) => admin.handleEdit(row?._id?.toString())}/> ))}>
+            rows={admin.data.map((i: AddressProps) => ( 
+                <AdminDataTable key={String(i._id)} row={i} onEdit={(row) => admin.handleEdit(row?._id?.toString())}/> 
+            ))}>
             <DataModal {...admin.modal}/>
         </AdminTableLayout>
-    )
+    );
 }
 
 export default UserAddress;

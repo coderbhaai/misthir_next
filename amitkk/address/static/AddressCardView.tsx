@@ -22,11 +22,11 @@ export function AddressCardView({ row, onEdit }: Props) {
               {row.phone && ( <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" /> {row.phone}</p> )}
             </div>
           </div>
+          <ActionCell row={row} modelName="Address" onEdit={onEdit}/>
         </div>
-
+        
         <p className="text-sm text-gray-600 bg-gray-50/50 rounded-xl p-3.5 border border-gray-100 leading-relaxed">{fullAddress(row)}</p>
       </div>
-      <ActionCell row={row} modelName="Address" onEdit={onEdit}/>
     </div>
   );
 }

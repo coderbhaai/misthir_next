@@ -1,29 +1,17 @@
-'use client'
-
 import { AddressProps } from '@amitkk/address/types';
-import { fullAddress } from '@amitkk/address/utils/addressUtils';
-import UserRow from '@amitkk/basic/static/UserRow';
-import { UserRowProps } from '@amitkk/basic/types/user';
-import { ActionCell } from '@amitkk/components/basic/ActionCell';
-import { TableCell, TableRow } from '@amitkk/components/basic/table';
-
-export interface DataProps extends AddressProps {
-  city_new: string;
-  country_id: string;
-  state_id: string;
-};
+import { AddressCardView } from '@amitkk/address/static/AddressCardView';
+import { AddressTableRow } from '@amitkk/address/static/AddressTableRow';
 
 type Props = {
-  row: DataProps;
-  onEdit: (row: DataProps) => void;
+  row: AddressProps;
+  onEdit: (row: AddressProps) => void;
+  viewMode?: "table" | "grid";
 };
 
-export function AdminDataTable({ row, onEdit }: Props) {
-  return (
-    <TableRow>
-      <TableCell><UserRow row={row.user_id as UserRowProps}/></TableCell>
-      <TableCell>{fullAddress(row)}</TableCell>
-      <ActionCell row={row} modelName="Address" onEdit={onEdit}/>
-    </TableRow>
-  );
+export function AdminDataTable({ row, onEdit, viewMode = "table" }: Props) {
+  if (viewMode === "grid") {
+    return <AddressCardView row={row} onEdit={onEdit} />;
+  }
+
+  return <AddressTableRow row={row} onEdit={onEdit} />;
 }

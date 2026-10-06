@@ -1,6 +1,6 @@
 import { AddressProps } from '@amitkk/address/types';
-import { AddressCardView } from './AddressCardView';
-import { AddressTableRow } from './AddressTableRow';
+import { AddressCardView } from '@amitkk/address/static/AddressCardView';
+import { AddressTableRow } from '@amitkk/address/static/AddressTableRow';
 
 type Props = {
   row: AddressProps;

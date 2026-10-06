@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import React, { ReactNode, useState } from "react";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { Button } from '@amitkk/components/button/button';
 import { FILTER_COMPONENTS } from "../filters";
@@ -18,8 +18,7 @@ type AdminTableLayoutProps<T> = {
   admin: any;
   title: ReactNode;
   head?: { id: string; label: string }[];
-  // Change rows to accept a function that receives the active viewMode
-  rows: (viewMode: "table" | "grid") => ReactNode;
+  rows: ReactNode; // Back to standard ReactNode!
   addButtonLabel?: string;
   filters?: readonly FilterConfig[];
   actionsAboveFilters?: ReactNode;
@@ -51,6 +50,14 @@ export function AdminTableLayout<T>({
   const { onPageChange, onRowsPerPageChange, clearFilters } = useFilterContext();
   const { data, pagination, handleAddNew } = admin;  
   const [currentViewMode, setCurrentViewMode] = useState<"table" | "grid">(viewMode);
+
+  // Automatically pass currentViewMode to all row children components
+  const enhancedRows = React.Children.map(rows, (child) => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child, { viewMode: currentViewMode } as any);
+    }
+    return child;
+  });
 
   return (
     <div className="relative pb-24">
@@ -113,10 +120,10 @@ export function AdminTableLayout<T>({
         </div>
       </div>
 
-      {/* Render Grid or Table dynamically using the callback */}
+      {/* Render Grid or Table using enhanced rows with injected viewMode */}
       {currentViewMode === "grid" ? (
         <div className={cn("row my-4", gridClassName)}>
-          {rows(currentViewMode)}
+          {enhancedRows}
           {!data?.length && (
             <div className="col-span-12 py-16 text-center text-sm text-muted-foreground bg-gray-50 rounded-2xl border border-dashed border-gray-300">
               {emptyMessage || "No data found"}
@@ -135,7 +142,7 @@ export function AdminTableLayout<T>({
             </TableHeader>
 
             <TableBody>
-              {rows(currentViewMode)}
+              {enhancedRows}
               {!data?.length &&
                 (emptyMessage || (
                   <TableRow>

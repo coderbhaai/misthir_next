@@ -1,11 +1,12 @@
 "use client";
 
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
-import { AdminDataTable, DataProps } from "@amitkk/ecom/admin/admin-order-table";
+import { AdminDataTable } from "@amitkk/ecom/admin/admin-order-table";
 import { useAdminPage } from "hooks/useAdminPage";
+import { OrderProps } from "@amitkk/ecom/types";
 
 export function AdminOrders() {
-    const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/ecom", listFunction: "get_all_orders" });  
+    const admin = useAdminPage<OrderProps>({ listEndpoint: "ecom/ecom", listFunction: "get_all_orders" });  
 
     const FILTER_CONFIG = [
         { name: "SearchFilter", grid: "col-span-9", },
@@ -22,8 +23,8 @@ export function AdminOrders() {
                 ];
 
     return (
-        <AdminTableLayout admin={admin} title="Orders" filters={FILTER_CONFIG} head={head} 
-            rows={admin.data.map((i: DataProps) => ( <AdminDataTable key={String(i._id)} row={i}/> ))}>
+        <AdminTableLayout admin={admin} title="My Orders" viewMode="grid" showViewModeSwitch={true} filters={FILTER_CONFIG} head={head} 
+            rows={admin.data.map((i: OrderProps) => ( <AdminDataTable key={String(i._id)} row={i}/> ))}>
         </AdminTableLayout>
     );
 }
