@@ -56,7 +56,7 @@ export default function ReviewForm({ module, module_id, onSubmitted }: ReviewFor
         formData.append("rating", String(rating ?? 0));
 
         try {
-            await apiRequest("POST", basic/review", formData);
+            const res = await apiRequest("POST", "basic/review", formData);
             if( res?.data ){
                 setFiles([]);
                 setReview("");

@@ -1,4 +1,4 @@
-import SellerProductForm from '@amitkk/seller/admin/add-update-product-form';
+import SellerProductForm from '@amitkk/ecom/seller/admin/add-update-product-form';
 import { useRouter } from 'next/router';
 
 const EditAdminVendorProduct = () => {

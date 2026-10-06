@@ -33,11 +33,11 @@ const DynamicAdminPage: DynamicAdminPageType = () => {
         const baseSlug = slugParts[0];
         const fullPath = `/admin/${slugParts.join("/")}`;
         
-        // const allowed = await checkPermission(fullPath);
-        // if (!allowed) {
-        //   window.location.href = get404Url();
-        //   return;
-        // }
+        const allowed = await checkPermission(fullPath);
+        if (!allowed) {
+          window.location.href = get404Url();
+          return;
+        }
         
         if (baseSlug && adminComponentMap[baseSlug]) {
           const mapEntry = adminComponentMap[baseSlug];
@@ -48,7 +48,7 @@ const DynamicAdminPage: DynamicAdminPageType = () => {
         }
       } catch (error) {
         clo(error);
-        const NotFoundComponent = () => <h1 className="heading">Page Not Found</h1>;
+        const NotFoundComponent = () => <h1 className="heading">XX Page Not Found</h1>;
         setComponent(() => NotFoundComponent);
       } finally {
         setLoading(false);
@@ -63,13 +63,9 @@ const DynamicAdminPage: DynamicAdminPageType = () => {
   }
 
   return (
-      <Component
-        module={Array.isArray(slug) && slug[1] ? slug[1] : ""}
-        module_id={Array.isArray(slug) && slug[2] ? slug[2] : ""}
-      />
+      <Component module={Array.isArray(slug) && slug[1] ? slug[1] : ""} module_id={Array.isArray(slug) && slug[2] ? slug[2] : ""}/>
   );
 };
 
 DynamicAdminPage.delayLayoutRender = true;
-
 export default DynamicAdminPage;

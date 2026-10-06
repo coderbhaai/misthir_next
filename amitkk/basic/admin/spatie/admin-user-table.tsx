@@ -17,6 +17,7 @@ export function AdminDataTable({ row, onEdit }: Props) {
 
   const permissionsList = row.permissions ?? [];
   const hasPermissions = permissionsList.length > 0;
+  const isSeller = (row.roles ?? []).some((role) => role.name?.toLowerCase() === 'seller');
 
   useEffect(() => {
     const element = textRef.current;
@@ -25,6 +26,11 @@ export function AdminDataTable({ row, onEdit }: Props) {
       setIsOverflowing(hasOverflow);
     }
   }, [permissionsList, isExpanded]);
+
+  const rowActions = [
+    { label: "Edit", onClick: () => onEdit(row) },
+    ...(isSeller ? [{ label: "Service Areas", href: `/admin/seller-service-areas/${row._id}` }] : []),
+  ];
 
   return (
     <>
@@ -48,10 +54,7 @@ export function AdminDataTable({ row, onEdit }: Props) {
         <ActionCell row={row} modelName="User" usePopover/>
       </TableRow>
 
-      <AdminRowActions id={row._id.toString()} actions={[
-        { label: "Edit", onClick: () => onEdit(row) },
-        { label: "Service Areas", href: `/admin/seller-service-areas/${row._id}` },
-      ]}/>
+      <AdminRowActions id={row._id.toString()} actions={rowActions}/>
     </>
   );
 }

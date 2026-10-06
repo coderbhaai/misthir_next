@@ -1,7 +1,6 @@
-// pages > admin > [...slug].tsx
+// pages > user > [...slug].tsx
 
 "use client";
-// import { checkPermission, clo, get404Url } from "@amitkk/basic/utils/utils";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { userComponentMap } from "../../amitkk/componentMaps";
@@ -19,7 +18,6 @@ const DynamicUserPage = () => {
 
     const loadComponent = async () => {
       try {
-        const redirectUrl = process.env.MODE === "dev" ? process.env.DEV_URL : process.env.PROD_URL;
         const token = getCookie("authToken");
         if (!token) {
           window.location.href = get404Url();
@@ -30,8 +28,10 @@ const DynamicUserPage = () => {
         const baseSlug = slugParts[0];
 
         if (baseSlug && userComponentMap[baseSlug]) {
-          const PageComponent = await userComponentMap[baseSlug]();
-          setComponent(() => PageComponent.default);
+          // 💡 Fix: Call .loader() here
+          const mapEntry = userComponentMap[baseSlug];
+          const PageComponent = await mapEntry.loader();
+          setComponent(() => PageComponent.default || PageComponent);
         } else {
           throw new Error(`Unknown base slug: ${baseSlug}`);
         }

@@ -96,6 +96,11 @@ import Sale from "./sales/Sale";
 import SaleTarget from "./sales/SaleTarget";
 import SaleUpsell from "./sales/SaleUpsell";
 
+import Wishlist from "./wishlist/Wishlist";
+import WishlistCart from "./wishlist/WishlistCart";
+import OrderGuide from "./wishlist/OrderGuide";
+import OrderGuideProducts from "./wishlist/OrderGuideProducts";
+
 import { auditLoggerPlugin } from "lib/server/plugins/auditLogger";
 
 const rawModels: Record<string, any> = {
@@ -135,6 +140,9 @@ const rawModels: Record<string, any> = {
 
   // Sales
   Sale, SaleTarget, SaleUpsell, 
+
+  // Wishlist
+  WishlistCart, Wishlist, OrderGuideProducts, OrderGuide, 
 };
 
 export type AnyModel = mongoose.Model<any, any, any, any, any, any>;

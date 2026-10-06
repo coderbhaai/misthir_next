@@ -289,17 +289,18 @@ export async function get_parent_menus(req: NextApiRequest, res: NextApiResponse
 export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) {
   try {
     const user_id = await getUserIdFromToken(req);
+    if (!user_id) { return res.status(401).json({ message: "Unauthorized: No user found from token" }); }
+
     const userPermissions = await UserPermission.find({ user_id }).select("permission_id").lean<{ permission_id?: Types.ObjectId | string }[]>().exec();
     const permissionIds = userPermissions.map((p) => p.permission_id).filter(Boolean);
+    
     const permittedMenus = await Menu.find({ status: true, permission_id: { $in: permissionIds } }).populate("media_id", "path alt").lean<IMenu[]>();
     const allMenusMap = new Map<string, IMenu>();
 
     async function addMenuWithParents(menu: IMenu) {
       if (!menu || !menu._id) return;
-
       const menuIdStr = menu._id.toString();
       if (allMenusMap.has(menuIdStr)) return;
-
       allMenusMap.set(menuIdStr, menu);
 
       if (menu.parent_id) {
@@ -314,15 +315,38 @@ export async function get_admin_menu(req: NextApiRequest, res: NextApiResponse) 
       await addMenuWithParents(menu);
     }
 
-    const allMenus = Array.from(allMenusMap.values());
-    const adminLinks: NestedMenu[] = buildMenuTree(allMenus, null);
-    const userSubmenus: NestedMenu[] = [];
+    const adminLinks: NestedMenu[] = buildMenuTree(Array.from(allMenusMap.values()), null);
 
-    return res.status(200).json({ message: "Fetched Menus", data: { adminLinks, userSubmenus } });
-  } catch (error) {
-    await logError(error, { function: "get_admin_menu", payload: req.body });
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
+    const rawUserMenus = await Menu.find({
+      status: true,
+      $or: [
+        { url: { $regex: /user/, $options: "i" } },
+        { path: { $regex: /user/, $options: "i" } }
+      ]
+    }).populate("media_id", "path alt").lean<IMenu[]>();
+    const userSubmenus: NestedMenu[] = buildMenuTree(rawUserMenus, null);
+
+    const rawSellerMenus = await Menu.find({
+      status: true,
+      $or: [
+        { url: { $regex: /seller/, $options: "i" } },
+        { path: { $regex: /seller/, $options: "i" } }
+      ],
+      $and: [
+        {
+          $or: [
+            { permission_id: { $in: permissionIds } },
+            { permission_id: { $exists: false } },
+            { permission_id: null }
+          ]
+        }
+      ]
+    }).populate("media_id", "path alt").lean<IMenu[]>();
+
+    const sellerSubmenus: NestedMenu[] = buildMenuTree(rawSellerMenus, null);
+
+    return res.status(200).json({ message: "Fetched Menus", data: { adminLinks, userSubmenus, sellerSubmenus } });
+  } catch (error) { await logError(error, { function: "get_admin_menu", payload: req.body }); }
 }
 
 export async function get_menu_links(req: NextApiRequest, res: NextApiResponse) {

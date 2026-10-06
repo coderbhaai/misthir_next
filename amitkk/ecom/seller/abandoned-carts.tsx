@@ -2,7 +2,7 @@
 
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useAdminPage } from "hooks/useAdminPage";
-import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-abandoned-cart-table";
+import { AdminDataTable, DataProps } from "@amitkk/ecom/seller/admin/seller-abandoned-cart-table";
 
 export function SellerAbandonedCart() {
     const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/ecom", listFunction: "get_vendor_abandoned_carts" });

@@ -7,6 +7,10 @@ import dynamic from "next/dynamic";
 import { useMenu, MenuGroup } from "contexts/MenuContext";
 import { useEcom } from "contexts/EcomContext";
 import { useAuth } from "contexts/AuthContext";
+import { useWishlist } from "contexts/WishlistContext";
+import { Button } from "@amitkk/components/button/button";
+import { Badge } from "@amitkk/components/ui/badge";
+import { Heart } from 'lucide-react';
 const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
 
 export default function MegaMenuNavbar() {
@@ -14,6 +18,7 @@ export default function MegaMenuNavbar() {
   useEffect(() => { setMounted(true); }, []);
 
   const { cartItemCount } = useEcom();
+  const { wishlistCount } = useWishlist();
   const { isLoggedIn, hasRole, user } = useAuth();
   const { menus } = useMenu();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -89,6 +94,16 @@ export default function MegaMenuNavbar() {
         </div>
 
         <div className="flex items-center gap-3">
+
+        {wishlistCount > 0 && ( 
+          <Link href="/my-wishlist" passHref>
+            <Button variant="ghost" size="icon" className="relative rounded-full"aria-label="Wishlist">
+              <Heart className="h-5 w-5" />
+              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">{wishlistCount}</Badge>
+            </Button>
+          </Link>
+        )}
+
           {mounted && cartItemCount > 0 && (
             <Link href="/cart" className="relative p-1.5 rounded-md hover:bg-white/10 transition-colors shrink-0">
               <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-white text-primary rounded-full h-4 w-4 flex items-center justify-center">{cartItemCount}</span>

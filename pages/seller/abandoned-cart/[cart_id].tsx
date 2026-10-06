@@ -1,4 +1,4 @@
-import SellerSingleAbandonedCart from '@amitkk/seller/admin/seller-single-abandoned-cart'
+import SellerSingleAbandonedCart from '@amitkk/ecom/seller/admin/seller-single-abandoned-cart'
 import { useRouter } from 'next/router';
 
 const EditSellerSingleAbandonedCart = () => {

@@ -90,19 +90,9 @@ export default function FancySubmitButtonOne({
 
   useEffect(() => {
     const button = buttonRef.current;
+    if (!button) { return; }
 
-    if (!button) {
-      return;
-    }
-
-    const handleNativeClick = () => {      
-      try {
-        playAnimation();
-      } catch (error) {
-        console.error("ANIMATION ERROR", error);
-      }
-    };
-
+    const handleNativeClick = () => { playAnimation(); };
     button.addEventListener("click", handleNativeClick);
 
     return () => { button.removeEventListener("click", handleNativeClick); };

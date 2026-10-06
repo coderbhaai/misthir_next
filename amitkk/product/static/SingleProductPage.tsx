@@ -22,6 +22,7 @@ import ProductImageGallery from "@amitkk/basic/admin/media/ProductImageGallery";
 import ContentRenderer from "@amitkk/basic/static/ContentRenderer";
 import { MetaRow } from "@amitkk/components/admin/MetaRow";
 import { filterAndExtractFeatures } from "@amitkk/basic/utils/my-utils/ecom-utils";
+import { useWishlist } from "contexts/WishlistContext";
 
 interface ProductPageProps {
   product: SingleProductItemProps;
@@ -43,6 +44,8 @@ const getFeatureName = (feature: any, fallback: string = "Option"): string => {
 
 export default function SingleProductPage({ product, relatedContent, reviews }: ProductPageProps) {
   const { sendAction, cart } = useEcom() as { sendAction: Function; cart?: { items?: Array<{ sku_id: string; flavor_id?: string; color_id?: string }> } };
+  const { sendWishlistAction, isInWishlist } = useWishlist();
+  const handleAddToWishlist = () => sendWishlistAction("add_to_wishlist", { action: "add_to_wishlist", product_id: product._id, sku_id: selectedSku?._id, quantity });
 
   const [aboutOpen, setAboutOpen] = useState(true);
   const [openBulkModal, setOpenBulkModal] = useState(false);
@@ -200,6 +203,9 @@ export default function SingleProductPage({ product, relatedContent, reviews }: 
                     {isAlreadyInCart ? "Update Cart / Add More" : "Add to Cart"}
                   </Button>
                   <Button className="bg-gradient-to-r from-[#f48fb1] to-[#ec407a] text-white rounded-xl px-6 py-2 text-base hover:from-[#ec407a] hover:to-[#f06292]">Buy now</Button>
+                  {selectedSku?._id && !isInWishlist(product._id.toString(), selectedSku._id.toString()) && ( 
+                      <button onClick={handleAddToWishlist} className="h-[52px] rounded-lg border border-neutral-300 px-6 font-medium text-neutral-700 transition-all hover:bg-neutral-100">Add to Wishlist</button> 
+                  )}
                 </div>
               </div>
             )}

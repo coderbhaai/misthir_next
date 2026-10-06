@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useFilterContext } from "contexts/FilterContext";
-import { apiRequest } from "../my-utils/admin-utils";
+import { apiRequest, clo } from "../my-utils/admin-utils";
 import { getFilterFieldMeta } from "../filters";
 import OpenSelect from "@amitkk/components/basic/OpenSelect";
 
@@ -60,8 +60,7 @@ export default function UserFilter(props: UserFilterProps) {
         const match = fetchedUsers.find((u) => String(u._id) === selectedValue);
         if (match) setSelectedUserDoc(match);
       }
-    } catch (error) {
-      console.error("Failed to load user options:", error);
+    } catch (error) { clo(error); 
       setUsers([]);
     } finally {
       setLoading(false);

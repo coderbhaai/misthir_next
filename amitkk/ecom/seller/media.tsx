@@ -2,8 +2,8 @@
 
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useAdminPage } from "hooks/useAdminPage";
-import DataModal from "@amitkk/seller/admin/seller-media-modal";
-import { AdminDataTable } from "@amitkk/seller/admin/seller-media-table";
+import DataModal from "@amitkk/ecom/seller/admin/seller-media-modal";
+import { AdminDataTable } from "@amitkk/ecom/seller/admin/seller-media-table";
 import { SingleMediaProps } from "@amitkk/basic/types/media";
 
 export  function SellerMedia(){

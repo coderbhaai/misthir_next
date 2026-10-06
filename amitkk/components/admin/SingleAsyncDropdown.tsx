@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { apiRequest } from "@amitkk/basic/utils/my-utils/admin-utils";
+import { apiRequest, clo } from "@amitkk/basic/utils/my-utils/admin-utils";
 import { X } from "lucide-react"; // Imported Lucide icon
 import AddActionButton from "@amitkk/components/ui/AddSideActionButton";
 
@@ -116,12 +116,7 @@ export default function SingleAsyncDropdown<T extends AnyObj>({
 
       const data = Array.isArray(res?.data) ? res.data : [];
       setOptions(data);
-    } catch (err) { 
-      console.error(`❌ [${label} Dropdown] fetch error`, err); 
-      setOptions([]); 
-    } finally { 
-      setLoading(false); 
-    }
+    } catch (err) { clo(err); setOptions([]); } finally { setLoading(false); }
   };
 
   useEffect(() => {

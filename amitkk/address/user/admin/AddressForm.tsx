@@ -14,11 +14,13 @@ import { Checkbox } from '@amitkk/components/basic/checkbox';
 type DataFormProps = {
     selectedAddressId?: string | number | null | object;
     onSubmit: (data: DataProps) => void;
+    user_id?: string;
 };
 
-export default function AddressForm({ selectedAddressId, onSubmit }: DataFormProps) {
+export default function AddressForm({ selectedAddressId, onSubmit, user_id }: DataFormProps) {
     const initialFormData: DataProps = {
         _id: "",
+        user_id,
         name: "",
         email: "",
         phone: "",

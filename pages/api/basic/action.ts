@@ -150,6 +150,9 @@ export async function create_spatie(){
       { name: 'products', url: '/admin/products',  status: 1, permission: 'Ecom', menu: ["Product"] },
       { name: 'Seller Commission', url: '/admin/seller-commission',  status: 1, permission: 'Ecom', menu: ["Product"] },
       { name: 'seller', url: '/admin/seller',  status: 1, permission: 'Ecom', menu: ["Product"] },
+      { name: 'Grievance', url: '/admin/grievance',  status: 1, permission: 'Ecom', menu: ["Product"] },
+      { name: 'Wishlist', url: '/admin/wishlist',  status: 1, permission: 'Ecom', menu: ["Product"] },
+      { name: 'Order Guide', url: '/admin/order-guide',  status: 1, permission: 'Ecom', menu: ["Product"] },
 
       { name: 'Abandoned Carts', url: '/seller/abandoned-carts',  status: 1, permission: 'Seller', menu: ["Seller"] },
       { name: 'brand', url: '/seller/brand',  status: 1, permission: 'Seller', menu: ["Seller"] },

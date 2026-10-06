@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode } from "react";
-import { Plus } from "lucide-react";
+import { ReactNode, useState } from "react";
+import { Plus, LayoutGrid, List } from "lucide-react";
 import { Button } from '@amitkk/components/button/button';
 import { FILTER_COMPONENTS } from "../filters";
 import { useFilterContext } from "contexts/FilterContext";
@@ -17,8 +17,9 @@ interface FilterConfig {
 type AdminTableLayoutProps<T> = {
   admin: any;
   title: ReactNode;
-  head: { id: string; label: string }[];
-  rows: ReactNode;
+  head?: { id: string; label: string }[];
+  // Change rows to accept a function that receives the active viewMode
+  rows: (viewMode: "table" | "grid") => ReactNode;
   addButtonLabel?: string;
   filters?: readonly FilterConfig[];
   actionsAboveFilters?: ReactNode;
@@ -26,12 +27,15 @@ type AdminTableLayoutProps<T> = {
   emptyMessage?: ReactNode;
   showPagination?: boolean;
   tableContainerClassName?: string;
+  viewMode?: "table" | "grid";
+  showViewModeSwitch?: boolean;
+  gridClassName?: string;
 };
 
 export function AdminTableLayout<T>({
   admin,
   title,
-  head,
+  head = [],
   rows,
   addButtonLabel,
   filters = [],
@@ -40,23 +44,40 @@ export function AdminTableLayout<T>({
   emptyMessage,
   showPagination = true,
   tableContainerClassName,
+  viewMode = "table",
+  showViewModeSwitch = false,
+  gridClassName = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
 }: AdminTableLayoutProps<T>) {
   const { onPageChange, onRowsPerPageChange, clearFilters } = useFilterContext();
-  const { data, pagination, handleAddNew } = admin;
+  const { data, pagination, handleAddNew } = admin;  
+  const [currentViewMode, setCurrentViewMode] = useState<"table" | "grid">(viewMode);
 
   return (
     <div className="relative pb-24">
       <div className="px-1">
         <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden">
-          <h1 className="text-xl font-bold">{title}</h1>
-          <div className="flex flex-wrap items-end gap-4">
-            {handleAddNew && addButtonLabel && (
-              <Button onClick={handleAddNew} className="shrink-0">
-                <Plus className="mr-2 h-4 w-4" />
-                {addButtonLabel}
-              </Button>
-            )}
-            {actionsAboveFilters && <div className="flex justify-end gap-2">{actionsAboveFilters}</div>}
+          <div className="flex items-center justify-between w-full gap-3">
+            <h1 className="text-xl font-bold">{title}</h1>
+
+            <div className="flex flex-wrap items-end gap-4">
+              {handleAddNew && addButtonLabel && (
+                <Button onClick={handleAddNew} className="shrink-0">
+                  <Plus className="mr-2 h-4 w-4" />{addButtonLabel}</Button>
+              )}
+              {actionsAboveFilters && <div className="flex justify-end gap-2">{actionsAboveFilters}</div>}
+
+              {showViewModeSwitch && (
+                <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
+                  <button type="button" onClick={() => setCurrentViewMode("table")} title="Table View"
+                    className={cn( "p-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1", currentViewMode === "table" ? "bg-blue-600 text-white shadow-md" : "text-gray-500 hover:text-gray-900 hover:bg-gray-200")}>
+                    <List className="w-4 h-4" />
+                  </button>
+                  <button type="button" onClick={() => setCurrentViewMode("grid")} title="Grid View" className={cn( "p-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1", currentViewMode === "grid" ? "bg-blue-600 text-white shadow-md" : "text-gray-500 hover:text-gray-900 hover:bg-gray-200" )}>
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -92,29 +113,41 @@ export function AdminTableLayout<T>({
         </div>
       </div>
 
-      <div className={cn("relative w-full overflow-auto rounded-2xl border border-gray-200 bg-white shadow-sm", tableContainerClassName)}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {head.map((item) => (
-                <TableHead key={item.id}>{item.label}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
+      {/* Render Grid or Table dynamically using the callback */}
+      {currentViewMode === "grid" ? (
+        <div className={cn("row my-4", gridClassName)}>
+          {rows(currentViewMode)}
+          {!data?.length && (
+            <div className="col-span-12 py-16 text-center text-sm text-muted-foreground bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+              {emptyMessage || "No data found"}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className={cn("relative w-full overflow-auto rounded-2xl border border-gray-200 bg-white shadow-sm", tableContainerClassName)}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {head.map((item) => (
+                  <TableHead key={item.id}>{item.label}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
 
-          <TableBody>
-            {rows}
-            {!data?.length &&
-              (emptyMessage || (
-                <TableRow>
-                  <td colSpan={head.length} className="h-24 text-center text-sm text-muted-foreground">
-                    No data found
-                  </td>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-      </div>
+            <TableBody>
+              {rows(currentViewMode)}
+              {!data?.length &&
+                (emptyMessage || (
+                  <TableRow>
+                    <td colSpan={head.length || 1} className="h-24 text-center text-sm text-muted-foreground">
+                      No data found
+                    </td>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {showPagination && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -166,4 +199,4 @@ export function AdminTableLayout<T>({
       {children}
     </div>
   );
-} 
+}

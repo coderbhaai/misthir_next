@@ -1,5 +1,6 @@
 "use client";
 
+import { clo } from "@amitkk/basic/utils/my-utils/admin-utils";
 import { useEffect, useState } from "react";
 
 export function usePersistentFilters<T>(
@@ -17,11 +18,7 @@ export function usePersistentFilters<T>(
       if (raw) {
         setState(JSON.parse(raw));
       }
-    } catch (err) {
-      console.error("Load filter error:", err);
-    } finally {
-      setHydrated(true);
-    }
+    } catch (err) { clo(err); } finally { setHydrated(true); }
   }, [storageKey]);
 
   // SAVE
@@ -30,9 +27,7 @@ export function usePersistentFilters<T>(
 
     try {
       localStorage.setItem(storageKey, JSON.stringify(state));
-    } catch (err) {
-      console.error("Save filter error:", err);
-    }
+    } catch (err) { clo(err); }
   }, [state, storageKey, hydrated]);
 
   return {

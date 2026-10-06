@@ -5,11 +5,11 @@ import { Types } from 'mongoose';
 export interface LayoutLinks {
   adminLinks: any[];
   userSubmenus: any[];
+  sellerSubmenus: any[];
 }
 
 export const getLayoutLinks = async (): Promise<LayoutLinks> => {
   const res = await apiRequest("GET", "basic/menu?function=get_admin_menu");
-
   const links = res?.data;
 
   return links || { adminLinks: [], userSubmenus: [] };

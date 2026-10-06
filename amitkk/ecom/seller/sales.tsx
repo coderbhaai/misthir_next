@@ -2,7 +2,7 @@
 
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useAdminPage } from "hooks/useAdminPage";
-import { AdminDataTable, DataProps } from "@amitkk/seller/admin/seller-sales-table";
+import { AdminDataTable, DataProps } from "@amitkk/ecom/seller/admin/seller-sales-table";
 
 export function SellerSales() {
     const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/sales", listFunction: "get_filtered_sales", addRoute: "/admin/add-update-blog" });

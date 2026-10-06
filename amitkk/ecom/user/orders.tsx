@@ -2,7 +2,7 @@
 
 import { AdminTableLayout } from "@amitkk/basic/utils/layouts/AdminTableLayout";
 import { useAdminPage } from "hooks/useAdminPage";
-import { AdminDataTable, DataProps } from "@amitkk/user/admin/user-order-table";
+import { AdminDataTable, DataProps } from "@amitkk/ecom/user/admin/user-order-table";
 
 export function UserOrders() {
     const admin = useAdminPage<DataProps>({ listEndpoint: "ecom/ecom", listFunction: "get_user_orders" });

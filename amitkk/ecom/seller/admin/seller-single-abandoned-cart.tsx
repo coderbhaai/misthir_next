@@ -7,7 +7,7 @@ import { CartProps, CartSkuProps } from '@amitkk/ecom/types';
 import PaymentStatic from "@amitkk/ecom/static/PaymentStatic";
 import { semiAddress } from "@amitkk/address/utils/addressUtils";
 import CartCharges from "@amitkk/ecom/static/CartCharges";
-import VendorDiscountModal from "@amitkk/seller/admin/VendorDiscountModal";
+import VendorDiscountModal from "@amitkk/ecom/seller/admin/VendorDiscountModal";
 import dayjs from "dayjs";
 import { TextField } from "@amitkk/components/basic/TextField";
 import { Button } from "@amitkk/components/button/button";

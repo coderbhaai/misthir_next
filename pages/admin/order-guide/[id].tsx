@@ -1,8 +1,9 @@
-import SellerProductForm from '@amitkk/ecom/seller/admin/add-update-product-form';
+// import SingleAdminOrderGuide from '@amitkk/ecom/admin/SingleAdminOrderGuide';
+import SingleAdminOrderGuide from '@amitkk/wishlist/admin/SingleAdminOrderGuide';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
-const EditSellerProduct = () => {
+const EditProduct = () => {
   const router = useRouter();
   const { id } = router.query;
 
@@ -13,7 +14,7 @@ const EditSellerProduct = () => {
 
   if (!id) return <div>Error: No ID found</div>;
 
-  return <SellerProductForm dataId={id as string} />;
+  return <SingleAdminOrderGuide dataId={id as string} />;
 };
 
-export default EditSellerProduct;
+export default EditProduct;

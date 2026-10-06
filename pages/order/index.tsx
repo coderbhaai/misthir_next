@@ -1,6 +1,6 @@
 // pages > order > index.tsx
 
-import UserSingleOrder from "@amitkk/user/static/user-single-order";
+import UserSingleOrder from "@amitkk/ecom/user/admin/user-single-order";
 import { useEffect, useState } from "react";
 
 export default function OrderPage() {
