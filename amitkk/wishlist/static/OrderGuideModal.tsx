@@ -1,4 +1,3 @@
-// components/OrderGuideModal.tsx
 import { useState } from "react";
 import { useAuth } from "contexts/AuthContext";
 import CustomModal from "@amitkk/basic/static/CustomModal";
@@ -18,8 +17,7 @@ export default function OrderGuideModal({ open, handleClose, onSelectGuide = nul
     const [activeTab, setActiveTab] = useState<string>("create");
     const handleTabChange = (value: string) => { setActiveTab(value); };
 
-    const { orderGuides, loadingGuides } = useAuth();
-    const [isCreating, setIsCreating] = useState(false);
+    const { orderGuides } = useAuth();
     const [newGuideName, setNewGuideName] = useState("");
 
     if (!open) return null;
@@ -38,7 +36,6 @@ export default function OrderGuideModal({ open, handleClose, onSelectGuide = nul
 
             hitToastr('success', res?.message);
             setNewGuideName("");
-            setIsCreating(false);
             handleClose();
         }
     };
@@ -58,10 +55,7 @@ export default function OrderGuideModal({ open, handleClose, onSelectGuide = nul
             <TabsContent value="create">
                 <div className="space-y-4">
                     <TextField label='Guide Name' value={newGuideName} name='name' onChange={(e) => setNewGuideName(e.target.value)} required/>
-                    <div className="flex gap-2">
-                        <button onClick={handleCreate} className="flex-1 rounded-md bg-primary py-2 text-sm font-medium text-white hover:bg-primary/90">Save & Select</button>
-                        <button onClick={() => setIsCreating(false)} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">Cancel</button>
-                    </div>
+                    <button onClick={handleCreate} className="flex-1 rounded-md bg-primary py-2 text-sm font-medium text-white hover:bg-primary/90">Save & Select</button>
                 </div>
                 
             </TabsContent>

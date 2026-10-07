@@ -21,11 +21,9 @@ export  function AdminAddress(){
     
     return(
         <AdminTableLayout admin={admin} title="Address" addButtonLabel="New Address" viewMode="table" showViewModeSwitch={true} filters={FILTER_CONFIG} head={head} 
-                    rows={admin.data.map((i: AddressProps) => ( 
-                        <AdminDataTable key={String(i._id)} row={i} onEdit={(row) => admin.handleEdit(row?._id?.toString())}/> 
-                    ))}>
-                    {/* <DataModal {...admin.modal}/> */}
-                </AdminTableLayout>   
+            rows={admin.data.map((i: AddressProps) => ( <AdminDataTable key={String(i._id)} row={i} onEdit={(row) => admin.handleEdit(row?._id?.toString())}/> ))}>
+            {/* <DataModal {...admin.modal}/> */}
+        </AdminTableLayout>
     )
 }
 

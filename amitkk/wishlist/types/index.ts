@@ -65,3 +65,12 @@ export interface OrderGuideProps {
 
   products?: SingleProductItemProps[];
 }
+
+export interface OrderGuideProductsProps {
+  _id?: string;
+  sku_id?: string;
+  product_id?: string | SingleProductItemProps;
+  quantity?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}

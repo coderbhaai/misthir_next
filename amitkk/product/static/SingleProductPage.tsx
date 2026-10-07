@@ -1,7 +1,4 @@
-// pages > product > [...slug.tsx]
-
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import SuggestProducts from "@amitkk/product/static/suggest-products";
 import SuggestBlogs from "@amitkk/blog/static/suggest-blog";
 import ShareMe from "@amitkk/basic/static/ShareMe";
@@ -11,7 +8,6 @@ import BulkOrderModal from "@amitkk/ecom/static/BulkOrderModal";
 import SuggestTestimonial from "@amitkk/basic/admin/testimonial/suggest-testimonial";
 import FaqPanel from "@amitkk/basic/admin/faq/FaqPanel";
 import { RelatedContent, ReviewProps } from "@amitkk/basic/types";
-import { Card } from "@amitkk/components/ui/card";
 import { Button } from "@amitkk/components/button/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@amitkk/components/ui/badge";
@@ -23,6 +19,9 @@ import ContentRenderer from "@amitkk/basic/static/ContentRenderer";
 import { MetaRow } from "@amitkk/components/admin/MetaRow";
 import { filterAndExtractFeatures } from "@amitkk/basic/utils/my-utils/ecom-utils";
 import { useWishlist } from "contexts/WishlistContext";
+import OrderGuideModal from "@amitkk/wishlist/static/OrderGuideModal";
+import { useAuth } from "contexts/AuthContext";
+import { apiRequest, hitToastr } from "@amitkk/basic/utils/my-utils/admin-utils";
 
 interface ProductPageProps {
   product: SingleProductItemProps;
@@ -43,6 +42,7 @@ const getFeatureName = (feature: any, fallback: string = "Option"): string => {
 };
 
 export default function SingleProductPage({ product, relatedContent, reviews }: ProductPageProps) {
+  const { isLoggedIn, hasRole } = useAuth();
   const { sendAction, cart } = useEcom() as { sendAction: Function; cart?: { items?: Array<{ sku_id: string; flavor_id?: string; color_id?: string }> } };
   const { sendWishlistAction, isInWishlist } = useWishlist();
   const handleAddToWishlist = () => sendWishlistAction("add_to_wishlist", { action: "add_to_wishlist", product_id: product._id, sku_id: selectedSku?._id, quantity });
@@ -118,6 +118,33 @@ export default function SingleProductPage({ product, relatedContent, reviews }: 
   };
 
   if (!product) { return <p>Product not found</p>; }
+
+  const [guideModalOpen, setGuideModalOpen] = useState(false);
+  const handleAddToOrderGuideClick = () => {
+      if (!isLoggedIn) { return; }
+      setGuideModalOpen(true);
+  };
+
+  const handleSelectGuide = async (guideId: string) => {
+    try {
+        const formData = new FormData();
+        formData.append("function", "add_to_order_guide");
+        formData.append("order_guide_id", guideId);
+        formData.append("product_id", product?._id);
+        formData.append("sku_id", selectedSku?._id ?? "");
+        formData.append("quantity", quantity.toString());
+
+        const res = await apiRequest("POST", "ecom/wishlist", formData);
+
+        if (res?.data || res?.status === 200) {
+          hitToastr("success", res?.message || "Item added to Order Guide successfully!");
+          setGuideModalOpen(false);
+        }
+    } catch (error) {
+      console.error("Error adding item to order guide:", error);
+      hitToastr("error", "Failed to add item to order guide.");
+    }
+  };
 
   return (
     <>
@@ -203,6 +230,9 @@ export default function SingleProductPage({ product, relatedContent, reviews }: 
                     {isAlreadyInCart ? "Update Cart / Add More" : "Add to Cart"}
                   </Button>
                   <Button className="bg-gradient-to-r from-[#f48fb1] to-[#ec407a] text-white rounded-xl px-6 py-2 text-base hover:from-[#ec407a] hover:to-[#f06292]">Buy now</Button>
+                  {isLoggedIn && selectedSku?._id && ( 
+                    <button onClick={handleAddToOrderGuideClick} className="h-[52px] rounded-lg border border-neutral-300 px-6 font-medium text-neutral-700 transition-all hover:bg-neutral-100">Add to Order Guide</button>
+                  )}
                   {selectedSku?._id && !isInWishlist(product._id.toString(), selectedSku._id.toString()) && ( 
                       <button onClick={handleAddToWishlist} className="h-[52px] rounded-lg border border-neutral-300 px-6 font-medium text-neutral-700 transition-all hover:bg-neutral-100">Add to Wishlist</button> 
                   )}
@@ -233,6 +263,7 @@ export default function SingleProductPage({ product, relatedContent, reviews }: 
       <SuggestBlogs data={relatedContent.blogs} />
 
       <BulkOrderModal isOpen={openBulkModal} onClose={() => setOpenBulkModal(false)} product_id={product?._id as string || ""} sku_id={selectedSku?._id as string || ""} seller_id={product?.seller_id as unknown as string || ""}/>
+      <OrderGuideModal open={guideModalOpen} handleClose={() => setGuideModalOpen(false)} onSelectGuide={handleSelectGuide}/>
     </>
   );
 }

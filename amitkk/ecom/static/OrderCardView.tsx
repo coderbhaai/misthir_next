@@ -12,7 +12,6 @@ export function OrderCardView({ row }: Props) {
   return (
     <div className="col-span-12 md:col-span-4 card p-3">
       <div className="space-y-4">
-        {/* Header with order date / ID */}
         <div className="flex items-center justify-between pb-3 border-b border-gray-100 text-xs text-gray-500">
           <div className="flex items-center gap-1.5 font-medium text-gray-700">
             <Package className="w-4 h-4 text-blue-600" />
@@ -26,7 +25,6 @@ export function OrderCardView({ row }: Props) {
           )}
         </div>
 
-        {/* Products / SKUs Section */}
         <div className="space-y-2">
           <h5 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Products</h5>
           <div className="text-sm text-gray-700 bg-gray-50/50 rounded-xl p-3 border border-gray-100">
@@ -34,7 +32,6 @@ export function OrderCardView({ row }: Props) {
           </div>
         </div>
 
-        {/* Charges Section (if present) */}
         {row.orderCharges && (
           <div className="space-y-2">
             <h5 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Charges Breakdown</h5>
@@ -44,8 +41,7 @@ export function OrderCardView({ row }: Props) {
           </div>
         )}
       </div>
-
-      {/* Footer with Payment Summary */}
+      
       <div className="pt-3 border-t border-gray-100 flex items-center justify-between mt-2">
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           <CreditCard className="w-4 h-4 text-gray-400" />

@@ -21,6 +21,11 @@ interface User {
   token?: string;
 }
 
+export interface OrderGuide {
+  _id: string;
+  name: string;
+}
+
 interface AuthContextType {
   isLoggedIn: boolean;
   user: User | null;
@@ -38,6 +43,10 @@ interface AuthContextType {
   canAny: (permissions: string[]) => boolean;
   canAll: (permissions: string[]) => boolean;
   canAccess: (modelName: string, id: string) => Promise<boolean>;
+  orderGuides: OrderGuide[];
+  loadingGuides: boolean;
+  fetchOrderGuides: () => Promise<void>;
+  setOrderGuides: React.Dispatch<React.SetStateAction<OrderGuide[]>>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -57,6 +66,10 @@ const AuthContext = createContext<AuthContextType>({
   canAny: () => false,
   canAll: () => false,
   canAccess: async () => false,
+  orderGuides: [],
+  loadingGuides: false,
+  fetchOrderGuides: async () => {},
+  setOrderGuides: () => {},
 });
 
 export const useUserId = () => {
@@ -142,8 +155,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setRoles([]);
     setPermissions([]);
-
     setIsLoggedIn(false);
+    setOrderGuides([]);
 
     logoutListeners.forEach(cb => cb());
   };
@@ -189,6 +202,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch { return false; }
   }, []);
 
+  const [orderGuides, setOrderGuides] = useState<OrderGuide[]>([]);
+  const [loadingGuides, setLoadingGuides] = useState(false);
+  const fetchOrderGuides = useCallback(async () => {
+    setLoadingGuides(true);
+    try {
+      const res = await apiRequest("GET", `ecom/wishlist?function=get_my_order_guides`);
+      if (res?.data) {
+        setOrderGuides(res.data);
+      }
+    } catch (error) {
+      console.error("Error fetching order guides:", error);
+    } finally {
+      setLoadingGuides(false);
+    }
+  }, []);
+  
+  useEffect(() => { 
+    if (isLoggedIn) { fetchOrderGuides(); } 
+  }, [isLoggedIn, fetchOrderGuides]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -208,6 +241,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         canAny,
         canAll,
         canAccess,
+        orderGuides,
+        loadingGuides,
+        fetchOrderGuides,
+        setOrderGuides,
       }}
     >
       {children}
