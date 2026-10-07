@@ -12,7 +12,6 @@ export interface OrderCouponDoc extends Document<Types.ObjectId> {
   discount_type: string;
   discount?: number;
   name: string;
-  code: string;
   sales: number;
   status: boolean;
   valid_from: Date;
@@ -34,7 +33,6 @@ const orderCouponSchema = new Schema<OrderCouponDoc>({
     discount_type: { type: String, required: true },
     discount: { type: Number, default: null },
     name: { type: String, required: true },
-    code: { type: String, required: true, unique: true },
     sales: { type: Number, default: 0 },
     status: { type: Boolean, default: false },
     valid_from: { type: Date, required: true },

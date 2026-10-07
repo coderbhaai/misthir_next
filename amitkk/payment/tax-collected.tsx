@@ -5,7 +5,7 @@ import { useAdminPage } from "hooks/useAdminPage";
 import { AdminDataTable, DataProps } from "@amitkk/payment/admin/admin-tax-collected-table";
 
 export function AdminTaxCollected() {
-    const admin = useAdminPage<DataProps>({ listEndpoint: "payment/payment", listFunction: "get_all_tax_collected" });    
+    const admin = useAdminPage<DataProps>({ listEndpoint: "payment/tax", listFunction: "get_filtered_tax_collected" });    
 
     const FILTER_CONFIG = [
         { name: "SearchFilter", grid: "col-span-9", },

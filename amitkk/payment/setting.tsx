@@ -15,11 +15,8 @@ export  function AdminSetting(){
     ] as const;
 
     const head: { id: string; label: string }[] = [
-                    { id: "name", label: "Name" },
                     { id: "module", label: "Module" },
                     { id: "module_value", label: "Value" },
-                    { id: "status", label: "Status" },
-                    { id: "date", label: "Date" },
                     { id: "", label: "" },
                 ];
     

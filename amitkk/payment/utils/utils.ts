@@ -19,7 +19,6 @@ export type PaymentGatewayName = 'razorpay' | 'phonepe' | 'mpesa';
 
 export const makePayment = async ({ module, module_id }: { module: string; module_id: string }) => {
   try{
-
     const res = await apiRequest("GET", `payment/payment?function=get_all_settings`);
     if( !res?.data ){ hitToastr('errors', "Site Setting not found"); return; }
 
@@ -75,10 +74,18 @@ export const hitRazorpay = async (module: string, module_id: string) => {
         },
         theme: { color: '#f19f40' },
         handler: async (response: any) => {
-          await apiRequest("POST", "payment/payment", { response, module, module_id, payment_gateway: "Razorpay", source: "Website", function: "payment_response" });
+          const res = await apiRequest("POST", "payment/payment", { 
+            function: "payment_response",
+            options,
+            response, 
+            module, 
+            module_id, 
+            payment_gateway: "Razorpay", 
+            source: "Website", 
+          });
           
           if( res?.data?.order_id ){
-            router.push(`/order/${res?.data?.order_id}`);
+            // router.push(`/order/${res?.data?.order_id}`);
           }
         },
       };
@@ -104,7 +111,6 @@ export function getPaymentConfig() {
   const key_id = isProd ? process.env.NEXT_PUBLIC_RAZORPAY_KEY_PROD_ID : process.env.NEXT_PUBLIC_RAZORPAY_KEY_TEST_ID;
   return { isProd, key_id };
 }
-
 
 export function generateInvoice(order: OrderProps) {
   const doc = new jsPDF();

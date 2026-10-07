@@ -366,12 +366,18 @@ export async function upsertCartCharges(cart_id: string, data: Partial<typeof Ca
 
 export async function place_order(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const cart_id = await getCartIdFromRequest(req, res);
-    if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
+    // const cart_id = await getCartIdFromRequest(req, res);
+    // if (!cart_id) { return res.status(200).json({ status: false, message: 'Cart not found' }); }
 
-    const result = await createOrderFromCart(cart_id, res);
 
-    return res.status(200).json({ status: true, message: "Order Placed", data: result });
+    // const payment = await createPaymentOrder("Cart", cart_id);
+
+    // return res.status(200).json({ status: true, message: "Payment initiated", data: payment });
+
+
+    // const result = await createOrderFromCart(cart_id, res);
+
+    // return res.status(200).json({ status: true, message: "Order Placed", data: true });
   } catch (error) { return await logError(error, { function: "place_order", payload: req.body }); }
 };
 
@@ -382,7 +388,7 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
       { path: "cartConsent"}, 
       { path: "cartCoupon", populate: { path: "coupon_id", model: "Coupon" } }, 
       { path: "billing_address_id", populate: { path: "city_id", populate: { path: "state_id", }, }, }, 
-      { path: "cartSkus", populate: { path: "sku_id" } } 
+      { path: "cartSkus", populate: [{ path: "sku_id" }, { path: "product_id", populate: { path: "tax_id" } }] } 
     ]);
     if (!cart) { return { status: false, message: "Cart not found" }; }
   
@@ -414,70 +420,63 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
       }).save();
     }
 
-    if (cart.cartConsent) {
-      const { email, phone } = cart.cartConsent;
-      let orderConsentId;
-      let emailDuplicateFlag = false;
-      let phoneDuplicateFlag = false;
+    // if (cart.cartConsent) {
+    //   const { email, phone } = cart.cartConsent;
+    //   let orderConsentId;
+    //   let emailDuplicateFlag = false;
+    //   let phoneDuplicateFlag = false;
 
-      // 1. Check for existing records matching email or phone individually
-      const [existingByEmail, existingByPhone] = await Promise.all([
-        email ? OrderConsent.findOne({ email }) : null,
-        phone ? OrderConsent.findOne({ phone }) : null,
-      ]);
+    //   const [existingByEmail, existingByPhone] = await Promise.all([
+    //     email ? OrderConsent.findOne({ email }) : null,
+    //     phone ? OrderConsent.findOne({ phone }) : null,
+    //   ]);
 
-      if (existingByEmail && existingByPhone) {
-        // Scenario A: Both exist (could be the same document or two separate ones)
-        // If they point to the exact same document, reuse it. Otherwise, pick one (e.g., email's record).
-        orderConsentId = existingByEmail._id;
-        emailDuplicateFlag = true;
-        phoneDuplicateFlag = true;
-      } else if (existingByEmail) {
-        // Scenario B: Only email exists
-        orderConsentId = existingByEmail._id;
-        emailDuplicateFlag = true;
-        phoneDuplicateFlag = false;
-      } else if (existingByPhone) {
-        // Scenario C: Only phone exists
-        orderConsentId = existingByPhone._id;
-        emailDuplicateFlag = false;
-        phoneDuplicateFlag = true;
-      } else {
-        // Scenario D: Neither exists, create a brand new entry
-        const newConsent = await new OrderConsent({
-          user_id: cart.user_id,
-          email: email,
-          phone: phone,
-          city_id: cart.cartConsent.city_id,
-          state_id: cart.cartConsent.state_id,
-          country_id: cart.cartConsent.country_id,
-          emailConsent: cart.cartConsent.emailConsent,
-          phoneConsent: cart.cartConsent.phoneConsent,
-          email_duplicate: false,
-          phone_duplicate: false,
-        }).save();
+    //   if (existingByEmail && existingByPhone) {
+    //     orderConsentId = existingByEmail._id;
+    //     emailDuplicateFlag = true;
+    //     phoneDuplicateFlag = true;
+    //   } else if (existingByEmail) {
+    //     orderConsentId = existingByEmail._id;
+    //     emailDuplicateFlag = true;
+    //     phoneDuplicateFlag = false;
+    //   } else if (existingByPhone) {
+    //     orderConsentId = existingByPhone._id;
+    //     emailDuplicateFlag = false;
+    //     phoneDuplicateFlag = true;
+    //   } else {
+    //     const newConsent = await new OrderConsent({
+    //       user_id: cart.user_id,
+    //       email: email,
+    //       phone: phone,
+    //       city_id: cart.cartConsent.city_id,
+    //       state_id: cart.cartConsent.state_id,
+    //       country_id: cart.cartConsent.country_id,
+    //       emailConsent: cart.cartConsent.emailConsent,
+    //       phoneConsent: cart.cartConsent.phoneConsent,
+    //       email_duplicate: false,
+    //       phone_duplicate: false,
+    //     }).save();
 
-        orderConsentId = newConsent._id;
-      }
+    //     orderConsentId = newConsent._id;
+    //   }
       
-      if (orderConsentId && (emailDuplicateFlag || phoneDuplicateFlag)) {
-        await OrderConsent.updateOne(
-          { _id: orderConsentId },
-          { 
-            $set: { 
-              email_duplicate: emailDuplicateFlag, 
-              phone_duplicate: phoneDuplicateFlag 
-            } 
-          }
-        );
-      }
+    //   if (orderConsentId && (emailDuplicateFlag || phoneDuplicateFlag)) {
+    //     await OrderConsent.updateOne(
+    //       { _id: orderConsentId },
+    //       { 
+    //         $set: { 
+    //           email_duplicate: emailDuplicateFlag, 
+    //           phone_duplicate: phoneDuplicateFlag 
+    //         } 
+    //       }
+    //     );
+    //   }
 
-      // 2. Link the consent ID to the order via OrderOrderConsent
-      await new OrderOrderConsent({ 
-        order_id: savedOrder._id, 
-        orderConsent_id: orderConsentId 
-      }).save();
-    }
+    //   await new OrderOrderConsent({ 
+    //     order_id: savedOrder._id, 
+    //     orderConsent_id: orderConsentId 
+    //   }).save();
+    // }
   
     if (cart.cartCoupon && typeof cart.cartCoupon === 'object' && cart.cartCoupon.coupon_id) {
       const coupon = cart.cartCoupon.coupon_id as any;
@@ -494,7 +493,6 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
         discount_type: coupon.discount_type,
         discount: coupon.discount,
         name: coupon.name,
-        code: coupon.code,
         sales: coupon.sales,
         status: coupon.status,
         valid_from: coupon.valid_from,
@@ -517,14 +515,15 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
   
     if (Array.isArray(cart.cartSkus) && cart.cartSkus.length > 0) {
       const orderSkuDocs = cart.cartSkus.map((item: any) => {
-        let effectivePrice = item.sku?.price || 0;
+        let effectivePrice = item.sale || 0;
         effectivePrice -= perUnitAdminDiscount;
+
         if (item.vendor_discount) {
           effectivePrice -= item.vendor_discount;
         }
         
         const quantity = item.quantity || 0;
-        const taxRate = item.sku?.tax_id?.rate || 0;
+        const taxRate = item.product_id?.tax_id?.rate || 0;
         const taxableAmount = effectivePrice * quantity;
         const taxAmount = (taxableAmount * taxRate) / 100;
   
@@ -536,7 +535,7 @@ export async function createOrderFromCart(cart_id: string, res: NextApiResponse)
           sku_id: item.sku_id,
           seller_id: item.seller_id,
           price: item.sku_id?.price,
-          tax_id: item.sku_id?.tax_id,
+          tax_id: item.product_id?.tax_id,
           quantity,
           vendor_discount: item.vendor_discount,
           flavor_id: item.flavor_id,

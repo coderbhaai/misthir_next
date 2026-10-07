@@ -230,11 +230,12 @@ export default function SingleProductPage({ product, relatedContent, reviews }: 
                     {isAlreadyInCart ? "Update Cart / Add More" : "Add to Cart"}
                   </Button>
                   <Button className="bg-gradient-to-r from-[#f48fb1] to-[#ec407a] text-white rounded-xl px-6 py-2 text-base hover:from-[#ec407a] hover:to-[#f06292]">Buy now</Button>
+                  <Button onClick={() => setOpenBulkModal(true)} className="bg-gradient-to-r from-[#f48fb1] to-[#ec407a] text-white rounded-xl px-6 py-2 text-base hover:from-[#ec407a] hover:to-[#f06292]">Bulk Order</Button>
                   {isLoggedIn && selectedSku?._id && ( 
                     <button onClick={handleAddToOrderGuideClick} className="h-[52px] rounded-lg border border-neutral-300 px-6 font-medium text-neutral-700 transition-all hover:bg-neutral-100">Add to Order Guide</button>
                   )}
                   {selectedSku?._id && !isInWishlist(product._id.toString(), selectedSku._id.toString()) && ( 
-                      <button onClick={handleAddToWishlist} className="h-[52px] rounded-lg border border-neutral-300 px-6 font-medium text-neutral-700 transition-all hover:bg-neutral-100">Add to Wishlist</button> 
+                    <button onClick={handleAddToWishlist} className="h-[52px] rounded-lg border border-neutral-300 px-6 font-medium text-neutral-700 transition-all hover:bg-neutral-100">Add to Wishlist</button> 
                   )}
                 </div>
               </div>
@@ -242,7 +243,6 @@ export default function SingleProductPage({ product, relatedContent, reviews }: 
           </div>
 
           <div className="col-span-12 space-y-4 mt-6">
-            <Button onClick={() => setOpenBulkModal(true)} className="bg-gradient-to-r from-[#f48fb1] to-[#ec407a] text-white rounded-xl px-6 py-2 text-base hover:from-[#ec407a] hover:to-[#f06292]">Bulk Order</Button>
             <div className="flex items-center space-x-2">
               <h3 className="text-lg font-medium text-foreground">About {product.name}</h3>
               <Button variant="outline" size="icon" onClick={() => setAboutOpen(!aboutOpen)} className="rounded-full border-[#ec407a] w-8 h-8 p-0">

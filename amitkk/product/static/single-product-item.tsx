@@ -27,21 +27,17 @@ export function SingleProductItem({ row }: SingleProductItemProps) {
 
             <div className="absolute w-full bottom-0 left-0 right-0 text-black p-4 text-center transition-all duration-300 ease-in-out backdrop-blur-md group-hover:opacity-0 group-hover:translate-y-full">
               <p className="text-center text-white font-medium">{row.name}</p>
-              {row.dietary_type && (
-                <p className="text-white absolute top-1 right-2 text-xs font-semibold">{row.dietary_type}</p>
-              )}
+              {row.dietary_type && ( <p className="text-white absolute top-1 right-2 text-xs font-semibold">{row.dietary_type}</p> )}
             </div>
           </div>
         </Link>
 
-        <Link href={`/${row.url}`}>
           <div className="absolute inset-0 bg-black/60 flex flex-col justify-center items-center opacity-0 translate-y-5 transition-all duration-300 ease-in-out group-hover:opacity-100 group-hover:translate-y-0 text-white p-4">
-            {row.weight && <p className="mb-2 text-sm">{row.weight}</p>}
+            {row.weight && <p className="mb-2 text-sm">{row.weight}</p>}            
             <div className="absolute bottom-4">
-              <Button variant="secondary">Check Product</Button>
+              <Link href={`/${row.url}`}><Button variant="secondary">Check Product</Button></Link>
             </div>
           </div>
-        </Link>
       </div>
     </div>
   );

@@ -83,7 +83,7 @@ import SellerServiceArea from "./ecom/SellerServiceArea";
 
 import SiteSetting from "./payment/SiteSetting";
 import Tax from "./payment/Tax";
-import Razorpay from "./payment/Razorpay";
+import RazorpayPayment from "./payment/RazorpayPayment";
 import TaxCollected from "./payment/TaxCollected";
 
 import Coupon from "./coupon/Coupon";
@@ -130,7 +130,7 @@ const rawModels: Record<string, any> = {
   BankDetail, Commission, Documentation, Ingridient, Product, ProductBrand, ProductFeature, ProductIngridient, Productmeta, ProductSpecification, ProductProductBrand, ProductProductFeature, ProductProductmeta, ProductProductSpecification, Sku, SkuDetail, SkuProductFeature, Vendor, ProductFilter, 
 
   // Payment
-  SiteSetting, Tax, Razorpay, TaxCollected,
+  SiteSetting, Tax, RazorpayPayment, TaxCollected,
 
   // Block
   GenericBlock, TabBlock, BlockQuote, BlockDetail, 

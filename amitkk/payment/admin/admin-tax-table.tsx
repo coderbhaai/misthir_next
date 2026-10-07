@@ -4,9 +4,6 @@ import { TaxProps } from '@amitkk/payment/types';
 import { ActionCell } from '@amitkk/components/basic/ActionCell';
 
 export interface DataProps extends TaxProps {
-  function: string;
-  _id: string | Types.ObjectId;
-  selectedDataId: string | number | object | null;
 };
 
 type Props = {

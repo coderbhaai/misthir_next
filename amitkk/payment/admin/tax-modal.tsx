@@ -4,7 +4,6 @@ import CustomModal from '@amitkk/basic/static/CustomModal';
 import StatusDisplay from '@amitkk/components/admin/status-display-input';
 import { apiRequest, clo, hitToastr, TableDataFormProps } from '@amitkk/basic/utils/my-utils/admin-utils';
 import { TextField } from '@amitkk/components/basic/TextField';
-import { Button } from '@amitkk/components/button/button';
 import { useFormHandler } from 'hooks/useFormHandler';
 import StickyFormFooter from '@amitkk/components/ui/StickyFormFooter';
 
@@ -14,7 +13,6 @@ type DataFormProps = TableDataFormProps & {
 
 export default function DataModal({ open, handleClose, selectedDataId, handleUpdate }: DataFormProps) {
   const initialFormData: DataProps = {
-    function: 'create_update_tax',
     name: '',
     rate: '',
     status: true,
@@ -22,7 +20,6 @@ export default function DataModal({ open, handleClose, selectedDataId, handleUpd
     createdAt: new Date(),
     updatedAt: new Date(),
     _id: '',
-    selectedDataId,
   };
   const [formData, setFormData] = React.useState<DataProps>(initialFormData);
 
@@ -35,10 +32,12 @@ export default function DataModal({ open, handleClose, selectedDataId, handleUpd
     if (open && selectedDataId) {
       const fetchData = async () => {
         try {
-          const res = await apiRequest("GET", `payment/payment?function=get_single_tax&id=${selectedDataId}`);
+          const res = await apiRequest("POST", `payment/tax`, {
+            function: "get_single_tax",
+            id: selectedDataId
+          });
 
           setFormData({
-            function: 'create_update_tax',
             name: res?.data.name || '',
             rate: res?.data.rate || '',
             status: res?.data.status ?? true,
@@ -46,7 +45,6 @@ export default function DataModal({ open, handleClose, selectedDataId, handleUpd
             createdAt: res?.data.createdAt || new Date(),
             updatedAt: new Date(),
             _id: res?.data._id || '',
-            selectedDataId: res?.data._id || '',
           });
           
         } catch (error) { clo( error ); }
@@ -60,12 +58,12 @@ export default function DataModal({ open, handleClose, selectedDataId, handleUpd
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("function", "create_update_tax");
+      formDataToSend.append("_id", selectedDataId as string);
       formDataToSend.append("name", formData.name);
       formDataToSend.append("rate", formData.rate);
       formDataToSend.append("status", String(formData.status));
       formDataToSend.append("displayOrder", String(formData.displayOrder ));
-      formDataToSend.append("_id", selectedDataId as string);
-      const res = await apiRequest("POST", `payment/payment`, formDataToSend);
+      const res = await apiRequest("POST", `payment/tax`, formDataToSend);
 
       if( res?.data ){
         setFormData(initialFormData);

@@ -75,6 +75,7 @@
     "nodemailer": "^7.0.10",
     "pdfkit": "^0.17.2",
     "radix-ui": "^1.4.3",
+    "razorpay": "^2.9.8",
     "react": "^19.2.0",
     "react-countup": "^6.5.3",
     "react-datepicker": "^9.1.0",

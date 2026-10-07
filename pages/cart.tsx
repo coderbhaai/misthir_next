@@ -16,6 +16,7 @@ import { BooleanRadioGroup } from "@amitkk/components/basic/BooleanRadioGroup";
 import BackOrdersList from "@amitkk/ecom/static/BackOrdersList";
 import CreateUpdateAddressModal from "@amitkk/address/static/create-address-modal";
 import ContactInfoSection from "@amitkk/ecom/static/ContactInfoSection";
+import { makePayment } from "@amitkk/payment/utils/utils";
 
 export default function CheckoutPage() {
   const { fetchCart, sendAction, cart, relatedProducts } = useEcom();
@@ -225,14 +226,21 @@ export default function CheckoutPage() {
 
     if (cart?.payable_amount !== 0) {
       try {
-        const res = await apiRequest("POST", "ecom/ecom", {
-          function: "place_order",
-        });
+        makePayment({ module: "Cart", module_id: String(cart?._id) });
+        // const res = await apiRequest("POST", "ecom/ecom", {
+        //   function: "place_order",
+        // });
 
-        await fetchCart();
-        if (res?.data?.status) {
-          router.push(`/order/${res?.data?.order_id}`);
-        }
+        // if (!res?.data?.status) { hitToastr("error", res?.data?.message || "Unable to initiate payment"); return; }
+
+        // const payment = res.data.data;
+        // await openRazorpay(payment);
+
+        
+        // await fetchCart();
+        // if (res?.data?.status) {
+        //   router.push(`/order/${res?.data?.order_id}`);
+        // }
       } catch (error) { clo(error); }
       return;
     }
